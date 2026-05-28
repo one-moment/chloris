@@ -1,0 +1,25 @@
+@import "../styles.css";
+
+.status-select {
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.next-dialog-fallback {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(31, 41, 51, 0.3);
+  z-index: 10;
+}
+
+.next-dialog-fallback.hidden {
+  display: none !important;
+}

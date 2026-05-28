@@ -1,6 +1,6 @@
 # Mattermost Project Communication MVP
 
-Mattermost 스타일의 사내 프로젝트 커뮤니케이션 MVP입니다. 현재 버전은 정적 웹앱으로 구현되어 있어 별도 빌드 없이 브라우저에서 바로 실행할 수 있습니다.
+Mattermost 스타일의 사내 프로젝트 커뮤니케이션 MVP입니다. 현재 버전은 Next.js 기반 React 앱으로 전환되었습니다. 기존 정적 목업 파일도 참고용으로 남겨두었습니다.
 
 ## 주요 기능
 
@@ -20,13 +20,20 @@ Mattermost 스타일의 사내 프로젝트 커뮤니케이션 MVP입니다. 현
 
 ## 실행 방법
 
-정적 파일만으로 실행됩니다.
+Next.js 개발 서버를 실행합니다.
 
 ```bash
-open index.html
+npm install
+npm run dev
 ```
 
-또는 로컬 정적 서버를 사용합니다.
+브라우저에서 다음 주소를 엽니다.
+
+```text
+http://127.0.0.1:3000
+```
+
+정적 목업을 확인하려면 로컬 정적 서버를 사용할 수 있습니다.
 
 ```bash
 python3 -m http.server 4173
@@ -44,6 +51,8 @@ http://127.0.0.1:4173
 index.html    화면 구조
 styles.css    UI 스타일
 app.js        상태 관리와 상호작용 로직
+app/          Next.js App Router 소스
+package.json  Next.js 실행 스크립트와 의존성
 PLAN.md       개발계획
 ```
 
