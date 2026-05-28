@@ -13,6 +13,7 @@ import { createInitialState, makeChannel, makeMessage, makePost } from "../lib/i
 
 export default function Home() {
   const [state, setState] = useState(createInitialState);
+  const [stateLoaded, setStateLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState("ideas");
   const [activeFilter, setActiveFilter] = useState("all");
   const [postDraft, setPostDraft] = useState({ title: "", body: "", status: "검토중" });
@@ -25,19 +26,50 @@ export default function Home() {
   const [showChannelDialog, setShowChannelDialog] = useState(false);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (!saved) return;
-    try {
-      const parsed = JSON.parse(saved);
-      if (parsed?.projects?.[0]?.channels) setState(parsed);
-    } catch {
-      window.localStorage.removeItem(STORAGE_KEY);
+    let cancelled = false;
+
+    async function loadState() {
+      try {
+        const response = await fetch("/api/state");
+        if (!response.ok) throw new Error("Failed to load server state");
+        const serverState = await response.json();
+        if (!cancelled && serverState?.projects?.[0]?.channels) {
+          setState(serverState);
+          setStateLoaded(true);
+          return;
+        }
+      } catch {
+        const saved = window.localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+          setStateLoaded(true);
+          return;
+        }
+        try {
+          const parsed = JSON.parse(saved);
+          if (!cancelled && parsed?.projects?.[0]?.channels) setState(parsed);
+        } catch {
+          window.localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+
+      if (!cancelled) setStateLoaded(true);
     }
+
+    loadState();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
+    if (!stateLoaded) return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
+    fetch("/api/state", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state)
+    }).catch(() => {});
+  }, [state, stateLoaded]);
 
   const project = useMemo(
     () => state.projects.find((item) => item.id === state.selectedProjectId) ?? state.projects[0],

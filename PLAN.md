@@ -133,12 +133,13 @@ bot_runs
 
 ### Phase 2: 백엔드 API
 
-- 프로젝트 CRUD
-- 채널 CRUD
-- 메시지 CRUD
-- 게시글/댓글 CRUD
-- 파일 메타데이터 CRUD
-- 봇 등록 및 실행 로그 저장
+- 완료: 로컬 JSON 저장소 기반 `GET/PUT/DELETE /api/state`
+- 완료: 프로젝트 생성/목록 API
+- 완료: 채널 생성/목록 API
+- 완료: 메시지, 게시글, 댓글, 파일 생성 API
+- 완료: 봇 실행 생성 및 실행 상태 변경 API
+- 다음 작업: 실제 DB 스키마 확정 및 API를 개별 mutation 중심으로 프론트에 더 깊게 연결
+- 다음 작업: 봇 등록 CRUD, 입력 검증 강화, 서버 액션/권한 모델 준비
 
 ### Phase 3: Mattermost 연동
 
