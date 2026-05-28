@@ -45,6 +45,27 @@ const defaultState = {
       enabled: true,
     },
   ],
+  botRuns: [
+    {
+      id: "run-1",
+      botId: "bot-1",
+      botName: "Codex 구매봇",
+      provider: "Codex",
+      command: "/codex 구매요청 요약",
+      status: "성공",
+      requestedBy: "@박민수",
+      createdAt: "Today at 9:55 AM",
+      duration: "2.4s",
+      summary: "미완료 게시글 2건, 완료 1건을 요약했습니다.",
+      payload: {
+        project: "onemoment",
+        channel: "구매요청",
+        command: "/codex 구매요청 요약",
+        requester: "@박민수",
+        openPosts: 2,
+      },
+    },
+  ],
   files: [
     { id: "file-1", name: "shopping-bag-sample.pdf", source: "Ideas 첨부", owner: "@박민수", size: "1.8 MB" },
     { id: "file-2", name: "purchase-summary.md", source: "Codex 구매봇", owner: "@Codex 구매봇", size: "24 KB" },
@@ -124,6 +145,8 @@ const els = {
   botCommand: document.querySelector("#botCommand"),
   botWebhook: document.querySelector("#botWebhook"),
   ideaBotActions: document.querySelector("#ideaBotActions"),
+  botRunList: document.querySelector("#botRunList"),
+  ideaRunList: document.querySelector("#ideaRunList"),
   postForm: document.querySelector("#postForm"),
   postTitle: document.querySelector("#postTitle"),
   postBody: document.querySelector("#postBody"),
@@ -158,6 +181,7 @@ function normalizeState(value) {
     ...value,
     messages: value.messages ?? structuredClone(defaultState.messages),
     bots: value.bots ?? structuredClone(defaultState.bots),
+    botRuns: value.botRuns ?? structuredClone(defaultState.botRuns),
     files: value.files ?? structuredClone(defaultState.files),
     posts: value.posts ?? structuredClone(defaultState.posts),
   };
@@ -366,6 +390,46 @@ function renderBots() {
   });
 }
 
+function statusTone(status) {
+  if (status === "성공") return "chip";
+  if (status === "실행중") return "chip blue";
+  if (status === "실패") return "chip danger";
+  return "chip amber";
+}
+
+function renderBotRuns() {
+  const html = state.botRuns
+    .slice(0, 6)
+    .map(
+      (run) => `
+        <article class="run-card">
+          <div class="run-head">
+            <div>
+              <strong>${escapeHtml(run.botName)}</strong>
+              <span>${escapeHtml(run.command)}</span>
+            </div>
+            <span class="${statusTone(run.status)}">${escapeHtml(run.status)}</span>
+          </div>
+          <div class="run-meta">
+            <span>${escapeHtml(run.requestedBy)}</span>
+            <span>${escapeHtml(run.createdAt)}</span>
+            <span>${escapeHtml(run.duration)}</span>
+          </div>
+          <p>${escapeHtml(run.summary)}</p>
+          <details>
+            <summary>Webhook payload 보기</summary>
+            <pre>${escapeHtml(JSON.stringify(run.payload, null, 2))}</pre>
+          </details>
+        </article>
+      `,
+    )
+    .join("");
+
+  const empty = '<div class="mention-item"><strong>없음</strong><span>실행 로그 없음</span></div>';
+  els.botRunList.innerHTML = html || empty;
+  els.ideaRunList.innerHTML = html || empty;
+}
+
 function renderFiles() {
   els.fileList.innerHTML = state.files
     .map(
@@ -394,6 +458,7 @@ function renderAll() {
   renderPosts();
   renderSummary();
   renderBots();
+  renderBotRuns();
   renderFiles();
 }
 
@@ -440,23 +505,80 @@ function addMessage(author, body, bot = false) {
   });
 }
 
-function runBot(botId) {
-  const bot = state.bots.find((item) => item.id === botId);
-  if (!bot) return;
+function buildBotPayload(bot, commandText) {
+  const openPosts = state.posts.filter((post) => post.status !== "완료");
+  const mentionedUsers = [...new Set(state.posts.flatMap((post) => {
+    const text = `${post.body} ${post.comments.map((comment) => comment.body).join(" ")}`;
+    return text.match(/@[가-힣A-Za-z0-9_]+/g) ?? [];
+  }))];
+
+  return {
+    project: state.selectedProject,
+    channel: "구매요청",
+    provider: bot.provider,
+    bot: bot.name,
+    command: commandText || bot.command,
+    webhook: bot.webhook,
+    requester: currentUser,
+    openPosts: openPosts.length,
+    mentions: mentionedUsers,
+    posts: openPosts.map((post) => ({
+      id: post.id,
+      title: post.title,
+      status: post.status,
+      author: post.author,
+    })),
+  };
+}
+
+function completeBotRun(runId) {
+  const run = state.botRuns.find((item) => item.id === runId);
+  if (!run || run.status !== "실행중") return;
 
   const openPosts = state.posts.filter((post) => post.status !== "완료").length;
-  const result = `${bot.command} 실행 완료: ${state.selectedProject} / 구매요청 채널의 미완료 게시글 ${openPosts}건을 확인했습니다. 결과는 Messages와 Files에 기록됩니다.`;
+  run.status = "성공";
+  run.duration = "2.1s";
+  run.summary = `미완료 게시글 ${openPosts}건을 확인했고 실행 결과를 Messages와 Files에 기록했습니다.`;
 
-  addMessage(`@${bot.name}`, result, true);
+  addMessage(`@${run.botName}`, `${run.command} 실행 완료: ${run.summary}`, true);
   state.files.unshift({
     id: `file-${Date.now()}`,
-    name: `${bot.name}-run-result.md`,
-    source: bot.provider,
-    owner: `@${bot.name}`,
+    name: `${run.botName}-run-${run.id}.md`,
+    source: run.provider,
+    owner: `@${run.botName}`,
     size: "8 KB",
   });
   saveState();
   renderAll();
+}
+
+function runBot(botId, commandText = "") {
+  const bot = state.bots.find((item) => item.id === botId);
+  if (!bot) return;
+
+  const openPosts = state.posts.filter((post) => post.status !== "완료").length;
+  const command = commandText || `${bot.command} 구매요청 요약`;
+  const runId = `run-${Date.now()}`;
+  const payload = buildBotPayload(bot, command);
+
+  state.botRuns.unshift({
+    id: runId,
+    botId: bot.id,
+    botName: bot.name,
+    provider: bot.provider,
+    command,
+    status: "실행중",
+    requestedBy: currentUser,
+    createdAt: "Just now",
+    duration: "진행중",
+    summary: `Webhook 호출 대기 중입니다. 미완료 게시글 ${openPosts}건을 전송합니다.`,
+    payload,
+  });
+  addMessage("@시스템", `${bot.name} 실행을 시작했습니다: ${command}`, true);
+  saveState();
+  renderAll();
+
+  window.setTimeout(() => completeBotRun(runId), 900);
 }
 
 function handlePostSubmit(event) {
@@ -580,7 +702,7 @@ els.messageForm.addEventListener("submit", (event) => {
   const matchedBot = state.bots.find((bot) => body.startsWith(bot.command));
   addMessage(currentUser, body);
   if (matchedBot) {
-    runBot(matchedBot.id);
+    runBot(matchedBot.id, body);
   } else {
     saveState();
     renderAll();

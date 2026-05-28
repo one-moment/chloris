@@ -517,6 +517,11 @@ h1 mark {
   color: var(--blue);
 }
 
+.chip.danger {
+  background: #ffe4e9;
+  color: var(--danger);
+}
+
 .post-actions {
   display: flex;
   gap: 4px;
@@ -699,7 +704,8 @@ h1 mark {
 
 .people-list,
 .mention-list,
-.bot-list {
+.bot-list,
+.run-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -738,6 +744,73 @@ h1 mark {
   display: grid;
   gap: 8px;
   margin-top: 12px;
+}
+
+.run-list {
+  gap: 10px;
+}
+
+.run-card {
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+
+.run-head,
+.run-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.run-head strong,
+.run-head span,
+.run-meta span {
+  display: block;
+}
+
+.run-head > div > span,
+.run-meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.run-meta {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.run-card p {
+  margin-top: 8px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.run-card details {
+  margin-top: 8px;
+}
+
+.run-card summary {
+  color: var(--blue);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.run-card pre {
+  max-height: 180px;
+  overflow: auto;
+  margin: 8px 0 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: #111827;
+  color: #e5e7eb;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
 }
 
 .file-list {

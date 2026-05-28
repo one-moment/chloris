@@ -11,6 +11,8 @@ Mattermost 스타일의 사내 프로젝트 커뮤니케이션 MVP입니다. 현
 - Files: 게시글/댓글/봇 실행 결과 파일 목록
 - 자동화봇 등록: Codex, Claude Code, Custom Webhook
 - 자동화봇 실행 결과를 Messages와 Files에 기록
+- 자동화봇 실행 상태와 실행 로그 관리
+- Webhook payload 미리보기
 - 브라우저 `localStorage` 기반 데이터 저장
 
 ## 실행 방법

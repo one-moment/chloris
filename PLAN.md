@@ -139,6 +139,8 @@ bot_runs
 - Custom Webhook 실행
 - 봇 실행 권한과 감사 로그 추가
 - 실행 결과를 Messages, Ideas, Files에 연결
+- Webhook payload 검증 및 재실행 기능 추가
+- 실행 상태를 대기, 실행중, 성공, 실패로 표준화
 
 ### Phase 5: 사내 배포
 
