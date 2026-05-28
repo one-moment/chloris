@@ -8,8 +8,7 @@ import MessagesView from "../components/MessagesView";
 import ProjectSidebar from "../components/ProjectSidebar";
 import Topbar from "../components/Topbar";
 import { CURRENT_USER, STORAGE_KEY } from "../lib/constants";
-import { buildAutomationPayload, completeBotRun, makeBotRun } from "../lib/automation";
-import { createInitialState, makeChannel, makeMessage, makePost } from "../lib/initialData";
+import { createInitialState } from "../lib/initialData";
 
 export default function Home() {
   const [state, setState] = useState(createInitialState);
@@ -25,14 +24,43 @@ export default function Home() {
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [showChannelDialog, setShowChannelDialog] = useState(false);
 
+  async function requestJson(url, options = {}) {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers ?? {})
+      }
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(data?.error ?? "API request failed");
+    return data;
+  }
+
+  async function refreshState() {
+    const serverState = await requestJson("/api/state");
+    if (serverState?.projects?.[0]?.channels) {
+      setState(serverState);
+      setStateLoaded(true);
+    }
+    return serverState;
+  }
+
+  async function mutateAndRefresh(url, body, method = "POST") {
+    const result = await requestJson(url, {
+      method,
+      body: JSON.stringify(body)
+    });
+    await refreshState();
+    return result;
+  }
+
   useEffect(() => {
     let cancelled = false;
 
     async function loadState() {
       try {
-        const response = await fetch("/api/state");
-        if (!response.ok) throw new Error("Failed to load server state");
-        const serverState = await response.json();
+        const serverState = await requestJson("/api/state");
         if (!cancelled && serverState?.projects?.[0]?.channels) {
           setState(serverState);
           setStateLoaded(true);
@@ -105,24 +133,6 @@ export default function Home() {
     [channel.posts]
   );
 
-  function updateCurrentChannel(mutator) {
-    setState((current) => ({
-      ...current,
-      projects: current.projects.map((projectItem) => {
-        if (projectItem.id !== current.selectedProjectId) return projectItem;
-        return {
-          ...projectItem,
-          channels: projectItem.channels.map((channelItem) => {
-            if (channelItem.id !== current.selectedChannelId) return channelItem;
-            const nextChannel = structuredClone(channelItem);
-            mutator(nextChannel, projectItem);
-            return nextChannel;
-          })
-        };
-      })
-    }));
-  }
-
   function selectProject(projectId) {
     setState((current) => {
       const nextProject = current.projects.find((item) => item.id === projectId) ?? current.projects[0];
@@ -140,149 +150,127 @@ export default function Home() {
     setActiveTab("ideas");
   }
 
-  function createProject(event) {
+  async function createProject(event) {
     event.preventDefault();
     const name = projectDraft.trim();
     if (!name) return;
-    const firstChannel = makeChannel("매니저 소통", "general");
-    const projectId = `project-${Date.now()}`;
-    setState((current) => ({
-      ...current,
-      selectedProjectId: projectId,
-      selectedChannelId: firstChannel.id,
-      projects: [
-        ...current.projects,
-        {
-          id: projectId,
-          name,
-          description: `${name} 내부 커뮤니케이션 공간`,
-          channels: [firstChannel]
-        }
-      ]
-    }));
-    setProjectDraft("");
-    setShowProjectDialog(false);
+    try {
+      await mutateAndRefresh("/api/projects", { name });
+      setProjectDraft("");
+      setShowProjectDialog(false);
+      setActiveTab("ideas");
+    } catch (error) {
+      console.error(error);
+    }
   }
 
-  function createChannel(event) {
+  async function createChannel(event) {
     event.preventDefault();
     const name = channelDraft.name.trim();
     if (!name) return;
-    const newChannel = makeChannel(name, channelDraft.type);
-    setState((current) => ({
-      ...current,
-      selectedChannelId: newChannel.id,
-      projects: current.projects.map((projectItem) => (
-        projectItem.id === current.selectedProjectId
-          ? { ...projectItem, channels: [...projectItem.channels, newChannel] }
-          : projectItem
-      ))
-    }));
-    setChannelDraft({ name: "", type: "general" });
-    setShowChannelDialog(false);
-    setActiveTab("ideas");
+    try {
+      await mutateAndRefresh(`/api/projects/${state.selectedProjectId}/channels`, {
+        name,
+        type: channelDraft.type
+      });
+      setChannelDraft({ name: "", type: "general" });
+      setShowChannelDialog(false);
+      setActiveTab("ideas");
+    } catch (error) {
+      console.error(error);
+    }
   }
 
-  function sendMessage() {
+  async function sendMessage() {
     const body = messageDraft.trim();
     if (!body) return;
-    updateCurrentChannel((next) => {
-      next.messages.unshift(makeMessage(body, "captain"));
-    });
-    setMessageDraft("");
+    try {
+      await mutateAndRefresh(`/api/channels/${channel.id}/messages`, { body, author: "captain" });
+      setMessageDraft("");
+    } catch (error) {
+      console.error(error);
+    }
   }
 
-  function createPost() {
+  async function createPost() {
     if (!postDraft.title.trim() || !postDraft.body.trim()) return;
-    updateCurrentChannel((next) => {
-      next.posts.unshift(makePost({ ...postDraft, author: "captain" }));
-    });
-    setPostDraft({ title: "", body: "", status: "검토중" });
+    try {
+      await mutateAndRefresh(`/api/channels/${channel.id}/posts`, {
+        ...postDraft,
+        author: "captain"
+      });
+      setPostDraft({ title: "", body: "", status: "검토중" });
+    } catch (error) {
+      console.error(error);
+    }
   }
 
-  function changePostStatus(postId, status) {
-    updateCurrentChannel((next) => {
-      next.posts = next.posts.map((post) => (post.id === postId ? { ...post, status } : post));
-    });
+  async function changePostStatus(postId, status) {
+    try {
+      await mutateAndRefresh(`/api/posts/${postId}`, { status }, "PATCH");
+    } catch (error) {
+      console.error(error);
+    }
   }
 
-  function addComment(postId) {
+  async function addComment(postId) {
     const body = commentDrafts[postId]?.trim();
     if (!body) return;
-    updateCurrentChannel((next) => {
-      next.posts = next.posts.map((post) => (
-        post.id === postId
-          ? {
-              ...post,
-              comments: [
-                ...(post.comments ?? []),
-                { id: `comment-${Date.now()}`, author: "captain", body, createdAt: "방금 전" }
-              ]
-            }
-          : post
-      ));
-    });
-    setCommentDrafts((current) => ({ ...current, [postId]: "" }));
+    try {
+      await mutateAndRefresh(`/api/posts/${postId}/comments`, { body, author: "captain" });
+      setCommentDrafts((current) => ({ ...current, [postId]: "" }));
+    } catch (error) {
+      console.error(error);
+    }
   }
 
-  function addFile() {
+  async function addFile() {
     const name = fileDraft.name.trim();
     if (!name) return;
-    updateCurrentChannel((next) => {
-      next.files.unshift({
-        id: `file-${Date.now()}`,
+    try {
+      await mutateAndRefresh(`/api/channels/${channel.id}/files`, {
         name,
-        source: fileDraft.source || "수동 추가",
-        createdAt: "방금 전"
+        source: fileDraft.source || "수동 추가"
       });
-    });
-    setFileDraft({ name: "", source: "수동 추가" });
+      setFileDraft({ name: "", source: "수동 추가" });
+    } catch (error) {
+      console.error(error);
+    }
   }
 
-  function runBot(bot) {
-    const payload = buildAutomationPayload({ project, channel, bot });
-    const run = makeBotRun({ bot, channel, payload });
-    updateCurrentChannel((next) => {
-      next.botRuns.unshift(run);
-      next.messages.unshift(makeMessage(`${bot.name} 실행 요청을 보냈습니다.`, "자동화 허브", true));
-    });
+  async function runBot(bot) {
+    try {
+      await mutateAndRefresh(`/api/channels/${channel.id}/bot-runs`, {
+        botId: bot.id,
+        requester: "@captain"
+      });
+    } catch (error) {
+      console.error(error);
+    }
   }
 
-  function completeRun(runId) {
-    updateCurrentChannel((next) => {
-      next.botRuns = next.botRuns.map((run) => (run.id === runId ? completeBotRun(run, next.type) : run));
-      const completed = next.botRuns.find((run) => run.id === runId);
-      if (next.type === "purchase") {
-        next.files.unshift({ id: `file-${Date.now()}`, name: "purchase-review-draft.json", source: "Codex 구매봇", createdAt: "방금 전" });
-      } else if (completed?.payload?.sheetSync) {
-        next.files.unshift({
-          id: `file-${Date.now()}`,
-          name: `${completed.payload.sheetSync.target}-sync-log.json`,
-          source: completed.botName,
-          createdAt: "방금 전"
-        });
-      }
-    });
+  async function completeRun(runId) {
+    try {
+      await mutateAndRefresh(`/api/bot-runs/${runId}`, { action: "complete" }, "PATCH");
+    } catch (error) {
+      console.error(error);
+    }
   }
 
-  function approveRun(runId) {
-    updateCurrentChannel((next) => {
-      next.botRuns = next.botRuns.map((run) => (
-        run.id === runId
-          ? { ...run, status: "승인 완료", approvalStatus: "승인 완료", summary: "담당자가 결제를 승인했습니다. 구매봇이 최종 결제 단계로 진행할 수 있습니다." }
-          : run
-      ));
-    });
+  async function approveRun(runId) {
+    try {
+      await mutateAndRefresh(`/api/bot-runs/${runId}`, { action: "approve" }, "PATCH");
+    } catch (error) {
+      console.error(error);
+    }
   }
 
-  function rejectRun(runId) {
-    updateCurrentChannel((next) => {
-      next.botRuns = next.botRuns.map((run) => (
-        run.id === runId
-          ? { ...run, status: "반려", approvalStatus: "반려", summary: "담당자가 자동 구매 실행을 반려했습니다." }
-          : run
-      ));
-    });
+  async function rejectRun(runId) {
+    try {
+      await mutateAndRefresh(`/api/bot-runs/${runId}`, { action: "reject" }, "PATCH");
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   return (
