@@ -6,15 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint \"app/**/*.{js,jsx}\" \"components/**/*.{js,jsx}\" \"lib/**/*.{js,jsx}\" next.config.mjs"
   },
   "dependencies": {
-    "next": "15.0.4",
+    "next": "^15.5.18",
     "react": "19.0.0",
     "react-dom": "19.0.0"
   },
   "devDependencies": {
-    "eslint": "9.15.0",
-    "eslint-config-next": "15.0.4"
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^15.5.18"
   }
 }
