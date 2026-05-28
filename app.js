@@ -1,5 +1,6 @@
-const STORAGE_KEY = "mattermost-project-mvp-v2";
+const STORAGE_KEY = "mattermost-project-mvp-v3";
 const currentUser = "@박민수";
+const channelName = "구매요청";
 
 const people = [
   { handle: "@유경화", name: "유경화", team: "플라워팀", avatar: "유" },
@@ -8,9 +9,26 @@ const people = [
   { handle: "@성원에프디아이", name: "성원에프디아이", team: "협력사", avatar: "성" },
 ];
 
-const defaultState = {
-  projects: ["onemoment", "ERP 고도화", "모바일 앱", "보안 점검"],
-  selectedProject: "onemoment",
+const sharedBots = [
+  {
+    id: "bot-1",
+    name: "Codex 구매봇",
+    provider: "Codex",
+    command: "/codex",
+    webhook: "https://automation.internal/codex/purchase",
+    enabled: true,
+  },
+  {
+    id: "bot-2",
+    name: "Claude 리뷰봇",
+    provider: "Claude Code",
+    command: "/claude-review",
+    webhook: "https://automation.internal/claude/review",
+    enabled: true,
+  },
+];
+
+const defaultProjectData = {
   messages: [
     {
       id: "msg-1",
@@ -27,24 +45,6 @@ const defaultState = {
       bot: true,
     },
   ],
-  bots: [
-    {
-      id: "bot-1",
-      name: "Codex 구매봇",
-      provider: "Codex",
-      command: "/codex",
-      webhook: "https://automation.internal/codex/purchase",
-      enabled: true,
-    },
-    {
-      id: "bot-2",
-      name: "Claude 리뷰봇",
-      provider: "Claude Code",
-      command: "/claude-review",
-      webhook: "https://automation.internal/claude/review",
-      enabled: true,
-    },
-  ],
   botRuns: [
     {
       id: "run-1",
@@ -56,13 +56,19 @@ const defaultState = {
       requestedBy: "@박민수",
       createdAt: "Today at 9:55 AM",
       duration: "2.4s",
-      summary: "미완료 게시글 2건, 완료 1건을 요약했습니다.",
+      summary: "구매요청을 정리하고 장바구니 준비 단계까지 완료했습니다.",
+      approvalStatus: "승인 대기",
+      purchaseStage: "승인 대기",
       payload: {
         project: "onemoment",
         channel: "구매요청",
         command: "/codex 구매요청 요약",
         requester: "@박민수",
         openPosts: 2,
+        approvalRequired: true,
+        finalPaymentMode: "human_approval_required",
+        buyerBotHost: "mac-mini-purchase-bot",
+        vendorTargets: ["coupang", "gmarket"],
       },
     },
   ],
@@ -119,6 +125,17 @@ const defaultState = {
   ],
 };
 
+const defaultState = {
+  selectedProjectId: "project-1",
+  projects: [
+    { id: "project-1", name: "onemoment", channel: "구매요청", ...structuredClone(defaultProjectData) },
+    { id: "project-2", name: "ERP 고도화", channel: "구매요청", ...emptyProjectData("ERP 고도화") },
+    { id: "project-3", name: "모바일 앱", channel: "구매요청", ...emptyProjectData("모바일 앱") },
+    { id: "project-4", name: "보안 점검", channel: "구매요청", ...emptyProjectData("보안 점검") },
+  ],
+  bots: structuredClone(sharedBots),
+};
+
 let state = loadState();
 let activeFilter = "all";
 
@@ -129,6 +146,13 @@ const els = {
   projectForm: document.querySelector("#projectForm"),
   closeProjectDialog: document.querySelector("#closeProjectDialog"),
   newProjectName: document.querySelector("#newProjectName"),
+  fileDialog: document.querySelector("#fileDialog"),
+  fileForm: document.querySelector("#fileForm"),
+  closeFileDialog: document.querySelector("#closeFileDialog"),
+  newFileName: document.querySelector("#newFileName"),
+  newFileSource: document.querySelector("#newFileSource"),
+  channelTitle: document.querySelector("#channelTitle"),
+  activeChannelLabel: document.querySelector("#activeChannelLabel"),
   tabs: document.querySelectorAll(".tabs button"),
   views: {
     messages: document.querySelector("#messagesView"),
@@ -164,6 +188,23 @@ const els = {
   addFileBtn: document.querySelector("#addFileBtn"),
 };
 
+function emptyProjectData(projectName) {
+  return {
+    messages: [
+      {
+        id: `msg-${projectName}`,
+        author: "@시스템",
+        body: `${projectName} 프로젝트 채널이 생성되었습니다.`,
+        createdAt: "Just now",
+        bot: true,
+      },
+    ],
+    botRuns: [],
+    files: [],
+    posts: [],
+  };
+}
+
 function loadState() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (!saved) return structuredClone(defaultState);
@@ -176,19 +217,32 @@ function loadState() {
 }
 
 function normalizeState(value) {
+  if (Array.isArray(value.projects) && typeof value.projects[0] === "string") {
+    return structuredClone(defaultState);
+  }
+
   return {
     ...structuredClone(defaultState),
     ...value,
-    messages: value.messages ?? structuredClone(defaultState.messages),
-    bots: value.bots ?? structuredClone(defaultState.bots),
-    botRuns: value.botRuns ?? structuredClone(defaultState.botRuns),
-    files: value.files ?? structuredClone(defaultState.files),
-    posts: value.posts ?? structuredClone(defaultState.posts),
+    bots: value.bots ?? structuredClone(sharedBots),
+    projects: (value.projects ?? defaultState.projects).map((project) => ({
+      channel: channelName,
+      ...emptyProjectData(project.name ?? "새 프로젝트"),
+      ...project,
+      messages: project.messages ?? [],
+      botRuns: project.botRuns ?? [],
+      files: project.files ?? [],
+      posts: project.posts ?? [],
+    })),
   };
 }
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function currentProject() {
+  return state.projects.find((project) => project.id === state.selectedProjectId) ?? state.projects[0];
 }
 
 function escapeHtml(value) {
@@ -217,19 +271,33 @@ function statusClass(status) {
   return "chip amber";
 }
 
+function statusTone(status) {
+  if (status === "성공") return "chip";
+  if (status === "실행중") return "chip blue";
+  if (status === "실패") return "chip danger";
+  if (status === "승인 대기") return "chip amber";
+  if (status === "승인됨") return "chip";
+  if (status === "반려") return "chip danger";
+  return "chip amber";
+}
+
 function renderProjects() {
+  const project = currentProject();
+  els.channelTitle.textContent = project.channel;
+  els.activeChannelLabel.textContent = project.channel;
   els.projectSelect.innerHTML = state.projects
     .map(
-      (project) =>
-        `<option value="${escapeHtml(project)}" ${
-          project === state.selectedProject ? "selected" : ""
-        }>${escapeHtml(project)}</option>`,
+      (item) =>
+        `<option value="${escapeHtml(item.id)}" ${
+          item.id === project.id ? "selected" : ""
+        }>${escapeHtml(item.name)}</option>`,
     )
     .join("");
 }
 
 function renderMessages() {
-  els.messageList.innerHTML = state.messages
+  const project = currentProject();
+  els.messageList.innerHTML = project.messages
     .map(
       (message) => `
         <article class="message-row ${message.bot ? "bot-message" : ""}">
@@ -249,8 +317,9 @@ function renderMessages() {
 }
 
 function getFilteredPosts() {
+  const posts = currentProject().posts;
   if (activeFilter === "mentions") {
-    return state.posts.filter(
+    return posts.filter(
       (post) =>
         post.body.includes(currentUser) ||
         post.comments.some((comment) => comment.body.includes(currentUser)),
@@ -258,10 +327,10 @@ function getFilteredPosts() {
   }
 
   if (activeFilter === "open") {
-    return state.posts.filter((post) => post.status !== "완료");
+    return posts.filter((post) => post.status !== "완료");
   }
 
-  return state.posts;
+  return posts;
 }
 
 function renderPosts() {
@@ -276,7 +345,14 @@ function renderPosts() {
             <div>
               <div class="post-title-row">
                 <h3>${escapeHtml(post.title)}</h3>
-                <span class="${statusClass(post.status)}">${escapeHtml(post.status)}</span>
+                <select class="status-select" data-post-id="${escapeHtml(post.id)}" aria-label="상태 변경">
+                  ${["검토중", "진행중", "완료"]
+                    .map(
+                      (status) =>
+                        `<option value="${status}" ${status === post.status ? "selected" : ""}>${status}</option>`,
+                    )
+                    .join("")}
+                </select>
               </div>
               <div class="post-meta">${escapeHtml(post.author)} · ${escapeHtml(post.createdAt)}</div>
             </div>
@@ -338,14 +414,18 @@ function renderPosts() {
   document.querySelectorAll(".reply-form").forEach((form) => {
     form.addEventListener("submit", handleReplySubmit);
   });
+  document.querySelectorAll(".status-select").forEach((select) => {
+    select.addEventListener("change", handleStatusChange);
+  });
 }
 
 function renderSummary() {
-  els.reviewCount.textContent = state.posts.filter((post) => post.status === "검토중").length;
-  els.progressCount.textContent = state.posts.filter((post) => post.status === "진행중").length;
-  els.doneCount.textContent = state.posts.filter((post) => post.status === "완료").length;
+  const posts = currentProject().posts;
+  els.reviewCount.textContent = posts.filter((post) => post.status === "검토중").length;
+  els.progressCount.textContent = posts.filter((post) => post.status === "진행중").length;
+  els.doneCount.textContent = posts.filter((post) => post.status === "완료").length;
 
-  const mentions = state.posts
+  const mentions = posts
     .filter(
       (post) =>
         post.body.includes(currentUser) ||
@@ -390,15 +470,9 @@ function renderBots() {
   });
 }
 
-function statusTone(status) {
-  if (status === "성공") return "chip";
-  if (status === "실행중") return "chip blue";
-  if (status === "실패") return "chip danger";
-  return "chip amber";
-}
-
 function renderBotRuns() {
-  const html = state.botRuns
+  const runs = currentProject().botRuns;
+  const html = runs
     .slice(0, 6)
     .map(
       (run) => `
@@ -416,6 +490,24 @@ function renderBotRuns() {
             <span>${escapeHtml(run.duration)}</span>
           </div>
           <p>${escapeHtml(run.summary)}</p>
+          ${
+            run.approvalStatus
+              ? `<div class="approval-box">
+                  <div>
+                    <strong>${escapeHtml(run.purchaseStage ?? "구매 준비")}</strong>
+                    <span>${escapeHtml(run.approvalStatus)}</span>
+                  </div>
+                  ${
+                    run.approvalStatus === "승인 대기"
+                      ? `<div class="approval-actions">
+                          <button class="primary-button approve-run" data-run-id="${escapeHtml(run.id)}" type="button">구매 승인</button>
+                          <button class="secondary-button reject-run" data-run-id="${escapeHtml(run.id)}" type="button">반려</button>
+                        </div>`
+                      : ""
+                  }
+                </div>`
+              : ""
+          }
           <details>
             <summary>Webhook payload 보기</summary>
             <pre>${escapeHtml(JSON.stringify(run.payload, null, 2))}</pre>
@@ -428,10 +520,18 @@ function renderBotRuns() {
   const empty = '<div class="mention-item"><strong>없음</strong><span>실행 로그 없음</span></div>';
   els.botRunList.innerHTML = html || empty;
   els.ideaRunList.innerHTML = html || empty;
+
+  document.querySelectorAll(".approve-run").forEach((button) => {
+    button.addEventListener("click", () => approvePurchaseRun(button.dataset.runId));
+  });
+  document.querySelectorAll(".reject-run").forEach((button) => {
+    button.addEventListener("click", () => rejectPurchaseRun(button.dataset.runId));
+  });
 }
 
 function renderFiles() {
-  els.fileList.innerHTML = state.files
+  const files = currentProject().files;
+  els.fileList.innerHTML = files
     .map(
       (file) => `
         <article class="file-row">
@@ -445,6 +545,15 @@ function renderFiles() {
       `,
     )
     .join("");
+
+  if (!files.length) {
+    els.fileList.innerHTML = `
+      <div class="empty-state">
+        <h2>파일이 없습니다</h2>
+        <p>파일을 추가하거나 봇을 실행하면 결과 파일이 여기에 표시됩니다.</p>
+      </div>
+    `;
+  }
 }
 
 function countMentions(post) {
@@ -496,7 +605,7 @@ function hideMentionMenu() {
 }
 
 function addMessage(author, body, bot = false) {
-  state.messages.push({
+  currentProject().messages.push({
     id: `msg-${Date.now()}`,
     author,
     body,
@@ -506,21 +615,32 @@ function addMessage(author, body, bot = false) {
 }
 
 function buildBotPayload(bot, commandText) {
-  const openPosts = state.posts.filter((post) => post.status !== "완료");
-  const mentionedUsers = [...new Set(state.posts.flatMap((post) => {
+  const project = currentProject();
+  const openPosts = project.posts.filter((post) => post.status !== "완료");
+  const mentionedUsers = [...new Set(project.posts.flatMap((post) => {
     const text = `${post.body} ${post.comments.map((comment) => comment.body).join(" ")}`;
     return text.match(/@[가-힣A-Za-z0-9_]+/g) ?? [];
   }))];
 
   return {
-    project: state.selectedProject,
-    channel: "구매요청",
+    project: project.name,
+    channel: project.channel,
     provider: bot.provider,
     bot: bot.name,
     command: commandText || bot.command,
     webhook: bot.webhook,
     requester: currentUser,
     openPosts: openPosts.length,
+    approvalRequired: true,
+    finalPaymentMode: "human_approval_required",
+    buyerBotHost: "mac-mini-purchase-bot",
+    browserAutomation: {
+      mode: "remote_browser_control",
+      allowedUntil: "checkout_review",
+      stopBeforePayment: true,
+      recordOrderResult: true,
+    },
+    vendorTargets: ["coupang", "gmarket"],
     mentions: mentionedUsers,
     posts: openPosts.map((post) => ({
       id: post.id,
@@ -531,19 +651,30 @@ function buildBotPayload(bot, commandText) {
   };
 }
 
-function completeBotRun(runId) {
-  const run = state.botRuns.find((item) => item.id === runId);
+function completeBotRun(projectId, runId) {
+  const project = state.projects.find((item) => item.id === projectId);
+  if (!project) return;
+
+  const run = project.botRuns.find((item) => item.id === runId);
   if (!run || run.status !== "실행중") return;
 
-  const openPosts = state.posts.filter((post) => post.status !== "완료").length;
-  run.status = "성공";
+  const openPosts = project.posts.filter((post) => post.status !== "완료").length;
+  run.status = "승인 대기";
   run.duration = "2.1s";
-  run.summary = `미완료 게시글 ${openPosts}건을 확인했고 실행 결과를 Messages와 Files에 기록했습니다.`;
+  run.purchaseStage = "장바구니 준비 완료";
+  run.approvalStatus = "승인 대기";
+  run.summary = `미완료 구매요청 ${openPosts}건을 정리했고 맥미니 구매봇이 결제 직전 단계까지 준비할 수 있습니다. 최종 결제는 담당자 승인이 필요합니다.`;
 
-  addMessage(`@${run.botName}`, `${run.command} 실행 완료: ${run.summary}`, true);
-  state.files.unshift({
+  project.messages.push({
+    id: `msg-${Date.now()}`,
+    author: `@${run.botName}`,
+    body: `${run.command} 처리 준비 완료: ${run.summary}`,
+    createdAt: "Just now",
+    bot: true,
+  });
+  project.files.unshift({
     id: `file-${Date.now()}`,
-    name: `${run.botName}-run-${run.id}.md`,
+    name: `${run.botName}-purchase-draft-${run.id}.md`,
     source: run.provider,
     owner: `@${run.botName}`,
     size: "8 KB",
@@ -553,15 +684,16 @@ function completeBotRun(runId) {
 }
 
 function runBot(botId, commandText = "") {
+  const project = currentProject();
   const bot = state.bots.find((item) => item.id === botId);
   if (!bot) return;
 
-  const openPosts = state.posts.filter((post) => post.status !== "완료").length;
+  const openPosts = project.posts.filter((post) => post.status !== "완료").length;
   const command = commandText || `${bot.command} 구매요청 요약`;
   const runId = `run-${Date.now()}`;
   const payload = buildBotPayload(bot, command);
 
-  state.botRuns.unshift({
+  project.botRuns.unshift({
     id: runId,
     botId: bot.id,
     botName: bot.name,
@@ -571,19 +703,65 @@ function runBot(botId, commandText = "") {
     requestedBy: currentUser,
     createdAt: "Just now",
     duration: "진행중",
-    summary: `Webhook 호출 대기 중입니다. 미완료 게시글 ${openPosts}건을 전송합니다.`,
+    summary: `맥미니 구매봇 Webhook 호출 대기 중입니다. 미완료 구매요청 ${openPosts}건을 전송합니다.`,
+    purchaseStage: "요청 접수",
+    approvalStatus: "준비 중",
     payload,
   });
-  addMessage("@시스템", `${bot.name} 실행을 시작했습니다: ${command}`, true);
+  addMessage("@시스템", `${bot.name} 실행을 시작했습니다: ${command}. 실제 결제는 승인 전까지 진행하지 않습니다.`, true);
   saveState();
   renderAll();
 
-  window.setTimeout(() => completeBotRun(runId), 900);
+  window.setTimeout(() => completeBotRun(project.id, runId), 900);
+}
+
+function approvePurchaseRun(runId) {
+  const project = currentProject();
+  const run = project.botRuns.find((item) => item.id === runId);
+  if (!run || run.approvalStatus !== "승인 대기") return;
+
+  run.status = "승인됨";
+  run.approvalStatus = "승인됨";
+  run.purchaseStage = "구매 승인 완료";
+  run.summary = "담당자가 구매를 승인했습니다. 맥미니 구매봇은 결제 화면에서 사람이 최종 결제를 진행한 뒤 주문번호를 기록해야 합니다.";
+  run.payload.approvedBy = currentUser;
+  run.payload.approvedAt = new Date().toISOString();
+  run.payload.nextAction = "human_complete_payment_and_record_order";
+
+  addMessage("@시스템", `${run.botName} 구매 초안이 승인되었습니다. 결제 화면에서 담당자가 최종 결제를 진행하세요.`, true);
+  project.files.unshift({
+    id: `file-${Date.now()}`,
+    name: `${run.botName}-approval-${run.id}.md`,
+    source: "구매 승인",
+    owner: currentUser,
+    size: "4 KB",
+  });
+  saveState();
+  renderAll();
+}
+
+function rejectPurchaseRun(runId) {
+  const project = currentProject();
+  const run = project.botRuns.find((item) => item.id === runId);
+  if (!run || run.approvalStatus !== "승인 대기") return;
+
+  run.status = "반려";
+  run.approvalStatus = "반려";
+  run.purchaseStage = "구매 반려";
+  run.summary = "담당자가 구매 초안을 반려했습니다. 구매요청 게시글을 수정한 뒤 다시 실행할 수 있습니다.";
+  run.payload.rejectedBy = currentUser;
+  run.payload.rejectedAt = new Date().toISOString();
+  run.payload.nextAction = "revise_purchase_request";
+
+  addMessage("@시스템", `${run.botName} 구매 초안이 반려되었습니다. 요청 내용을 수정한 뒤 다시 실행하세요.`, true);
+  saveState();
+  renderAll();
 }
 
 function handlePostSubmit(event) {
   event.preventDefault();
 
+  const project = currentProject();
   const title = els.postTitle.value.trim();
   const body = els.postBody.value.trim();
   if (!title || !body) {
@@ -591,7 +769,7 @@ function handlePostSubmit(event) {
     return;
   }
 
-  state.posts.unshift({
+  project.posts.unshift({
     id: `post-${Date.now()}`,
     title,
     body,
@@ -616,12 +794,24 @@ function handleReplySubmit(event) {
   const body = input.value.trim();
   if (!body) return;
 
-  const post = state.posts.find((item) => item.id === form.dataset.postId);
+  const project = currentProject();
+  const post = project.posts.find((item) => item.id === form.dataset.postId);
   if (!post) return;
 
   post.comments.push({ id: `comment-${Date.now()}`, author: currentUser, body });
   addMessage(currentUser, `댓글을 남겼습니다: ${post.title}`);
   input.value = "";
+  saveState();
+  renderAll();
+}
+
+function handleStatusChange(event) {
+  const project = currentProject();
+  const post = project.posts.find((item) => item.id === event.target.dataset.postId);
+  if (!post) return;
+
+  post.status = event.target.value;
+  addMessage("@시스템", `${post.title} 상태가 ${post.status}(으)로 변경되었습니다.`, true);
   saveState();
   renderAll();
 }
@@ -649,8 +839,10 @@ els.filterButtons.forEach((button) => {
 });
 
 els.projectSelect.addEventListener("change", () => {
-  state.selectedProject = els.projectSelect.value;
+  state.selectedProjectId = els.projectSelect.value;
+  activeFilter = "all";
   saveState();
+  renderAll();
 });
 
 els.newProjectBtn.addEventListener("click", () => {
@@ -664,13 +856,17 @@ els.projectForm.addEventListener("submit", (event) => {
   const name = els.newProjectName.value.trim();
   if (!name) return;
 
-  if (!state.projects.includes(name)) {
-    state.projects.push(name);
-  }
+  const project = {
+    id: `project-${Date.now()}`,
+    name,
+    channel: channelName,
+    ...emptyProjectData(name),
+  };
 
-  state.selectedProject = name;
+  state.projects.push(project);
+  state.selectedProjectId = project.id;
   saveState();
-  renderProjects();
+  renderAll();
   els.projectDialog.close();
 });
 
@@ -732,15 +928,33 @@ els.botForm.addEventListener("submit", (event) => {
 });
 
 els.addFileBtn.addEventListener("click", () => {
-  state.files.unshift({
+  els.newFileName.value = "";
+  els.newFileSource.value = "수동 추가";
+  els.fileDialog.showModal();
+  els.newFileName.focus();
+});
+
+els.fileForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = els.newFileName.value.trim();
+  const source = els.newFileSource.value.trim() || "수동 추가";
+  if (!name) return;
+
+  currentProject().files.unshift({
     id: `file-${Date.now()}`,
-    name: "new-attachment.pdf",
-    source: "수동 추가",
+    name,
+    source,
     owner: currentUser,
     size: "512 KB",
   });
+  addMessage(currentUser, `파일을 추가했습니다: ${name}`);
   saveState();
-  renderFiles();
+  renderAll();
+  els.fileDialog.close();
+});
+
+els.closeFileDialog.addEventListener("click", () => {
+  els.fileDialog.close();
 });
 
 document.addEventListener("click", (event) => {

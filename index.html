@@ -10,7 +10,7 @@
     <div class="app-shell">
       <aside class="rail" aria-label="Primary navigation">
         <button class="rail-button active" title="Channels" aria-label="Channels"><span class="icon">#</span></button>
-        <button class="rail-button" title="Messages" aria-label="Messages"><span class="icon">@</span></button>
+        <button class="rail-button" title="Mentions" aria-label="Mentions"><span class="icon">@</span></button>
         <button class="rail-button" title="Files" aria-label="Files"><span class="icon">F</span></button>
         <button class="rail-button rail-bottom" title="Settings" aria-label="Settings"><span class="icon">S</span></button>
       </aside>
@@ -42,7 +42,7 @@
           </div>
           <button class="channel-item muted"><span>매니저 소통</span></button>
           <button class="channel-item muted"><span>결제관련</span></button>
-          <button class="channel-item active"><span>구매요청</span></button>
+          <button class="channel-item active"><span id="activeChannelLabel">구매요청</span></button>
           <button class="channel-item muted"><span>베이커리_원모</span></button>
           <button class="channel-item muted"><span>플라워 운영</span></button>
         </nav>
@@ -51,7 +51,7 @@
       <main class="workspace">
         <header class="topbar">
           <div>
-            <h1>구매요청 <span>⌄</span> <mark>★</mark></h1>
+            <h1><span id="channelTitle">구매요청</span> <span>⌄</span> <mark>★</mark></h1>
             <nav class="tabs" aria-label="Project tabs">
               <button data-tab="messages">Messages</button>
               <button data-tab="ideas" class="active">Ideas</button>
@@ -166,7 +166,7 @@
 
             <section class="panel">
               <h2>자동화 실행</h2>
-              <p>게시판 내용을 요약하거나 담당자를 추천하는 봇 작업을 실행합니다.</p>
+              <p>구매봇은 상품 정보를 정리하고 맥미니 원격 브라우저에서 장바구니/결제 직전 단계까지 준비합니다. 최종 결제는 담당자가 승인합니다.</p>
               <div id="ideaBotActions" class="bot-list"></div>
             </section>
 
@@ -214,6 +214,24 @@
         <menu>
           <button type="button" id="closeProjectDialog" class="secondary-button">취소</button>
           <button value="default" class="primary-button">생성</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <dialog id="fileDialog">
+      <form method="dialog" id="fileForm" class="dialog-card">
+        <h2>파일 추가</h2>
+        <label>
+          파일명
+          <input id="newFileName" placeholder="예: purchase-summary.md" maxlength="80">
+        </label>
+        <label>
+          출처
+          <input id="newFileSource" placeholder="예: Ideas 첨부" maxlength="40">
+        </label>
+        <menu>
+          <button type="button" id="closeFileDialog" class="secondary-button">취소</button>
+          <button value="default" class="primary-button">추가</button>
         </menu>
       </form>
     </dialog>
