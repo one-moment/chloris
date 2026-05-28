@@ -1,0 +1,57 @@
+import { CHANNEL_TYPES } from "../lib/constants";
+
+export default function ProjectSidebar({
+  projects,
+  selectedProjectId,
+  selectedChannelId,
+  onSelectProject,
+  onSelectChannel,
+  onNewProject,
+  onNewChannel
+}) {
+  const project = projects.find((item) => item.id === selectedProjectId) ?? projects[0];
+
+  return (
+    <aside className="sidebar">
+      <div className="workspace-header">
+        <div>
+          <strong>{project.name}</strong>
+          <span>captain@1moment.co.kr</span>
+        </div>
+        <button className="icon-button" onClick={onNewProject} aria-label="프로젝트 생성">+</button>
+      </div>
+
+      <div className="project-switcher">
+        {projects.map((item) => (
+          <button
+            key={item.id}
+            className={item.id === selectedProjectId ? "project-pill active" : "project-pill"}
+            onClick={() => onSelectProject(item.id)}
+          >
+            {item.name}
+          </button>
+        ))}
+      </div>
+
+      <div className="sidebar-section">
+        <div className="section-title">
+          <span>Channels</span>
+          <button className="ghost-button" onClick={onNewChannel}>채널 생성</button>
+        </div>
+
+        <nav className="channel-list">
+          {project.channels.map((channel) => (
+            <button
+              key={channel.id}
+              className={channel.id === selectedChannelId ? "channel-item active" : "channel-item"}
+              onClick={() => onSelectChannel(channel.id)}
+            >
+              <span className="channel-name"># {channel.name}</span>
+              <small>{CHANNEL_TYPES[channel.type]?.label}</small>
+            </button>
+          ))}
+        </nav>
+      </div>
+    </aside>
+  );
+}
