@@ -172,6 +172,21 @@ button {
 .with-action {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.mini-action {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.mini-action:hover {
+  background: var(--surface-subtle);
 }
 
 .channel-item {
@@ -186,6 +201,12 @@ button {
   background: transparent;
   color: var(--text);
   text-align: left;
+}
+
+.channel-type {
+  color: var(--muted);
+  font-size: 11px;
+  margin-left: 6px;
 }
 
 .channel-item.active {

@@ -31,20 +31,11 @@
         </section>
 
         <nav class="channel-list" aria-label="Project channels">
-          <div class="list-heading">Unread</div>
-          <button class="channel-item"><span>양재_당일배송</span><b>1</b></button>
-          <button class="channel-item"><span>꽃 입고 관리</span><b>8</b></button>
-          <button class="channel-item"><span>꽃 폐기 관리</span><b>47</b></button>
-
           <div class="list-heading with-action">
-            <span>Starred</span>
-            <span>★</span>
+            <span>Channels</span>
+            <button id="newChannelBtn" class="mini-action" title="채널 생성" aria-label="채널 생성">＋</button>
           </div>
-          <button class="channel-item muted"><span>매니저 소통</span></button>
-          <button class="channel-item muted"><span>결제관련</span></button>
-          <button class="channel-item active"><span id="activeChannelLabel">구매요청</span></button>
-          <button class="channel-item muted"><span>베이커리_원모</span></button>
-          <button class="channel-item muted"><span>플라워 운영</span></button>
+          <div id="channelList"></div>
         </nav>
       </aside>
 
@@ -165,8 +156,8 @@
             </section>
 
             <section class="panel">
-              <h2>자동화 실행</h2>
-              <p>구매봇은 상품 정보를 정리하고 맥미니 원격 브라우저에서 장바구니/결제 직전 단계까지 준비합니다. 최종 결제는 담당자가 승인합니다.</p>
+              <h2 id="automationPanelTitle">자동화 실행</h2>
+              <p id="automationPanelDescription">채널 유형에 맞는 자동화봇을 실행합니다.</p>
               <div id="ideaBotActions" class="bot-list"></div>
             </section>
 
@@ -232,6 +223,30 @@
         <menu>
           <button type="button" id="closeFileDialog" class="secondary-button">취소</button>
           <button value="default" class="primary-button">추가</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <dialog id="channelDialog">
+      <form method="dialog" id="channelForm" class="dialog-card">
+        <h2>채널 생성</h2>
+        <label>
+          채널명
+          <input id="newChannelName" placeholder="예: 입고 관리" maxlength="40">
+        </label>
+        <label>
+          채널 유형
+          <select id="newChannelType">
+            <option value="general">일반 소통</option>
+            <option value="purchase">구매요청</option>
+            <option value="inbound">입고</option>
+            <option value="outbound">출고</option>
+            <option value="inventory">재고관리</option>
+          </select>
+        </label>
+        <menu>
+          <button type="button" id="closeChannelDialog" class="secondary-button">취소</button>
+          <button value="default" class="primary-button">생성</button>
         </menu>
       </form>
     </dialog>

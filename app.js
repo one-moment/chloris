@@ -1,6 +1,5 @@
-const STORAGE_KEY = "mattermost-project-mvp-v3";
+const STORAGE_KEY = "mattermost-channel-mvp-v1";
 const currentUser = "@박민수";
-const channelName = "구매요청";
 
 const people = [
   { handle: "@유경화", name: "유경화", team: "플라워팀", avatar: "유" },
@@ -9,132 +8,110 @@ const people = [
   { handle: "@성원에프디아이", name: "성원에프디아이", team: "협력사", avatar: "성" },
 ];
 
-const sharedBots = [
+const channelTypes = {
+  general: {
+    label: "일반 소통",
+    description: "채팅과 Ideas 중심의 일반 소통 채널입니다. 자동화는 요약/할 일 추출 정도로 제한됩니다.",
+  },
+  purchase: {
+    label: "구매요청",
+    description: "구매요청을 정리하고 맥미니 구매봇이 장바구니/결제 직전 단계까지 준비합니다. 최종 결제는 담당자가 승인합니다.",
+  },
+  inbound: {
+    label: "입고",
+    description: "입고 게시글에서 품목, 수량, 거래처, 입고일을 추출해 연결된 스프레드시트 입고대장에 업로드합니다.",
+  },
+  outbound: {
+    label: "출고",
+    description: "출고 게시글에서 품목, 수량, 목적지, 담당자를 추출해 연결된 스프레드시트 출고대장에 업로드합니다.",
+  },
+  inventory: {
+    label: "재고관리",
+    description: "재고 변동 게시글을 분석해 재고표를 갱신하고 부족 재고 알림을 남깁니다.",
+  },
+};
+
+const defaultBots = [
+  { id: "bot-summary", name: "채널 요약봇", provider: "Codex", command: "/summary", channelTypes: ["general", "purchase", "inbound", "outbound", "inventory"] },
+  { id: "bot-purchase", name: "Codex 구매봇", provider: "Codex", command: "/codex", channelTypes: ["purchase"] },
+  { id: "bot-inbound", name: "입고대장 업로드봇", provider: "Custom Webhook", command: "/inbound", channelTypes: ["inbound"] },
+  { id: "bot-outbound", name: "출고대장 업로드봇", provider: "Custom Webhook", command: "/outbound", channelTypes: ["outbound"] },
+  { id: "bot-inventory", name: "재고표 갱신봇", provider: "Custom Webhook", command: "/inventory", channelTypes: ["inventory"] },
+];
+
+const samplePosts = [
   {
-    id: "bot-1",
-    name: "Codex 구매봇",
-    provider: "Codex",
-    command: "/codex",
-    webhook: "https://automation.internal/codex/purchase",
-    enabled: true,
+    id: "post-1",
+    title: "베이커리 포장재 구매요청",
+    body:
+      "[구매요청]\n1. 이름/소속 : 유경화/플라워팀\n2. 주문상품 내역 :\n- 락스 / 1\n- 버터무릉 스티커 / 1\n- 디자인 샘플용 부자재 / 1개씩\n\n@박민수 확인 부탁드립니다.",
+    status: "검토중",
+    author: "@유경화",
+    createdAt: "May 21 at 1:26 PM",
+    link: "link.coupang.com/a/dU8MJL4A5A",
+    reactions: 4,
+    comments: [
+      { id: "comment-1", author: "@박민수", body: "품목 확인했습니다. 납기일만 추가해주시면 바로 발주 진행하겠습니다." },
+      { id: "comment-2", author: "@유경화", body: "@박민수 금요일 오전까지 필요합니다." },
+    ],
   },
   {
-    id: "bot-2",
-    name: "Claude 리뷰봇",
-    provider: "Claude Code",
-    command: "/claude-review",
-    webhook: "https://automation.internal/claude/review",
-    enabled: true,
+    id: "post-2",
+    title: "쇼핑백 샘플 업체 비교",
+    body: "새 쇼핑백 샘플 단가를 비교했습니다. @디자인팀 색상 검토 부탁드립니다.",
+    status: "진행중",
+    author: "@박민수",
+    createdAt: "Today at 9:42 AM",
+    link: "docs.internal/shopping-bag-sample",
+    reactions: 2,
+    comments: [],
   },
 ];
 
-const defaultProjectData = {
-  messages: [
-    {
-      id: "msg-1",
-      author: "@유경화",
-      body: "베이커리 포장재 구매요청을 Ideas에 등록했습니다.",
-      createdAt: "May 21 at 1:26 PM",
-      bot: false,
-    },
-    {
-      id: "msg-2",
-      author: "@Codex 구매봇",
-      body: "구매요청 3건을 요약했습니다. 미완료 2건, 완료 1건입니다.",
-      createdAt: "Today at 9:55 AM",
-      bot: true,
-    },
-  ],
-  botRuns: [
-    {
-      id: "run-1",
-      botId: "bot-1",
-      botName: "Codex 구매봇",
-      provider: "Codex",
-      command: "/codex 구매요청 요약",
-      status: "성공",
-      requestedBy: "@박민수",
-      createdAt: "Today at 9:55 AM",
-      duration: "2.4s",
-      summary: "구매요청을 정리하고 장바구니 준비 단계까지 완료했습니다.",
-      approvalStatus: "승인 대기",
-      purchaseStage: "승인 대기",
-      payload: {
-        project: "onemoment",
-        channel: "구매요청",
-        command: "/codex 구매요청 요약",
-        requester: "@박민수",
-        openPosts: 2,
-        approvalRequired: true,
-        finalPaymentMode: "human_approval_required",
-        buyerBotHost: "mac-mini-purchase-bot",
-        vendorTargets: ["coupang", "gmarket"],
-      },
-    },
-  ],
-  files: [
-    { id: "file-1", name: "shopping-bag-sample.pdf", source: "Ideas 첨부", owner: "@박민수", size: "1.8 MB" },
-    { id: "file-2", name: "purchase-summary.md", source: "Codex 구매봇", owner: "@Codex 구매봇", size: "24 KB" },
-  ],
-  posts: [
-    {
-      id: "post-1",
-      title: "베이커리 포장재 구매요청",
-      body:
-        "[구매요청]\n1. 이름/소속 : 유경화/플라워팀\n2. 주문상품 내역 :\n- 락스 / 1\n- 버터무릉 스티커 / 1\n- 디자인 샘플용 부자재 / 1개씩\n\n@박민수 확인 부탁드립니다.",
-      status: "검토중",
-      author: "@유경화",
-      createdAt: "May 21 at 1:26 PM",
-      link: "link.coupang.com/a/dU8MJL4A5A",
-      reactions: 4,
-      comments: [
-        {
-          id: "comment-1",
-          author: "@박민수",
-          body: "품목 확인했습니다. 납기일만 추가해주시면 바로 발주 진행하겠습니다.",
-        },
-        {
-          id: "comment-2",
-          author: "@유경화",
-          body: "@박민수 금요일 오전까지 필요합니다.",
-        },
-      ],
-    },
-    {
-      id: "post-2",
-      title: "쇼핑백 샘플 업체 비교",
-      body: "새 쇼핑백 샘플 단가를 비교했습니다. @디자인팀 색상 검토 부탁드립니다.",
-      status: "진행중",
-      author: "@박민수",
-      createdAt: "Today at 9:42 AM",
-      link: "docs.internal/shopping-bag-sample",
-      reactions: 2,
-      comments: [],
-    },
-    {
-      id: "post-3",
-      title: "완료: 리본 재고 보충",
-      body: "리본 3종 재고 보충 완료했습니다. 다음 입고 예정일은 다음 주 화요일입니다.",
-      status: "완료",
-      author: "@성원에프디아이",
-      createdAt: "Yesterday at 4:10 PM",
-      link: "",
-      reactions: 6,
-      comments: [{ id: "comment-3", author: "@박민수", body: "확인했습니다. 감사합니다." }],
-    },
-  ],
-};
+function makeChannel(name, type, seed = false) {
+  return {
+    id: `channel-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    name,
+    type,
+    messages: seed
+      ? [
+          { id: "msg-1", author: "@유경화", body: "베이커리 포장재 구매요청을 Ideas에 등록했습니다.", createdAt: "May 21 at 1:26 PM", bot: false },
+          { id: "msg-2", author: "@Codex 구매봇", body: "구매요청 2건을 확인했습니다.", createdAt: "Today at 9:55 AM", bot: true },
+        ]
+      : [{ id: `msg-${Date.now()}`, author: "@시스템", body: `${name} 채널이 생성되었습니다.`, createdAt: "Just now", bot: true }],
+    posts: seed ? structuredClone(samplePosts) : [],
+    files: seed
+      ? [
+          { id: "file-1", name: "shopping-bag-sample.pdf", source: "Ideas 첨부", owner: "@박민수", size: "1.8 MB" },
+          { id: "file-2", name: "purchase-summary.md", source: "Codex 구매봇", owner: "@Codex 구매봇", size: "24 KB" },
+        ]
+      : [],
+    botRuns: [],
+  };
+}
 
-const defaultState = {
-  selectedProjectId: "project-1",
-  projects: [
-    { id: "project-1", name: "onemoment", channel: "구매요청", ...structuredClone(defaultProjectData) },
-    { id: "project-2", name: "ERP 고도화", channel: "구매요청", ...emptyProjectData("ERP 고도화") },
-    { id: "project-3", name: "모바일 앱", channel: "구매요청", ...emptyProjectData("모바일 앱") },
-    { id: "project-4", name: "보안 점검", channel: "구매요청", ...emptyProjectData("보안 점검") },
-  ],
-  bots: structuredClone(sharedBots),
-};
+function defaultState() {
+  const purchase = makeChannel("구매요청", "purchase", true);
+  return {
+    selectedProjectId: "project-1",
+    selectedChannelId: purchase.id,
+    projects: [
+      {
+        id: "project-1",
+        name: "onemoment",
+        channels: [
+          makeChannel("매니저 소통", "general"),
+          makeChannel("베이커리", "general"),
+          purchase,
+          makeChannel("입고 관리", "inbound"),
+          makeChannel("출고 관리", "outbound"),
+          makeChannel("재고관리", "inventory"),
+        ],
+      },
+    ],
+    bots: structuredClone(defaultBots),
+  };
+}
 
 let state = loadState();
 let activeFilter = "all";
@@ -146,13 +123,19 @@ const els = {
   projectForm: document.querySelector("#projectForm"),
   closeProjectDialog: document.querySelector("#closeProjectDialog"),
   newProjectName: document.querySelector("#newProjectName"),
+  newChannelBtn: document.querySelector("#newChannelBtn"),
+  channelDialog: document.querySelector("#channelDialog"),
+  channelForm: document.querySelector("#channelForm"),
+  closeChannelDialog: document.querySelector("#closeChannelDialog"),
+  newChannelName: document.querySelector("#newChannelName"),
+  newChannelType: document.querySelector("#newChannelType"),
   fileDialog: document.querySelector("#fileDialog"),
   fileForm: document.querySelector("#fileForm"),
   closeFileDialog: document.querySelector("#closeFileDialog"),
   newFileName: document.querySelector("#newFileName"),
   newFileSource: document.querySelector("#newFileSource"),
   channelTitle: document.querySelector("#channelTitle"),
-  activeChannelLabel: document.querySelector("#activeChannelLabel"),
+  channelList: document.querySelector("#channelList"),
   tabs: document.querySelectorAll(".tabs button"),
   views: {
     messages: document.querySelector("#messagesView"),
@@ -171,12 +154,12 @@ const els = {
   ideaBotActions: document.querySelector("#ideaBotActions"),
   botRunList: document.querySelector("#botRunList"),
   ideaRunList: document.querySelector("#ideaRunList"),
+  automationPanelTitle: document.querySelector("#automationPanelTitle"),
+  automationPanelDescription: document.querySelector("#automationPanelDescription"),
   postForm: document.querySelector("#postForm"),
   postTitle: document.querySelector("#postTitle"),
   postBody: document.querySelector("#postBody"),
   postStatus: document.querySelector("#postStatus"),
-  mentionBtn: document.querySelector("#mentionBtn"),
-  mentionMenu: document.querySelector("#mentionMenu"),
   cancelPost: document.querySelector("#cancelPost"),
   postList: document.querySelector("#postList"),
   filterButtons: document.querySelectorAll(".segmented button"),
@@ -188,53 +171,16 @@ const els = {
   addFileBtn: document.querySelector("#addFileBtn"),
 };
 
-function emptyProjectData(projectName) {
-  return {
-    messages: [
-      {
-        id: `msg-${projectName}`,
-        author: "@시스템",
-        body: `${projectName} 프로젝트 채널이 생성되었습니다.`,
-        createdAt: "Just now",
-        bot: true,
-      },
-    ],
-    botRuns: [],
-    files: [],
-    posts: [],
-  };
-}
-
 function loadState() {
   const saved = localStorage.getItem(STORAGE_KEY);
-  if (!saved) return structuredClone(defaultState);
-
+  if (!saved) return defaultState();
   try {
-    return normalizeState(JSON.parse(saved));
+    const parsed = JSON.parse(saved);
+    if (!parsed.projects?.[0]?.channels) return defaultState();
+    return parsed;
   } catch {
-    return structuredClone(defaultState);
+    return defaultState();
   }
-}
-
-function normalizeState(value) {
-  if (Array.isArray(value.projects) && typeof value.projects[0] === "string") {
-    return structuredClone(defaultState);
-  }
-
-  return {
-    ...structuredClone(defaultState),
-    ...value,
-    bots: value.bots ?? structuredClone(sharedBots),
-    projects: (value.projects ?? defaultState.projects).map((project) => ({
-      channel: channelName,
-      ...emptyProjectData(project.name ?? "새 프로젝트"),
-      ...project,
-      messages: project.messages ?? [],
-      botRuns: project.botRuns ?? [],
-      files: project.files ?? [],
-      posts: project.posts ?? [],
-    })),
-  };
 }
 
 function saveState() {
@@ -243,6 +189,15 @@ function saveState() {
 
 function currentProject() {
   return state.projects.find((project) => project.id === state.selectedProjectId) ?? state.projects[0];
+}
+
+function currentChannel() {
+  const project = currentProject();
+  return project.channels.find((channel) => channel.id === state.selectedChannelId) ?? project.channels[0];
+}
+
+function availableBots(channel = currentChannel()) {
+  return state.bots.filter((bot) => bot.channelTypes?.includes(channel.type));
 }
 
 function escapeHtml(value) {
@@ -255,49 +210,56 @@ function escapeHtml(value) {
 }
 
 function renderMentionedText(value) {
-  const escaped = escapeHtml(value);
-  return escaped.replace(/(@[가-힣A-Za-z0-9_]+)/g, '<span class="mention">$1</span>');
+  return escapeHtml(value).replace(/(@[가-힣A-Za-z0-9_]+)/g, '<span class="mention">$1</span>');
 }
 
 function initials(handle) {
   const person = people.find((item) => item.handle === handle);
-  if (person) return person.avatar;
-  return handle.replace("@", "").slice(0, 1).toUpperCase();
-}
-
-function statusClass(status) {
-  if (status === "완료") return "chip";
-  if (status === "진행중") return "chip blue";
-  return "chip amber";
+  return person?.avatar ?? handle.replace("@", "").slice(0, 1).toUpperCase();
 }
 
 function statusTone(status) {
-  if (status === "성공") return "chip";
-  if (status === "실행중") return "chip blue";
-  if (status === "실패") return "chip danger";
-  if (status === "승인 대기") return "chip amber";
-  if (status === "승인됨") return "chip";
-  if (status === "반려") return "chip danger";
+  if (["성공", "승인됨", "완료"].includes(status)) return "chip";
+  if (["실행중", "진행중"].includes(status)) return "chip blue";
+  if (["실패", "반려"].includes(status)) return "chip danger";
   return "chip amber";
 }
 
 function renderProjects() {
   const project = currentProject();
-  els.channelTitle.textContent = project.channel;
-  els.activeChannelLabel.textContent = project.channel;
   els.projectSelect.innerHTML = state.projects
-    .map(
-      (item) =>
-        `<option value="${escapeHtml(item.id)}" ${
-          item.id === project.id ? "selected" : ""
-        }>${escapeHtml(item.name)}</option>`,
-    )
+    .map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === project.id ? "selected" : ""}>${escapeHtml(item.name)}</option>`)
     .join("");
 }
 
+function renderChannels() {
+  const channel = currentChannel();
+  els.channelTitle.textContent = channel.name;
+  els.channelList.innerHTML = currentProject().channels
+    .map((item) => {
+      const openCount = item.posts.filter((post) => post.status !== "완료").length;
+      return `
+        <button class="channel-item ${item.id === channel.id ? "active" : "muted"}" data-channel-id="${escapeHtml(item.id)}">
+          <span>${escapeHtml(item.name)} <small class="channel-type">${escapeHtml(channelTypes[item.type]?.label ?? item.type)}</small></span>
+          ${openCount ? `<b>${openCount}</b>` : ""}
+        </button>
+      `;
+    })
+    .join("");
+
+  document.querySelectorAll("[data-channel-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedChannelId = button.dataset.channelId;
+      activeFilter = "all";
+      saveState();
+      renderAll();
+    });
+  });
+}
+
 function renderMessages() {
-  const project = currentProject();
-  els.messageList.innerHTML = project.messages
+  const channel = currentChannel();
+  els.messageList.innerHTML = channel.messages
     .map(
       (message) => `
         <article class="message-row ${message.bot ? "bot-message" : ""}">
@@ -316,26 +278,15 @@ function renderMessages() {
     .join("");
 }
 
-function getFilteredPosts() {
-  const posts = currentProject().posts;
-  if (activeFilter === "mentions") {
-    return posts.filter(
-      (post) =>
-        post.body.includes(currentUser) ||
-        post.comments.some((comment) => comment.body.includes(currentUser)),
-    );
-  }
-
-  if (activeFilter === "open") {
-    return posts.filter((post) => post.status !== "완료");
-  }
-
+function filteredPosts() {
+  const posts = currentChannel().posts;
+  if (activeFilter === "mentions") return posts.filter((post) => post.body.includes(currentUser) || post.comments.some((comment) => comment.body.includes(currentUser)));
+  if (activeFilter === "open") return posts.filter((post) => post.status !== "완료");
   return posts;
 }
 
 function renderPosts() {
-  const posts = getFilteredPosts();
-
+  const posts = filteredPosts();
   els.postList.innerHTML = posts
     .map(
       (post) => `
@@ -346,52 +297,18 @@ function renderPosts() {
               <div class="post-title-row">
                 <h3>${escapeHtml(post.title)}</h3>
                 <select class="status-select" data-post-id="${escapeHtml(post.id)}" aria-label="상태 변경">
-                  ${["검토중", "진행중", "완료"]
-                    .map(
-                      (status) =>
-                        `<option value="${status}" ${status === post.status ? "selected" : ""}>${status}</option>`,
-                    )
-                    .join("")}
+                  ${["검토중", "진행중", "완료"].map((status) => `<option value="${status}" ${status === post.status ? "selected" : ""}>${status}</option>`).join("")}
                 </select>
               </div>
               <div class="post-meta">${escapeHtml(post.author)} · ${escapeHtml(post.createdAt)}</div>
             </div>
-            <div class="post-actions">
-              <button class="icon-button" title="공유" aria-label="공유">↗</button>
-              <button class="icon-button" title="북마크" aria-label="북마크">♡</button>
-            </div>
+            <div class="post-actions"><button class="icon-button">↗</button><button class="icon-button">♡</button></div>
           </div>
           <div class="post-body">${renderMentionedText(post.body)}</div>
-          ${
-            post.link
-              ? `<div class="link-preview">
-                  <div>
-                    <strong>첨부 링크</strong>
-                    <span>${escapeHtml(post.link)}</span>
-                  </div>
-                  <button class="secondary-button">열기</button>
-                </div>`
-              : ""
-          }
-          <div class="post-footer">
-            <span>좋아요 ${post.reactions}</span>
-            <span>댓글 ${post.comments.length}</span>
-            <span>멘션 ${countMentions(post)}</span>
-          </div>
+          ${post.link ? `<div class="link-preview"><div><strong>첨부 링크</strong><span>${escapeHtml(post.link)}</span></div><button class="secondary-button">열기</button></div>` : ""}
+          <div class="post-footer"><span>좋아요 ${post.reactions}</span><span>댓글 ${post.comments.length}</span><span>멘션 ${countMentions(post)}</span></div>
           <section class="comments" aria-label="댓글">
-            ${post.comments
-              .map(
-                (comment) => `
-                  <div class="comment">
-                    <div class="avatar">${escapeHtml(initials(comment.author))}</div>
-                    <div class="comment-body">
-                      <strong>${escapeHtml(comment.author)}</strong>
-                      ${renderMentionedText(comment.body)}
-                    </div>
-                  </div>
-                `,
-              )
-              .join("")}
+            ${post.comments.map((comment) => `<div class="comment"><div class="avatar">${escapeHtml(initials(comment.author))}</div><div class="comment-body"><strong>${escapeHtml(comment.author)}</strong>${renderMentionedText(comment.body)}</div></div>`).join("")}
             <form class="reply-form" data-post-id="${escapeHtml(post.id)}">
               <input placeholder="댓글을 입력하세요..." aria-label="댓글을 입력하세요">
               <button class="primary-button" type="submit">댓글</button>
@@ -403,166 +320,91 @@ function renderPosts() {
     .join("");
 
   if (!posts.length) {
-    els.postList.innerHTML = `
-      <div class="empty-state">
-        <h2>표시할 게시글이 없습니다</h2>
-        <p>다른 필터를 선택하거나 새 게시글을 작성해보세요.</p>
-      </div>
-    `;
+    els.postList.innerHTML = `<div class="empty-state"><h2>표시할 게시글이 없습니다</h2><p>현재 채널에 새 Ideas 게시글을 작성해보세요.</p></div>`;
   }
 
-  document.querySelectorAll(".reply-form").forEach((form) => {
-    form.addEventListener("submit", handleReplySubmit);
-  });
-  document.querySelectorAll(".status-select").forEach((select) => {
-    select.addEventListener("change", handleStatusChange);
-  });
+  document.querySelectorAll(".reply-form").forEach((form) => form.addEventListener("submit", handleReplySubmit));
+  document.querySelectorAll(".status-select").forEach((select) => select.addEventListener("change", handleStatusChange));
 }
 
 function renderSummary() {
-  const posts = currentProject().posts;
+  const posts = currentChannel().posts;
   els.reviewCount.textContent = posts.filter((post) => post.status === "검토중").length;
   els.progressCount.textContent = posts.filter((post) => post.status === "진행중").length;
   els.doneCount.textContent = posts.filter((post) => post.status === "완료").length;
-
-  const mentions = posts
-    .filter(
-      (post) =>
-        post.body.includes(currentUser) ||
-        post.comments.some((comment) => comment.body.includes(currentUser)),
-    )
-    .slice(0, 3);
-
+  const mentions = posts.filter((post) => post.body.includes(currentUser)).slice(0, 3);
   els.mentionList.innerHTML = mentions.length
-    ? mentions
-        .map(
-          (post) => `
-            <div class="mention-item">
-              <strong>${escapeHtml(post.title)}</strong>
-              <span>${escapeHtml(post.status)}</span>
-            </div>
-          `,
-        )
-        .join("")
+    ? mentions.map((post) => `<div class="mention-item"><strong>${escapeHtml(post.title)}</strong><span>${escapeHtml(post.status)}</span></div>`).join("")
     : '<div class="mention-item"><strong>없음</strong><span>새 멘션 없음</span></div>';
 }
 
+function botCardHtml(bot) {
+  return `
+    <div class="bot-card">
+      <div><strong>${escapeHtml(bot.name)}</strong><span>${escapeHtml(bot.provider)} · ${escapeHtml(bot.command)}</span></div>
+      <button class="secondary-button run-bot" data-bot-id="${escapeHtml(bot.id)}" type="button">실행</button>
+    </div>
+  `;
+}
+
 function renderBots() {
-  const botCards = state.bots
-    .map(
-      (bot) => `
-        <div class="bot-card">
-          <div>
-            <strong>${escapeHtml(bot.name)}</strong>
-            <span>${escapeHtml(bot.provider)} · ${escapeHtml(bot.command)}</span>
-          </div>
-          <button class="secondary-button run-bot" data-bot-id="${escapeHtml(bot.id)}" type="button">실행</button>
-        </div>
-      `,
-    )
-    .join("");
+  const channel = currentChannel();
+  const type = channelTypes[channel.type] ?? channelTypes.general;
+  els.automationPanelTitle.textContent = `${type.label} 자동화`;
+  els.automationPanelDescription.textContent = type.description;
+  const botCards = availableBots(channel).map(botCardHtml).join("");
+  els.botList.innerHTML = botCards || '<div class="mention-item"><strong>없음</strong><span>연결된 봇 없음</span></div>';
+  els.ideaBotActions.innerHTML = botCards || '<div class="mention-item"><strong>없음</strong><span>이 채널에는 자동화봇이 없습니다</span></div>';
+  document.querySelectorAll(".run-bot").forEach((button) => button.addEventListener("click", () => runBot(button.dataset.botId)));
+}
 
-  els.botList.innerHTML = botCards;
-  els.ideaBotActions.innerHTML = botCards;
-
-  document.querySelectorAll(".run-bot").forEach((button) => {
-    button.addEventListener("click", () => runBot(button.dataset.botId));
-  });
+function approvalHtml(run) {
+  return `
+    <div class="approval-box">
+      <div><strong>${escapeHtml(run.purchaseStage ?? "자동화 준비")}</strong><span>${escapeHtml(run.approvalStatus)}</span></div>
+      ${
+        run.approvalStatus === "승인 대기"
+          ? `<div class="approval-actions"><button class="primary-button approve-run" data-run-id="${escapeHtml(run.id)}" type="button">승인</button><button class="secondary-button reject-run" data-run-id="${escapeHtml(run.id)}" type="button">반려</button></div>`
+          : ""
+      }
+    </div>
+  `;
 }
 
 function renderBotRuns() {
-  const runs = currentProject().botRuns;
+  const runs = currentChannel().botRuns;
   const html = runs
     .slice(0, 6)
     .map(
       (run) => `
         <article class="run-card">
-          <div class="run-head">
-            <div>
-              <strong>${escapeHtml(run.botName)}</strong>
-              <span>${escapeHtml(run.command)}</span>
-            </div>
-            <span class="${statusTone(run.status)}">${escapeHtml(run.status)}</span>
-          </div>
-          <div class="run-meta">
-            <span>${escapeHtml(run.requestedBy)}</span>
-            <span>${escapeHtml(run.createdAt)}</span>
-            <span>${escapeHtml(run.duration)}</span>
-          </div>
+          <div class="run-head"><div><strong>${escapeHtml(run.botName)}</strong><span>${escapeHtml(run.command)}</span></div><span class="${statusTone(run.status)}">${escapeHtml(run.status)}</span></div>
+          <div class="run-meta"><span>${escapeHtml(run.requestedBy)}</span><span>${escapeHtml(run.createdAt)}</span><span>${escapeHtml(run.duration)}</span></div>
           <p>${escapeHtml(run.summary)}</p>
-          ${
-            run.approvalStatus
-              ? `<div class="approval-box">
-                  <div>
-                    <strong>${escapeHtml(run.purchaseStage ?? "구매 준비")}</strong>
-                    <span>${escapeHtml(run.approvalStatus)}</span>
-                  </div>
-                  ${
-                    run.approvalStatus === "승인 대기"
-                      ? `<div class="approval-actions">
-                          <button class="primary-button approve-run" data-run-id="${escapeHtml(run.id)}" type="button">구매 승인</button>
-                          <button class="secondary-button reject-run" data-run-id="${escapeHtml(run.id)}" type="button">반려</button>
-                        </div>`
-                      : ""
-                  }
-                </div>`
-              : ""
-          }
-          <details>
-            <summary>Webhook payload 보기</summary>
-            <pre>${escapeHtml(JSON.stringify(run.payload, null, 2))}</pre>
-          </details>
+          ${run.approvalStatus ? approvalHtml(run) : ""}
+          <details><summary>Webhook payload 보기</summary><pre>${escapeHtml(JSON.stringify(run.payload, null, 2))}</pre></details>
         </article>
       `,
     )
     .join("");
-
   const empty = '<div class="mention-item"><strong>없음</strong><span>실행 로그 없음</span></div>';
   els.botRunList.innerHTML = html || empty;
   els.ideaRunList.innerHTML = html || empty;
-
-  document.querySelectorAll(".approve-run").forEach((button) => {
-    button.addEventListener("click", () => approvePurchaseRun(button.dataset.runId));
-  });
-  document.querySelectorAll(".reject-run").forEach((button) => {
-    button.addEventListener("click", () => rejectPurchaseRun(button.dataset.runId));
-  });
+  document.querySelectorAll(".approve-run").forEach((button) => button.addEventListener("click", () => approveRun(button.dataset.runId)));
+  document.querySelectorAll(".reject-run").forEach((button) => button.addEventListener("click", () => rejectRun(button.dataset.runId)));
 }
 
 function renderFiles() {
-  const files = currentProject().files;
+  const files = currentChannel().files;
   els.fileList.innerHTML = files
-    .map(
-      (file) => `
-        <article class="file-row">
-          <div class="file-icon">DOC</div>
-          <div>
-            <strong>${escapeHtml(file.name)}</strong>
-            <span>${escapeHtml(file.source)} · ${escapeHtml(file.owner)} · ${escapeHtml(file.size)}</span>
-          </div>
-          <button class="secondary-button" type="button">열기</button>
-        </article>
-      `,
-    )
+    .map((file) => `<article class="file-row"><div class="file-icon">DOC</div><div><strong>${escapeHtml(file.name)}</strong><span>${escapeHtml(file.source)} · ${escapeHtml(file.owner)} · ${escapeHtml(file.size)}</span></div><button class="secondary-button">열기</button></article>`)
     .join("");
-
-  if (!files.length) {
-    els.fileList.innerHTML = `
-      <div class="empty-state">
-        <h2>파일이 없습니다</h2>
-        <p>파일을 추가하거나 봇을 실행하면 결과 파일이 여기에 표시됩니다.</p>
-      </div>
-    `;
-  }
-}
-
-function countMentions(post) {
-  const text = `${post.body} ${post.comments.map((comment) => comment.body).join(" ")}`;
-  return (text.match(/@[가-힣A-Za-z0-9_]+/g) ?? []).length;
+  if (!files.length) els.fileList.innerHTML = `<div class="empty-state"><h2>파일이 없습니다</h2><p>파일을 추가하거나 봇을 실행하면 결과 파일이 여기에 표시됩니다.</p></div>`;
 }
 
 function renderAll() {
   renderProjects();
+  renderChannels();
   renderMessages();
   renderPosts();
   renderSummary();
@@ -571,129 +413,50 @@ function renderAll() {
   renderFiles();
 }
 
-function insertMention(handle) {
-  const current = els.postBody.value;
-  const needsSpace = current && !current.endsWith(" ");
-  els.postBody.value = `${current}${needsSpace ? " " : ""}${handle} `;
-  els.postBody.focus();
-  hideMentionMenu();
-}
-
-function showMentionMenu() {
-  els.mentionMenu.innerHTML = people
-    .map(
-      (person) => `
-        <button type="button" class="mention-option" data-handle="${escapeHtml(person.handle)}">
-          <span class="avatar">${escapeHtml(person.avatar)}</span>
-          <span>
-            <strong>${escapeHtml(person.handle)}</strong>
-            <small>${escapeHtml(person.name)} · ${escapeHtml(person.team)}</small>
-          </span>
-        </button>
-      `,
-    )
-    .join("");
-
-  els.mentionMenu.classList.remove("hidden");
-  els.mentionMenu.querySelectorAll(".mention-option").forEach((button) => {
-    button.addEventListener("click", () => insertMention(button.dataset.handle));
-  });
-}
-
-function hideMentionMenu() {
-  els.mentionMenu.classList.add("hidden");
-}
-
 function addMessage(author, body, bot = false) {
-  currentProject().messages.push({
-    id: `msg-${Date.now()}`,
-    author,
-    body,
-    createdAt: "Just now",
-    bot,
-  });
+  currentChannel().messages.push({ id: `msg-${Date.now()}`, author, body, createdAt: "Just now", bot });
 }
 
-function buildBotPayload(bot, commandText) {
-  const project = currentProject();
-  const openPosts = project.posts.filter((post) => post.status !== "완료");
-  const mentionedUsers = [...new Set(project.posts.flatMap((post) => {
-    const text = `${post.body} ${post.comments.map((comment) => comment.body).join(" ")}`;
-    return text.match(/@[가-힣A-Za-z0-9_]+/g) ?? [];
-  }))];
-
-  return {
-    project: project.name,
-    channel: project.channel,
+function buildPayload(bot, commandText) {
+  const channel = currentChannel();
+  const openPosts = channel.posts.filter((post) => post.status !== "완료");
+  const payload = {
+    project: currentProject().name,
+    channel: channel.name,
+    channelType: channel.type,
     provider: bot.provider,
     bot: bot.name,
     command: commandText || bot.command,
-    webhook: bot.webhook,
     requester: currentUser,
     openPosts: openPosts.length,
-    approvalRequired: true,
-    finalPaymentMode: "human_approval_required",
-    buyerBotHost: "mac-mini-purchase-bot",
-    browserAutomation: {
-      mode: "remote_browser_control",
-      allowedUntil: "checkout_review",
-      stopBeforePayment: true,
-      recordOrderResult: true,
-    },
-    vendorTargets: ["coupang", "gmarket"],
-    mentions: mentionedUsers,
-    posts: openPosts.map((post) => ({
-      id: post.id,
-      title: post.title,
-      status: post.status,
-      author: post.author,
-    })),
+    posts: openPosts.map((post) => ({ id: post.id, title: post.title, status: post.status, author: post.author })),
   };
-}
-
-function completeBotRun(projectId, runId) {
-  const project = state.projects.find((item) => item.id === projectId);
-  if (!project) return;
-
-  const run = project.botRuns.find((item) => item.id === runId);
-  if (!run || run.status !== "실행중") return;
-
-  const openPosts = project.posts.filter((post) => post.status !== "완료").length;
-  run.status = "승인 대기";
-  run.duration = "2.1s";
-  run.purchaseStage = "장바구니 준비 완료";
-  run.approvalStatus = "승인 대기";
-  run.summary = `미완료 구매요청 ${openPosts}건을 정리했고 맥미니 구매봇이 결제 직전 단계까지 준비할 수 있습니다. 최종 결제는 담당자 승인이 필요합니다.`;
-
-  project.messages.push({
-    id: `msg-${Date.now()}`,
-    author: `@${run.botName}`,
-    body: `${run.command} 처리 준비 완료: ${run.summary}`,
-    createdAt: "Just now",
-    bot: true,
-  });
-  project.files.unshift({
-    id: `file-${Date.now()}`,
-    name: `${run.botName}-purchase-draft-${run.id}.md`,
-    source: run.provider,
-    owner: `@${run.botName}`,
-    size: "8 KB",
-  });
-  saveState();
-  renderAll();
+  if (channel.type === "purchase") {
+    payload.approvalRequired = true;
+    payload.finalPaymentMode = "human_approval_required";
+    payload.buyerBotHost = "mac-mini-purchase-bot";
+    payload.browserAutomation = { mode: "remote_browser_control", allowedUntil: "checkout_review", stopBeforePayment: true };
+    payload.vendorTargets = ["coupang", "gmarket"];
+  }
+  if (["inbound", "outbound", "inventory"].includes(channel.type)) {
+    payload.sheetSync = {
+      target: channel.type === "inbound" ? "입고대장" : channel.type === "outbound" ? "출고대장" : "재고표",
+      mode: "append_or_update",
+      approvalRequired: false,
+    };
+  }
+  return payload;
 }
 
 function runBot(botId, commandText = "") {
-  const project = currentProject();
+  const channel = currentChannel();
   const bot = state.bots.find((item) => item.id === botId);
   if (!bot) return;
-
-  const openPosts = project.posts.filter((post) => post.status !== "완료").length;
-  const command = commandText || `${bot.command} 구매요청 요약`;
+  const command = commandText || `${bot.command} ${channel.name} 처리`;
   const runId = `run-${Date.now()}`;
-  const payload = buildBotPayload(bot, command);
-
-  project.botRuns.unshift({
+  const isPurchase = channel.type === "purchase";
+  const isSheet = ["inbound", "outbound", "inventory"].includes(channel.type);
+  channel.botRuns.unshift({
     id: runId,
     botId: bot.id,
     botName: bot.name,
@@ -703,84 +466,84 @@ function runBot(botId, commandText = "") {
     requestedBy: currentUser,
     createdAt: "Just now",
     duration: "진행중",
-    summary: `맥미니 구매봇 Webhook 호출 대기 중입니다. 미완료 구매요청 ${openPosts}건을 전송합니다.`,
-    purchaseStage: "요청 접수",
-    approvalStatus: "준비 중",
-    payload,
+    summary: isPurchase ? "맥미니 구매봇 Webhook 호출 대기 중입니다. 실제 결제는 승인 전까지 진행하지 않습니다." : isSheet ? "스프레드시트 자동화 Webhook 호출 대기 중입니다." : "채널 내용을 요약하고 할 일을 정리합니다.",
+    purchaseStage: isPurchase ? "요청 접수" : undefined,
+    approvalStatus: isPurchase ? "준비 중" : undefined,
+    payload: buildPayload(bot, command),
   });
-  addMessage("@시스템", `${bot.name} 실행을 시작했습니다: ${command}. 실제 결제는 승인 전까지 진행하지 않습니다.`, true);
+  addMessage("@시스템", `${bot.name} 실행을 시작했습니다: ${command}`, true);
   saveState();
   renderAll();
-
-  window.setTimeout(() => completeBotRun(project.id, runId), 900);
+  window.setTimeout(() => completeRun(channel.id, runId), 900);
 }
 
-function approvePurchaseRun(runId) {
-  const project = currentProject();
-  const run = project.botRuns.find((item) => item.id === runId);
-  if (!run || run.approvalStatus !== "승인 대기") return;
+function completeRun(channelId, runId) {
+  const channel = currentProject().channels.find((item) => item.id === channelId);
+  if (!channel) return;
+  const run = channel.botRuns.find((item) => item.id === runId);
+  if (!run || run.status !== "실행중") return;
+  if (channel.type === "purchase") {
+    run.status = "승인 대기";
+    run.purchaseStage = "장바구니 준비 완료";
+    run.approvalStatus = "승인 대기";
+    run.summary = "구매요청을 정리했고 맥미니 구매봇이 결제 직전 단계까지 준비할 수 있습니다. 최종 결제는 담당자 승인이 필요합니다.";
+    channel.files.unshift({ id: `file-${Date.now()}`, name: `${run.botName}-purchase-draft-${run.id}.md`, source: run.provider, owner: `@${run.botName}`, size: "8 KB" });
+  } else if (["inbound", "outbound", "inventory"].includes(channel.type)) {
+    run.status = "성공";
+    run.summary = `${channelTypes[channel.type].label} 내용을 연결된 스프레드시트에 업로드했습니다.`;
+    channel.files.unshift({ id: `file-${Date.now()}`, name: `${channel.name}-sheet-sync-${run.id}.md`, source: "스프레드시트 자동화", owner: `@${run.botName}`, size: "6 KB" });
+  } else {
+    run.status = "성공";
+    run.summary = "채널 내용을 요약하고 후속 할 일을 정리했습니다.";
+  }
+  run.duration = "2.1s";
+  channel.messages.push({ id: `msg-${Date.now()}`, author: `@${run.botName}`, body: `${run.command} 처리 결과: ${run.summary}`, createdAt: "Just now", bot: true });
+  saveState();
+  renderAll();
+}
 
+function approveRun(runId) {
+  const channel = currentChannel();
+  const run = channel.botRuns.find((item) => item.id === runId);
+  if (!run || run.approvalStatus !== "승인 대기") return;
   run.status = "승인됨";
   run.approvalStatus = "승인됨";
   run.purchaseStage = "구매 승인 완료";
-  run.summary = "담당자가 구매를 승인했습니다. 맥미니 구매봇은 결제 화면에서 사람이 최종 결제를 진행한 뒤 주문번호를 기록해야 합니다.";
+  run.summary = "담당자가 구매를 승인했습니다. 최종 결제는 사람이 진행하고 주문번호를 기록합니다.";
   run.payload.approvedBy = currentUser;
-  run.payload.approvedAt = new Date().toISOString();
   run.payload.nextAction = "human_complete_payment_and_record_order";
-
   addMessage("@시스템", `${run.botName} 구매 초안이 승인되었습니다. 결제 화면에서 담당자가 최종 결제를 진행하세요.`, true);
-  project.files.unshift({
-    id: `file-${Date.now()}`,
-    name: `${run.botName}-approval-${run.id}.md`,
-    source: "구매 승인",
-    owner: currentUser,
-    size: "4 KB",
-  });
+  channel.files.unshift({ id: `file-${Date.now()}`, name: `${run.botName}-approval-${run.id}.md`, source: "구매 승인", owner: currentUser, size: "4 KB" });
   saveState();
   renderAll();
 }
 
-function rejectPurchaseRun(runId) {
-  const project = currentProject();
-  const run = project.botRuns.find((item) => item.id === runId);
+function rejectRun(runId) {
+  const channel = currentChannel();
+  const run = channel.botRuns.find((item) => item.id === runId);
   if (!run || run.approvalStatus !== "승인 대기") return;
-
   run.status = "반려";
   run.approvalStatus = "반려";
   run.purchaseStage = "구매 반려";
-  run.summary = "담당자가 구매 초안을 반려했습니다. 구매요청 게시글을 수정한 뒤 다시 실행할 수 있습니다.";
+  run.summary = "담당자가 구매 초안을 반려했습니다. 게시글을 수정한 뒤 다시 실행할 수 있습니다.";
   run.payload.rejectedBy = currentUser;
-  run.payload.rejectedAt = new Date().toISOString();
   run.payload.nextAction = "revise_purchase_request";
-
-  addMessage("@시스템", `${run.botName} 구매 초안이 반려되었습니다. 요청 내용을 수정한 뒤 다시 실행하세요.`, true);
+  addMessage("@시스템", `${run.botName} 구매 초안이 반려되었습니다.`, true);
   saveState();
   renderAll();
+}
+
+function countMentions(post) {
+  const text = `${post.body} ${post.comments.map((comment) => comment.body).join(" ")}`;
+  return (text.match(/@[가-힣A-Za-z0-9_]+/g) ?? []).length;
 }
 
 function handlePostSubmit(event) {
   event.preventDefault();
-
-  const project = currentProject();
   const title = els.postTitle.value.trim();
   const body = els.postBody.value.trim();
-  if (!title || !body) {
-    els.postTitle.focus();
-    return;
-  }
-
-  project.posts.unshift({
-    id: `post-${Date.now()}`,
-    title,
-    body,
-    status: els.postStatus.value,
-    author: currentUser,
-    createdAt: "Just now",
-    link: extractLink(body),
-    reactions: 0,
-    comments: [],
-  });
-
+  if (!title || !body) return;
+  currentChannel().posts.unshift({ id: `post-${Date.now()}`, title, body, status: els.postStatus.value, author: currentUser, createdAt: "Just now", link: body.split(/\s+/).find((part) => /^https?:\/\//.test(part)) ?? "", reactions: 0, comments: [] });
   addMessage(currentUser, `Ideas에 새 게시글을 등록했습니다: ${title}`);
   els.postForm.reset();
   saveState();
@@ -790,57 +553,40 @@ function handlePostSubmit(event) {
 function handleReplySubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
-  const input = form.querySelector("input");
-  const body = input.value.trim();
+  const body = form.querySelector("input").value.trim();
   if (!body) return;
-
-  const project = currentProject();
-  const post = project.posts.find((item) => item.id === form.dataset.postId);
+  const post = currentChannel().posts.find((item) => item.id === form.dataset.postId);
   if (!post) return;
-
   post.comments.push({ id: `comment-${Date.now()}`, author: currentUser, body });
   addMessage(currentUser, `댓글을 남겼습니다: ${post.title}`);
-  input.value = "";
   saveState();
   renderAll();
 }
 
 function handleStatusChange(event) {
-  const project = currentProject();
-  const post = project.posts.find((item) => item.id === event.target.dataset.postId);
+  const post = currentChannel().posts.find((item) => item.id === event.target.dataset.postId);
   if (!post) return;
-
   post.status = event.target.value;
   addMessage("@시스템", `${post.title} 상태가 ${post.status}(으)로 변경되었습니다.`, true);
   saveState();
   renderAll();
 }
 
-function extractLink(value) {
-  return value.split(/\s+/).find((part) => /^https?:\/\//.test(part)) ?? "";
-}
+els.tabs.forEach((tab) => tab.addEventListener("click", () => {
+  const selected = tab.dataset.tab;
+  els.tabs.forEach((item) => item.classList.toggle("active", item === tab));
+  Object.entries(els.views).forEach(([name, view]) => view.classList.toggle("hidden", name !== selected));
+}));
 
-els.tabs.forEach((tab) => {
-  tab.addEventListener("click", () => {
-    const selected = tab.dataset.tab;
-    els.tabs.forEach((item) => item.classList.toggle("active", item === tab));
-    Object.entries(els.views).forEach(([name, view]) => {
-      view.classList.toggle("hidden", name !== selected);
-    });
-  });
-});
-
-els.filterButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    activeFilter = button.dataset.filter;
-    els.filterButtons.forEach((item) => item.classList.toggle("active", item === button));
-    renderPosts();
-  });
-});
+els.filterButtons.forEach((button) => button.addEventListener("click", () => {
+  activeFilter = button.dataset.filter;
+  els.filterButtons.forEach((item) => item.classList.toggle("active", item === button));
+  renderPosts();
+}));
 
 els.projectSelect.addEventListener("change", () => {
   state.selectedProjectId = els.projectSelect.value;
-  activeFilter = "all";
+  state.selectedChannelId = currentProject().channels[0].id;
   saveState();
   renderAll();
 });
@@ -848,80 +594,66 @@ els.projectSelect.addEventListener("change", () => {
 els.newProjectBtn.addEventListener("click", () => {
   els.newProjectName.value = "";
   els.projectDialog.showModal();
-  els.newProjectName.focus();
 });
 
 els.projectForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const name = els.newProjectName.value.trim();
   if (!name) return;
-
-  const project = {
-    id: `project-${Date.now()}`,
-    name,
-    channel: channelName,
-    ...emptyProjectData(name),
-  };
-
-  state.projects.push(project);
-  state.selectedProjectId = project.id;
+  const defaultChannel = makeChannel("매니저 소통", "general");
+  state.projects.push({ id: `project-${Date.now()}`, name, channels: [defaultChannel] });
+  state.selectedProjectId = state.projects.at(-1).id;
+  state.selectedChannelId = defaultChannel.id;
   saveState();
+  els.projectDialog.close();
   renderAll();
-  els.projectDialog.close();
 });
 
-els.closeProjectDialog.addEventListener("click", () => {
-  els.projectDialog.close();
+els.closeProjectDialog.addEventListener("click", () => els.projectDialog.close());
+
+els.newChannelBtn.addEventListener("click", () => {
+  els.newChannelName.value = "";
+  els.newChannelType.value = "general";
+  els.channelDialog.showModal();
 });
 
+els.channelForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = els.newChannelName.value.trim();
+  if (!name) return;
+  const channel = makeChannel(name, els.newChannelType.value);
+  currentProject().channels.push(channel);
+  state.selectedChannelId = channel.id;
+  saveState();
+  els.channelDialog.close();
+  renderAll();
+});
+
+els.closeChannelDialog.addEventListener("click", () => els.channelDialog.close());
 els.postForm.addEventListener("submit", handlePostSubmit);
-els.cancelPost.addEventListener("click", () => {
-  els.postForm.reset();
-  hideMentionMenu();
-});
-
-els.mentionBtn.addEventListener("click", showMentionMenu);
-els.postBody.addEventListener("input", () => {
-  const lastWord = els.postBody.value.split(/\s/).at(-1);
-  if (lastWord?.startsWith("@")) {
-    showMentionMenu();
-  } else {
-    hideMentionMenu();
-  }
-});
+els.cancelPost.addEventListener("click", () => els.postForm.reset());
 
 els.messageForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const body = els.messageInput.value.trim();
   if (!body) return;
-
-  const matchedBot = state.bots.find((bot) => body.startsWith(bot.command));
+  const bot = availableBots().find((item) => body.startsWith(item.command));
   addMessage(currentUser, body);
-  if (matchedBot) {
-    runBot(matchedBot.id, body);
-  } else {
+  els.messageInput.value = "";
+  if (bot) runBot(bot.id, body);
+  else {
     saveState();
     renderAll();
   }
-  els.messageInput.value = "";
 });
 
 els.botForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const name = els.botName.value.trim();
   const command = els.botCommand.value.trim();
-  const webhook = els.botWebhook.value.trim();
   if (!name || !command) return;
-
-  state.bots.push({
-    id: `bot-${Date.now()}`,
-    name,
-    provider: els.botProvider.value,
-    command,
-    webhook,
-    enabled: true,
-  });
-  addMessage("@시스템", `${name} 봇이 ${command} 명령어로 연결되었습니다.`, true);
+  state.bots.push({ id: `bot-${Date.now()}`, name, provider: els.botProvider.value, command, webhook: els.botWebhook.value.trim(), channelTypes: [currentChannel().type] });
+  addMessage("@시스템", `${name} 봇이 현재 채널에 연결되었습니다.`, true);
   els.botForm.reset();
   saveState();
   renderAll();
@@ -931,36 +663,19 @@ els.addFileBtn.addEventListener("click", () => {
   els.newFileName.value = "";
   els.newFileSource.value = "수동 추가";
   els.fileDialog.showModal();
-  els.newFileName.focus();
 });
 
 els.fileForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const name = els.newFileName.value.trim();
-  const source = els.newFileSource.value.trim() || "수동 추가";
   if (!name) return;
-
-  currentProject().files.unshift({
-    id: `file-${Date.now()}`,
-    name,
-    source,
-    owner: currentUser,
-    size: "512 KB",
-  });
+  currentChannel().files.unshift({ id: `file-${Date.now()}`, name, source: els.newFileSource.value.trim() || "수동 추가", owner: currentUser, size: "512 KB" });
   addMessage(currentUser, `파일을 추가했습니다: ${name}`);
   saveState();
+  els.fileDialog.close();
   renderAll();
-  els.fileDialog.close();
 });
 
-els.closeFileDialog.addEventListener("click", () => {
-  els.fileDialog.close();
-});
-
-document.addEventListener("click", (event) => {
-  if (!els.mentionMenu.contains(event.target) && event.target !== els.mentionBtn) {
-    hideMentionMenu();
-  }
-});
+els.closeFileDialog.addEventListener("click", () => els.fileDialog.close());
 
 renderAll();
