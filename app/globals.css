@@ -119,6 +119,17 @@
   font-weight: 800;
 }
 
+.action-error {
+  margin: 0;
+  border: 1px solid #fecdd3;
+  border-radius: var(--radius);
+  background: #fff1f2;
+  color: var(--danger);
+  padding: 9px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .auth-submit {
   width: 100%;
 }

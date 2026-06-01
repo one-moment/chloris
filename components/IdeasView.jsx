@@ -12,6 +12,7 @@ export default function IdeasView({
   draft,
   onDraftChange,
   attachments,
+  error,
   onAttachmentsChange,
   onRemoveAttachment,
   onCreatePost,
@@ -48,9 +49,9 @@ export default function IdeasView({
         <AttachmentList attachments={attachments} onRemove={onRemoveAttachment} />
         <div className="composer-actions">
           <div className="post-filters">
-            <button className={activeFilter === "all" ? "active" : ""} onClick={() => onFilterChange("all")}>전체</button>
-            <button className={activeFilter === "open" ? "active" : ""} onClick={() => onFilterChange("open")}>열린 글</button>
-            <button className={activeFilter === "mentions" ? "active" : ""} onClick={() => onFilterChange("mentions")}>멘션</button>
+            <button type="button" className={activeFilter === "all" ? "active" : ""} onClick={() => onFilterChange("all")}>전체</button>
+            <button type="button" className={activeFilter === "open" ? "active" : ""} onClick={() => onFilterChange("open")}>열린 글</button>
+            <button type="button" className={activeFilter === "mentions" ? "active" : ""} onClick={() => onFilterChange("mentions")}>멘션</button>
           </div>
           <div className="composer-submit">
             <label className="attachment-button">
@@ -60,6 +61,7 @@ export default function IdeasView({
             <button className="primary-button" type="button" onClick={onCreatePost} disabled={!draft.title.trim() && !draft.body.trim() && attachments.length === 0}>Post</button>
           </div>
         </div>
+        {error && <p className="action-error">{error}</p>}
       </div>
 
       <div className="status-summary">

@@ -33,6 +33,7 @@ export default function Home() {
   const [users, setUsers] = useState([]);
   const [authError, setAuthError] = useState("");
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   const requestJson = useCallback(async function requestJson(url, options = {}) {
     const response = await fetch(url, {
@@ -83,6 +84,7 @@ export default function Home() {
   }
 
   async function mutateAndRefresh(url, body, method = "POST", preferredSelection) {
+    setActionError("");
     const result = await requestJson(url, {
       method,
       body: JSON.stringify(body)
@@ -366,6 +368,7 @@ export default function Home() {
       setMessageAttachments([]);
     } catch (error) {
       console.error(error);
+      setActionError(error.message);
     }
   }
 
@@ -396,6 +399,7 @@ export default function Home() {
       setActiveFilter("all");
     } catch (error) {
       console.error(error);
+      setActionError(error.message);
     }
   }
 
@@ -539,6 +543,7 @@ export default function Home() {
               channel={channel}
               draft={messageDraft}
               attachments={messageAttachments}
+              error={actionError}
               onDraftChange={setMessageDraft}
               onAttachmentsChange={addMessageAttachments}
               onRemoveAttachment={(index) => removeAttachment(setMessageAttachments, index)}
@@ -556,6 +561,7 @@ export default function Home() {
               draft={postDraft}
               onDraftChange={setPostDraft}
               attachments={postAttachments}
+              error={actionError}
               onAttachmentsChange={addPostAttachments}
               onRemoveAttachment={(index) => removeAttachment(setPostAttachments, index)}
               onCreatePost={createPost}
