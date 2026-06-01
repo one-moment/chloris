@@ -12,6 +12,10 @@ import { createInitialState } from "../lib/initialData";
 
 const MAX_INLINE_ATTACHMENT_SIZE = 1_500_000;
 
+function makeClientId(prefix) {
+  return `${prefix}-client-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 export default function Home() {
   const [state, setState] = useState(createInitialState);
   const [stateLoaded, setStateLoaded] = useState(false);
@@ -91,6 +95,38 @@ export default function Home() {
     });
     await refreshState(preferredSelection);
     return result;
+  }
+
+  function refreshStateInBackground(preferredSelection = {}) {
+    refreshState(preferredSelection).catch((error) => {
+      console.error(error);
+      setActionError(error.message);
+    });
+  }
+
+  function updateChannel(channelId, mutator) {
+    setState((current) => ({
+      ...current,
+      projects: current.projects.map((projectItem) => ({
+        ...projectItem,
+        channels: projectItem.channels.map((channelItem) => (
+          channelItem.id === channelId ? mutator(channelItem) : channelItem
+        ))
+      }))
+    }));
+  }
+
+  function replaceChannelId(previousId, nextChannel) {
+    setState((current) => ({
+      ...current,
+      selectedChannelId: current.selectedChannelId === previousId ? nextChannel.id : current.selectedChannelId,
+      projects: current.projects.map((projectItem) => ({
+        ...projectItem,
+        channels: projectItem.channels.map((channelItem) => (
+          channelItem.id === previousId ? nextChannel : channelItem
+        ))
+      }))
+    }));
   }
 
   async function filesToAttachments(fileList) {
@@ -313,20 +349,60 @@ export default function Home() {
     event.preventDefault();
     const name = projectDraft.trim();
     if (!name) return;
+    const temporaryProject = {
+      id: makeClientId("project"),
+      name,
+      description: `${name} 내부 커뮤니케이션 공간`,
+      channels: [
+        {
+          id: makeClientId("channel"),
+          name: "매니저 소통",
+          type: "general",
+          messages: [],
+          posts: [],
+          files: [],
+          botRuns: []
+        }
+      ]
+    };
+    setActionError("");
+    setProjectDraft("");
+    setShowProjectDialog(false);
+    setActiveTab("ideas");
+    setState((current) => ({
+      ...current,
+      selectedProjectId: temporaryProject.id,
+      selectedChannelId: temporaryProject.channels[0]?.id,
+      projects: [...current.projects, temporaryProject]
+    }));
     try {
-      const created = await mutateAndRefresh("/api/projects", { name }, "POST", {
-        projectId: null,
-        channelId: null
+      const created = await requestJson("/api/projects", {
+        method: "POST",
+        body: JSON.stringify({ name })
       });
-      await refreshState({
-        projectId: created.id,
-        channelId: created.channels?.[0]?.id
-      });
-      setProjectDraft("");
-      setShowProjectDialog(false);
-      setActiveTab("ideas");
+      setState((current) => ({
+        ...current,
+        selectedProjectId: created.id,
+        selectedChannelId: created.channels?.[0]?.id,
+        projects: current.projects.map((projectItem) => (
+          projectItem.id === temporaryProject.id ? created : projectItem
+        ))
+      }));
+      refreshStateInBackground({ projectId: created.id, channelId: created.channels?.[0]?.id });
     } catch (error) {
       console.error(error);
+      setActionError(error.message);
+      setState((current) => {
+        const nextProjects = current.projects.filter((projectItem) => projectItem.id !== temporaryProject.id);
+        const selectedProject = nextProjects[0];
+        const selectedChannel = selectedProject?.channels[0];
+        return {
+          ...current,
+          projects: nextProjects,
+          selectedProjectId: selectedProject?.id,
+          selectedChannelId: selectedChannel?.id
+        };
+      });
     }
   }
 
@@ -334,41 +410,97 @@ export default function Home() {
     event.preventDefault();
     const name = channelDraft.name.trim();
     if (!name) return;
+    const temporaryChannel = {
+      id: makeClientId("channel"),
+      name,
+      type: channelDraft.type,
+      messages: [],
+      posts: [],
+      files: [],
+      botRuns: []
+    };
+    setActionError("");
+    setChannelDraft({ name: "", type: "general" });
+    setShowChannelDialog(false);
+    setActiveTab("ideas");
+    setState((current) => ({
+      ...current,
+      selectedChannelId: temporaryChannel.id,
+      projects: current.projects.map((projectItem) => (
+        projectItem.id === current.selectedProjectId
+          ? { ...projectItem, channels: [...projectItem.channels, temporaryChannel] }
+          : projectItem
+      ))
+    }));
     try {
-      const created = await mutateAndRefresh(`/api/projects/${state.selectedProjectId}/channels`, {
-        name,
-        type: channelDraft.type
-      }, "POST", {
-        projectId: state.selectedProjectId
+      const projectId = state.selectedProjectId;
+      const created = await requestJson(`/api/projects/${projectId}/channels`, {
+        method: "POST",
+        body: JSON.stringify({ name, type: temporaryChannel.type })
       });
-      await refreshState({
-        projectId: state.selectedProjectId,
-        channelId: created.id
-      });
-      setChannelDraft({ name: "", type: "general" });
-      setShowChannelDialog(false);
-      setActiveTab("ideas");
+      replaceChannelId(temporaryChannel.id, created);
+      refreshStateInBackground({ projectId, channelId: created.id });
     } catch (error) {
       console.error(error);
+      setActionError(error.message);
+      setState((current) => {
+        const selectedProject = current.projects.find((projectItem) => projectItem.id === current.selectedProjectId) ?? current.projects[0];
+        const channels = selectedProject?.channels.filter((channelItem) => channelItem.id !== temporaryChannel.id) ?? [];
+        return {
+          ...current,
+          selectedChannelId: channels[0]?.id,
+          projects: current.projects.map((projectItem) => (
+            projectItem.id === selectedProject?.id ? { ...projectItem, channels } : projectItem
+          ))
+        };
+      });
     }
   }
 
   async function sendMessage() {
     const body = messageDraft.trim();
     if (!body && messageAttachments.length === 0) return;
+    const channelId = channel.id;
+    const optimisticMessage = {
+      id: makeClientId("msg"),
+      authorId: currentUser.id,
+      author: currentUser.name,
+      body,
+      attachments: messageAttachments,
+      createdAt: "방금 전",
+      bot: false
+    };
+    setActionError("");
+    setMessageDraft("");
+    setMessageAttachments([]);
+    updateChannel(channelId, (channelItem) => ({
+      ...channelItem,
+      messages: [optimisticMessage, ...channelItem.messages]
+    }));
     try {
-      await mutateAndRefresh(`/api/channels/${channel.id}/messages`, {
-        body,
-        attachments: messageAttachments
-      }, "POST", {
-        projectId: state.selectedProjectId,
-        channelId: channel.id
+      const created = await requestJson(`/api/channels/${channelId}/messages`, {
+        method: "POST",
+        body: JSON.stringify({
+          body,
+          attachments: optimisticMessage.attachments
+        })
       });
-      setMessageDraft("");
-      setMessageAttachments([]);
+      updateChannel(channelId, (channelItem) => ({
+        ...channelItem,
+        messages: channelItem.messages.map((message) => (
+          message.id === optimisticMessage.id ? created : message
+        ))
+      }));
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId });
     } catch (error) {
       console.error(error);
       setActionError(error.message);
+      updateChannel(channelId, (channelItem) => ({
+        ...channelItem,
+        messages: channelItem.messages.filter((message) => message.id !== optimisticMessage.id)
+      }));
+      setMessageDraft(body);
+      setMessageAttachments(optimisticMessage.attachments);
     }
   }
 
@@ -379,27 +511,52 @@ export default function Home() {
       || "";
     const body = postDraft.body.trim();
     if (!title && !body && postAttachments.length === 0) return;
+    const channelId = channel.id;
+    const optimisticPost = {
+      id: makeClientId("post"),
+      title,
+      body,
+      attachments: postAttachments,
+      authorId: currentUser.id,
+      author: currentUser.name,
+      status: postDraft.status,
+      createdAt: "방금 전",
+      comments: []
+    };
+    setActionError("");
+    setPostDraft({ title: "", body: "", status: "검토중" });
+    setPostAttachments([]);
+    setActiveFilter("all");
+    updateChannel(channelId, (channelItem) => ({
+      ...channelItem,
+      posts: [optimisticPost, ...channelItem.posts]
+    }));
     try {
-      await mutateAndRefresh(
-        `/api/channels/${channel.id}/posts`,
-        {
+      const created = await requestJson(`/api/channels/${channelId}/posts`, {
+        method: "POST",
+        body: JSON.stringify({
           title,
           body,
-          status: postDraft.status,
-          attachments: postAttachments
-        },
-        "POST",
-        {
-          projectId: state.selectedProjectId,
-          channelId: channel.id
-        }
-      );
-      setPostDraft({ title: "", body: "", status: "검토중" });
-      setPostAttachments([]);
-      setActiveFilter("all");
+          status: optimisticPost.status,
+          attachments: optimisticPost.attachments
+        })
+      });
+      updateChannel(channelId, (channelItem) => ({
+        ...channelItem,
+        posts: channelItem.posts.map((post) => (
+          post.id === optimisticPost.id ? created : post
+        ))
+      }));
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId });
     } catch (error) {
       console.error(error);
       setActionError(error.message);
+      updateChannel(channelId, (channelItem) => ({
+        ...channelItem,
+        posts: channelItem.posts.filter((post) => post.id !== optimisticPost.id)
+      }));
+      setPostDraft({ title: postDraft.title, body: postDraft.body, status: optimisticPost.status });
+      setPostAttachments(optimisticPost.attachments);
     }
   }
 
