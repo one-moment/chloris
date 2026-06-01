@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id          String    @id
+  name        String
+  description String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  channels    Channel[]
+}
+
+model Channel {
+  id        String    @id
+  projectId String
+  name      String
+  type      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  posts     Post[]
+  files     File[]
+  botRuns   BotRun[]
+}
+
+model Message {
+  id        String   @id
+  channelId String
+  author    String
+  body      String
+  createdAt DateTime @default(now())
+  bot       Boolean  @default(false)
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+  id        String    @id
+  channelId String
+  title     String
+  body      String
+  author    String
+  status    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  channel   Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  comments  Comment[]
+}
+
+model Comment {
+  id        String   @id
+  postId    String
+  author    String
+  body      String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model File {
+  id        String   @id
+  channelId String
+  name      String
+  source    String
+  createdAt DateTime @default(now())
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+}
+
+model Bot {
+  id           String   @id
+  name         String
+  provider     String
+  command      String
+  channelTypes String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model BotRun {
+  id             String   @id
+  channelId      String
+  botId          String
+  botName        String
+  status         String
+  approvalStatus String
+  summary        String
+  payloadJson    String
+  createdAt      DateTime @default(now())
+  channel        Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+}

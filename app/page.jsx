@@ -92,11 +92,6 @@ export default function Home() {
   useEffect(() => {
     if (!stateLoaded) return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    fetch("/api/state", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(state)
-    }).catch(() => {});
   }, [state, stateLoaded]);
 
   const project = useMemo(

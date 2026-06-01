@@ -21,6 +21,7 @@ Next.js 개발 서버:
 
 ```bash
 npm install
+npm run db:push
 npm run dev
 ```
 
@@ -42,7 +43,7 @@ http://127.0.0.1:4173
 
 ## API 시작점
 
-개발 서버 실행 중에는 아래 API를 사용할 수 있습니다. 현재 저장소는 로컬 개발용 JSON 파일 `.data/app-state.json`에 상태를 저장하며, 이 파일은 Git에 포함하지 않습니다.
+개발 서버 실행 중에는 아래 API를 사용할 수 있습니다. 현재 MVP는 Prisma + SQLite를 사용하며, 로컬 DB 파일 `prisma/dev.db`는 Git에 포함하지 않습니다.
 
 ```text
 GET    /api/state
@@ -83,7 +84,10 @@ lib/
   constants.js          채널 타입, 탭, 상태 상수
   initialData.js        샘플 데이터와 생성 헬퍼
   automation.js         자동화 payload 및 실행 상태 헬퍼
-  serverState.js        API route용 상태 읽기/쓰기 헬퍼
+  prisma.js             Prisma Client 싱글턴
+  serverState.js        Prisma 기반 API 상태 읽기/쓰기 헬퍼
+prisma/
+  schema.prisma         MVP 데이터 모델
 index.html              정적 목업
 styles.css              공통 UI 스타일
 app.js                  정적 목업 상태/상호작용
