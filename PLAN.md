@@ -19,6 +19,7 @@
 - 구매봇은 장바구니/결제 검토 단계까지만 진행하고, 최종 결제는 담당자 승인 후 진행
 - 입고/출고/재고관리 채널은 Ideas 내용을 스프레드시트에 반영하는 자동화 payload 생성
 - 로그인 사용자 기준 메시지/게시글/댓글 작성자 및 봇 실행 요청자 기록
+- 운영 PostgreSQL, S3 첨부 저장, HTTPS 프록시, 백업 스크립트, 초대 코드 기반 가입 정책
 
 제외 기능:
 
@@ -26,7 +27,7 @@
 - 실제 Mattermost 서버 연동
 - 실제 파일 업로드
 - 실제 봇 실행 서버 호출
-- 세부 권한 관리, 초대 승인, SSO
+- 조직/채널 단위 세부 권한, SSO
 - 실제 결제 자동 실행
 
 ## 2. 현재 프론트엔드 구조
@@ -163,7 +164,10 @@ sessions
 - 완료: 메시지/게시글/댓글/봇 실행 요청자를 로그인 사용자 기준으로 기록
 - 완료: `/api/health`, Dockerfile, docker compose 기반 MVP 실행 구성 추가
 - 완료: 첫 관리자 생성 후 공개 가입을 막을 수 있는 `ALLOW_PUBLIC_SIGNUP` 옵션 추가
-- 다음 작업: 배포 DB 선택, 운영 환경 변수 정리, 파일 저장소 연결
+- 완료: 운영 PostgreSQL용 Prisma 스키마와 `docker-compose.prod.yml` 추가
+- 완료: S3 presigned upload 기반 첨부 저장 옵션 추가
+- 완료: 관리자 초대 코드 API와 초대 코드 가입 정책 추가
+- 완료: PostgreSQL/SQLite 백업 스크립트 추가
 - 다음 작업: 봇 등록 CRUD, 입력 검증 강화, 채널별 권한 모델 준비
 
 ### Phase 3: Mattermost 연동
@@ -183,9 +187,12 @@ sessions
 
 ### Phase 5: 사내 배포
 
-- 배포 DB(PostgreSQL 등) 연결
+- 배포 DB(PostgreSQL) 연결 완료
+- HTTPS 도메인 Caddy reverse proxy 구성 완료
+- S3 파일 저장소 옵션 완료
+- 기본 백업 스크립트 완료
+- 초대 코드 기반 가입 정책 완료
 - 권한 모델 고도화
 - SSO 또는 Mattermost 계정 연동
-- 파일 저장소 연결
 - Docker 배포 구성 고도화
 - 운영 모니터링

@@ -9,6 +9,7 @@ Mattermost 스타일의 사내 커뮤니케이션 MVP입니다. 현재 버전은
 - 프로젝트 안에서 채널 생성
 - 채널별 Messages, Ideas, Files 분리
 - Messages와 Ideas에 사진/파일 첨부
+- 운영 환경에서 S3 presigned upload 기반 파일 저장
 - 채널 유형: 일반 소통, 구매요청, 입고, 출고, 재고관리
 - Ideas 게시글 작성, 댓글, 멘션, 상태 변경
 - Files에 수동 파일 및 자동화 결과물 기록
@@ -16,7 +17,7 @@ Mattermost 스타일의 사내 커뮤니케이션 MVP입니다. 현재 버전은
 - 구매요청 채널: Mac mini 구매봇이 쿠팡/지마켓 등에서 후보를 준비하되 실제 결제 전 담당자 승인 대기
 - 입고/출고/재고관리 채널: Ideas 내용을 연결된 스프레드시트에 반영하는 자동화 payload 생성
 - 로그인 사용자 기준 메시지/게시글/댓글/봇 실행 요청자 기록
-- Next.js API route + Prisma + SQLite 기반 상태 저장
+- Next.js API route + Prisma 기반 상태 저장
 
 ## 실행 방법
 
@@ -46,9 +47,9 @@ python3 -m http.server 4173
 http://127.0.0.1:4173
 ```
 
-## 배포 실행
+## 운영 배포 실행
 
-MVP 배포용 컨테이너를 만들 수 있습니다. 기본값은 SQLite이며 운영에서는 영속 볼륨이나 PostgreSQL 전환을 권장합니다.
+로컬 확인용 단일 컨테이너는 SQLite를 사용할 수 있습니다.
 
 ```bash
 docker build -t mattermost-project-mvp .
@@ -61,13 +62,93 @@ docker run --env-file .env -p 3000:3000 mattermost-project-mvp
 docker compose up --build
 ```
 
+실제 운영 배포는 PostgreSQL, Caddy HTTPS 프록시, 앱 컨테이너를 함께 띄우는 구성을 사용합니다.
+
+```bash
+cp .env.production.example .env.production
+# .env.production 값을 실제 도메인, 이메일, DB 비밀번호, S3 정보로 수정
+docker compose --env-file .env.production -f docker-compose.prod.yml up --build -d
+```
+
+### HTTPS 도메인
+
+`docker-compose.prod.yml`은 Caddy를 포함합니다. 운영 서버에서 아래 DNS를 먼저 설정하세요.
+
+```text
+APP_DOMAIN A record -> 서버 공인 IP
+```
+
+그 뒤 `.env.production`의 `APP_DOMAIN`, `ACME_EMAIL`을 채우면 Caddy가 Let's Encrypt 인증서를 자동 발급하고 `app:3000`으로 프록시합니다.
+
+### 운영 DB: PostgreSQL
+
+운영 compose는 `postgres:16-alpine`을 사용하며 앱은 `prisma/schema.postgres.prisma`로 Prisma Client와 DB 스키마를 생성합니다.
+
+```bash
+docker compose --env-file .env.production -f docker-compose.prod.yml exec app npx prisma db push --schema prisma/schema.postgres.prisma
+```
+
+### 파일 저장소: S3
+
+운영에서 `STORAGE_PROVIDER=s3`를 설정하면 첨부 파일은 앱 서버를 거치지 않고 presigned URL로 S3에 직접 업로드됩니다.
+
+필수 환경 변수:
+
+```text
+STORAGE_PROVIDER=s3
+S3_BUCKET=...
+S3_REGION=ap-northeast-2
+S3_PUBLIC_BASE_URL=https://...
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+MAX_UPLOAD_BYTES=10485760
+```
+
+S3 IAM 권한은 최소한 대상 버킷 prefix에 대한 `s3:PutObject`가 필요합니다. 공개 URL로 파일을 보여주려면 CloudFront 또는 버킷 정책 기반의 읽기 URL을 `S3_PUBLIC_BASE_URL`로 연결하세요.
+
 상태 확인:
 
 ```text
 GET /api/health
 ```
 
-운영에서 첫 관리자 계정을 만든 뒤 공개 가입을 막으려면 환경 변수로 `ALLOW_PUBLIC_SIGNUP="false"`를 설정하세요. 첫 계정 생성은 항상 허용되고, 이후 계정 생성은 차단됩니다.
+### 초대/권한 정책
+
+첫 계정은 항상 `admin`으로 생성됩니다. 운영에서 첫 관리자 계정을 만든 뒤 공개 가입을 막으려면 `ALLOW_PUBLIC_SIGNUP=false`를 유지하세요. 이후 계정은 관리자 초대 코드가 있어야 가입할 수 있습니다.
+
+관리자 초대 API:
+
+```text
+GET  /api/invites
+POST /api/invites
+```
+
+예시:
+
+```bash
+curl -X POST https://$APP_DOMAIN/api/invites \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{"email":"staff@example.com","role":"member","expiresInDays":7}'
+```
+
+응답의 `code`를 직원에게 전달하면 가입 화면의 `초대 코드`에 입력할 수 있습니다.
+
+### 백업
+
+PostgreSQL:
+
+```bash
+DATABASE_URL="postgresql://..." npm run backup:postgres
+```
+
+SQLite:
+
+```bash
+SQLITE_DB_PATH="./prisma/dev.db" npm run backup:sqlite
+```
+
+운영에서는 `backups/` 결과물을 별도 오브젝트 스토리지나 백업 서버로 주기적으로 복사하세요.
 
 ## API 시작점
 
@@ -78,6 +159,9 @@ GET    /api/auth/me
 POST   /api/auth/register
 POST   /api/auth/login
 POST   /api/auth/logout
+GET    /api/invites
+POST   /api/invites
+POST   /api/uploads/presign
 GET    /api/health
 GET    /api/state
 PUT    /api/state
@@ -119,9 +203,16 @@ lib/
   automation.js         자동화 payload 및 실행 상태 헬퍼
   prisma.js             Prisma Client 싱글턴
   auth.js               비밀번호 해시, 세션 쿠키, 현재 사용자 헬퍼
+  storage.js            inline/S3 첨부 업로드 헬퍼
   serverState.js        Prisma 기반 API 상태 읽기/쓰기 헬퍼
 prisma/
   schema.prisma         MVP 데이터 모델
+  schema.postgres.prisma 운영 PostgreSQL 데이터 모델
+deploy/
+  Caddyfile             HTTPS reverse proxy
+scripts/
+  backup-postgres.sh
+  backup-sqlite.sh
 index.html              정적 목업
 styles.css              공통 UI 스타일
 app.js                  정적 목업 상태/상호작용

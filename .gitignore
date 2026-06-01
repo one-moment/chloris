@@ -7,8 +7,10 @@ prisma/migrations/
 out/
 dist/
 build/
+backups/
 
 .env
+.env.production
 .env*.local
 
 npm-debug.log*

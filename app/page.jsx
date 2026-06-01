@@ -10,7 +10,7 @@ import ProjectSidebar from "../components/ProjectSidebar";
 import Topbar from "../components/Topbar";
 import { createInitialState } from "../lib/initialData";
 
-const MAX_ATTACHMENT_SIZE = 1_500_000;
+const MAX_INLINE_ATTACHMENT_SIZE = 1_500_000;
 
 export default function Home() {
   const [state, setState] = useState(createInitialState);
@@ -85,23 +85,59 @@ export default function Home() {
 
   async function filesToAttachments(fileList) {
     const files = Array.from(fileList ?? []);
-    const validFiles = files.filter((file) => file.size <= MAX_ATTACHMENT_SIZE);
-    if (validFiles.length !== files.length) {
-      window.alert("1.5MB 이하 파일만 첨부할 수 있습니다.");
+    const uploaded = [];
+
+    for (const file of files) {
+      const target = await requestJson("/api/uploads/presign", {
+        method: "POST",
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type || "application/octet-stream",
+          fileSize: file.size
+        })
+      });
+
+      if (target.provider === "s3") {
+        await fetch(target.uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": file.type || "application/octet-stream"
+          },
+          body: file
+        });
+        uploaded.push({
+          id: `attachment-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          size: file.size,
+          storage: "s3",
+          key: target.key,
+          url: target.publicUrl
+        });
+        continue;
+      }
+
+      if (file.size > MAX_INLINE_ATTACHMENT_SIZE) {
+        window.alert("로컬 inline 저장은 1.5MB 이하 파일만 첨부할 수 있습니다. 운영에서는 S3 설정을 사용하세요.");
+        continue;
+      }
+
+      uploaded.push(await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({
+          id: `attachment-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          size: file.size,
+          storage: "inline",
+          dataUrl: reader.result
+        });
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      }));
     }
 
-    return Promise.all(validFiles.map((file) => new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve({
-        id: `attachment-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        name: file.name,
-        type: file.type || "application/octet-stream",
-        size: file.size,
-        dataUrl: reader.result
-      });
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    })));
+    return uploaded;
   }
 
   async function addMessageAttachments(fileList) {

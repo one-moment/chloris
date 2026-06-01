@@ -6,7 +6,8 @@ export default function AuthScreen({ onLogin, onRegister, error, isSubmitting })
     name: "",
     email: "",
     handle: "",
-    password: ""
+    password: "",
+    inviteCode: ""
   });
 
   function updateField(field, value) {
@@ -45,6 +46,10 @@ export default function AuthScreen({ onLogin, onRegister, error, isSubmitting })
             <label>
               멘션 핸들
               <input value={form.handle} onChange={(event) => updateField("handle", event.target.value)} placeholder="@captain" autoComplete="username" />
+            </label>
+            <label>
+              초대 코드
+              <input value={form.inviteCode} onChange={(event) => updateField("inviteCode", event.target.value)} placeholder="관리자에게 받은 초대 코드" autoComplete="one-time-code" />
             </label>
           </>
         )}

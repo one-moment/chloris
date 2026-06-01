@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -96,14 +96,14 @@ model Post {
 }
 
 model Comment {
-  id        String   @id
-  postId    String
-  authorId  String?
-  author    String
-  body      String
-  createdAt DateTime @default(now())
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  authorUser User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  id         String   @id
+  postId     String
+  authorId   String?
+  author     String
+  body       String
+  createdAt  DateTime @default(now())
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorUser User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
 }
 
 model File {

@@ -2,7 +2,7 @@ node_modules
 .next
 .git
 .env
+.env.production
 prisma/dev.db
+backups
 npm-debug.log
-README.md
-PLAN.md

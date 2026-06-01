@@ -6,17 +6,18 @@ export default function AttachmentList({ attachments = [], onRemove }) {
       {attachments.map((attachment, index) => {
         const key = attachment.id ?? `${attachment.name}-${index}`;
         const isImage = attachment.type?.startsWith("image/");
+        const href = attachment.url || attachment.dataUrl || "#";
         return (
           <div key={key} className={isImage ? "attachment-item image" : "attachment-item"}>
-            {isImage && attachment.dataUrl ? (
+            {isImage && href !== "#" ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={attachment.dataUrl} alt={attachment.name} />
+              <img src={href} alt={attachment.name} />
             ) : (
               <div className="attachment-icon">FILE</div>
             )}
             <div>
-              <a href={attachment.dataUrl} download={attachment.name}>{attachment.name}</a>
-              <span>{formatSize(attachment.size)}</span>
+              <a href={href} download={attachment.url ? undefined : attachment.name} target={attachment.url ? "_blank" : undefined} rel={attachment.url ? "noreferrer" : undefined}>{attachment.name}</a>
+              <span>{formatSize(attachment.size)}{attachment.storage === "s3" ? " · S3" : ""}</span>
             </div>
             {onRemove && (
               <button type="button" onClick={() => onRemove(index)} aria-label={`${attachment.name} 첨부 제거`}>
