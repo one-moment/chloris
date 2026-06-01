@@ -223,6 +223,18 @@
   min-width: 0;
 }
 
+.chat-column {
+  min-height: calc(100vh - 160px);
+}
+
+.chat-list {
+  align-content: end;
+  flex: 1;
+  min-height: 340px;
+  max-height: calc(100vh - 330px);
+  overflow: auto;
+}
+
 .project-switcher {
   grid-template-columns: 1fr;
 }
@@ -518,6 +530,24 @@
 .file-list {
   display: grid;
   gap: 12px;
+}
+
+.message-row {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 12px;
+}
+
+.message-row.bot {
+  border-color: #bfd6ff;
+  background: #f7fbff;
+}
+
+.message-row p {
+  margin-top: 6px;
+  line-height: 1.55;
+  white-space: pre-wrap;
 }
 
 .post-card-header span,

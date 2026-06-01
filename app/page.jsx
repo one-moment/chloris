@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AuthScreen from "../components/AuthScreen";
 import AutomationPanel from "../components/AutomationPanel";
 import FilesView from "../components/FilesView";
@@ -34,7 +34,7 @@ export default function Home() {
   const [authError, setAuthError] = useState("");
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
 
-  async function requestJson(url, options = {}) {
+  const requestJson = useCallback(async function requestJson(url, options = {}) {
     const response = await fetch(url, {
       ...options,
       credentials: "same-origin",
@@ -46,9 +46,9 @@ export default function Home() {
     const data = await response.json().catch(() => null);
     if (!response.ok) throw new Error(data?.error ?? "API request failed");
     return data;
-  }
+  }, []);
 
-  function withSelection(serverState, preferredProjectId, preferredChannelId) {
+  const withSelection = useCallback(function withSelection(serverState, preferredProjectId, preferredChannelId) {
     const selectedProject = serverState.projects.find((item) => item.id === preferredProjectId) ?? serverState.projects[0];
     const selectedChannel = selectedProject?.channels.find((item) => item.id === preferredChannelId) ?? selectedProject?.channels[0];
     return {
@@ -56,7 +56,7 @@ export default function Home() {
       selectedProjectId: selectedProject?.id,
       selectedChannelId: selectedChannel?.id
     };
-  }
+  }, []);
 
   async function refreshState(preferredSelection = {}) {
     const serverState = await requestJson("/api/state");
@@ -188,7 +188,24 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [requestJson]);
+
+  useEffect(() => {
+    if (!currentUser) return undefined;
+
+    const intervalId = window.setInterval(async () => {
+      try {
+        const serverState = await requestJson("/api/state");
+        if (!serverState?.projects?.[0]?.channels) return;
+        setState((current) => withSelection(serverState, current.selectedProjectId, current.selectedChannelId));
+        setUsers(serverState.users ?? []);
+      } catch (error) {
+        console.error(error);
+      }
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [currentUser, requestJson, withSelection]);
 
   const project = useMemo(
     () => state.projects.find((item) => item.id === state.selectedProjectId) ?? state.projects[0],
