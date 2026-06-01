@@ -21,10 +21,13 @@ services:
         PRISMA_SCHEMA: prisma/schema.postgres.prisma
     environment:
       DATABASE_URL: postgresql://mattermost:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/mattermost_mvp?schema=public
+      DIRECT_URL: postgresql://mattermost:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/mattermost_mvp?schema=public
       ALLOW_PUBLIC_SIGNUP: ${ALLOW_PUBLIC_SIGNUP:-false}
       STORAGE_PROVIDER: ${STORAGE_PROVIDER:-inline}
       S3_BUCKET: ${S3_BUCKET:-}
       S3_REGION: ${S3_REGION:-ap-northeast-2}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
       S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:-}
       MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-10485760}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}

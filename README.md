@@ -47,7 +47,25 @@ python3 -m http.server 4173
 http://127.0.0.1:4173
 ```
 
-## 운영 배포 실행
+## 첫 MVP 배포: Vercel + Supabase
+
+AWS보다 가볍게 첫 배포를 하려면 Vercel + Supabase 조합을 권장합니다.
+
+- Vercel: Next.js 앱/API 배포, HTTPS 도메인 자동 처리
+- Supabase: PostgreSQL, Storage
+- Prisma: `prisma/schema.postgres.prisma`
+
+배포 절차는 [Vercel + Supabase MVP 배포 문서](docs/deploy-vercel-supabase.md)를 따릅니다.
+
+핵심 명령:
+
+```bash
+DATABASE_URL="postgresql://..." DIRECT_URL="postgresql://..." npm run db:push:postgres
+```
+
+Vercel은 [vercel.json](vercel.json)의 `npm run vercel-build`를 사용해 PostgreSQL Prisma Client를 생성한 뒤 Next.js를 빌드합니다.
+
+## Docker 운영 배포 실행
 
 로컬 확인용 단일 컨테이너는 SQLite를 사용할 수 있습니다.
 
@@ -98,13 +116,15 @@ docker compose --env-file .env.production -f docker-compose.prod.yml exec app np
 STORAGE_PROVIDER=s3
 S3_BUCKET=...
 S3_REGION=ap-northeast-2
+S3_ENDPOINT=...
+S3_FORCE_PATH_STYLE=true
 S3_PUBLIC_BASE_URL=https://...
 AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 MAX_UPLOAD_BYTES=10485760
 ```
 
-S3 IAM 권한은 최소한 대상 버킷 prefix에 대한 `s3:PutObject`가 필요합니다. 공개 URL로 파일을 보여주려면 CloudFront 또는 버킷 정책 기반의 읽기 URL을 `S3_PUBLIC_BASE_URL`로 연결하세요.
+S3 IAM 권한은 최소한 대상 버킷 prefix에 대한 `s3:PutObject`가 필요합니다. Supabase Storage를 쓰는 경우 `S3_ENDPOINT`를 `https://PROJECT_REF.supabase.co/storage/v1/s3`, `S3_FORCE_PATH_STYLE=true`로 설정합니다.
 
 상태 확인:
 

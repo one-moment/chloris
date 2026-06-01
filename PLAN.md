@@ -20,6 +20,7 @@
 - 입고/출고/재고관리 채널은 Ideas 내용을 스프레드시트에 반영하는 자동화 payload 생성
 - 로그인 사용자 기준 메시지/게시글/댓글 작성자 및 봇 실행 요청자 기록
 - 운영 PostgreSQL, S3 첨부 저장, HTTPS 프록시, 백업 스크립트, 초대 코드 기반 가입 정책
+- Vercel + Supabase 기반 첫 MVP 배포 프로파일
 
 제외 기능:
 
@@ -168,6 +169,7 @@ sessions
 - 완료: S3 presigned upload 기반 첨부 저장 옵션 추가
 - 완료: 관리자 초대 코드 API와 초대 코드 가입 정책 추가
 - 완료: PostgreSQL/SQLite 백업 스크립트 추가
+- 완료: Vercel 빌드 설정과 Supabase Postgres/Storage 환경 예시 추가
 - 다음 작업: 봇 등록 CRUD, 입력 검증 강화, 채널별 권한 모델 준비
 
 ### Phase 3: Mattermost 연동
