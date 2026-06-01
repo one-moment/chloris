@@ -7,6 +7,7 @@
 포함 기능:
 
 - 프로젝트 생성 및 선택
+- 사용자 계정 생성, 로그인, 로그아웃
 - 프로젝트별 채널 생성
 - 채널별 Messages, Ideas, Files 데이터 분리
 - 채널 유형: 일반 소통, 구매요청, 입고, 출고, 재고관리
@@ -17,6 +18,7 @@
 - 구매요청 채널의 Mac mini 구매봇 원격 브라우저 자동화 개념
 - 구매봇은 장바구니/결제 검토 단계까지만 진행하고, 최종 결제는 담당자 승인 후 진행
 - 입고/출고/재고관리 채널은 Ideas 내용을 스프레드시트에 반영하는 자동화 payload 생성
+- 로그인 사용자 기준 메시지/게시글/댓글 작성자 및 봇 실행 요청자 기록
 
 제외 기능:
 
@@ -24,7 +26,7 @@
 - 실제 Mattermost 서버 연동
 - 실제 파일 업로드
 - 실제 봇 실행 서버 호출
-- 사용자 인증 및 권한 관리
+- 세부 권한 관리, 초대 승인, SSO
 - 실제 결제 자동 실행
 
 ## 2. 현재 프론트엔드 구조
@@ -120,6 +122,22 @@ bot_runs
 - approval_status
 - created_by
 - created_at
+
+users
+- id
+- email
+- name
+- handle
+- password_hash
+- role
+- created_at
+
+sessions
+- id
+- user_id
+- token_hash
+- expires_at
+- created_at
 ```
 
 ## 4. 다음 구현 단계
@@ -141,8 +159,12 @@ bot_runs
 - 완료: 프론트 프로젝트/채널/메시지/Ideas/댓글/파일/봇 실행 액션을 개별 mutation API에 연결
 - 완료: Prisma + SQLite 기반 실제 DB 스키마 도입 및 로컬 JSON 저장소 교체
 - 완료: 메시지와 Ideas 게시글에 사진/파일 첨부 MVP 추가
-- 다음 작업: 채팅/게시판 MVP를 기준으로 UI polish, 빈 상태/로딩/오류 처리, 배포 DB 선택
-- 다음 작업: 봇 등록 CRUD, 입력 검증 강화, 서버 액션/권한 모델 준비
+- 완료: 사용자 계정 생성/로그인/로그아웃, httpOnly 세션 쿠키, 비밀번호 해시 도입
+- 완료: 메시지/게시글/댓글/봇 실행 요청자를 로그인 사용자 기준으로 기록
+- 완료: `/api/health`, Dockerfile, docker compose 기반 MVP 실행 구성 추가
+- 완료: 첫 관리자 생성 후 공개 가입을 막을 수 있는 `ALLOW_PUBLIC_SIGNUP` 옵션 추가
+- 다음 작업: 배포 DB 선택, 운영 환경 변수 정리, 파일 저장소 연결
+- 다음 작업: 봇 등록 CRUD, 입력 검증 강화, 채널별 권한 모델 준비
 
 ### Phase 3: Mattermost 연동
 
@@ -161,8 +183,9 @@ bot_runs
 
 ### Phase 5: 사내 배포
 
+- 배포 DB(PostgreSQL 등) 연결
+- 권한 모델 고도화
 - SSO 또는 Mattermost 계정 연동
-- 권한 모델
 - 파일 저장소 연결
-- Docker 배포 구성
+- Docker 배포 구성 고도화
 - 운영 모니터링

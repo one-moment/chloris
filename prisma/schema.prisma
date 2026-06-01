@@ -30,20 +30,47 @@ model Channel {
   botRuns   BotRun[]
 }
 
+model User {
+  id           String    @id
+  email        String    @unique
+  name         String
+  handle       String    @unique
+  passwordHash String
+  role         String    @default("member")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+  messages     Message[]
+  posts        Post[]
+  comments     Comment[]
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model Message {
   id              String   @id
   channelId       String
+  authorId        String?
   author          String
   body            String
   attachmentsJson String   @default("[]")
   createdAt       DateTime @default(now())
   bot             Boolean  @default(false)
   channel         Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  authorUser      User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
 }
 
 model Post {
   id              String    @id
   channelId       String
+  authorId        String?
   title           String
   body            String
   attachmentsJson String    @default("[]")
@@ -52,16 +79,19 @@ model Post {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   channel         Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  authorUser      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
   comments        Comment[]
 }
 
 model Comment {
   id        String   @id
   postId    String
+  authorId  String?
   author    String
   body      String
   createdAt DateTime @default(now())
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorUser User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
 }
 
 model File {

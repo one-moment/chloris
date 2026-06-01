@@ -8,6 +8,8 @@ export default function ProjectSidebar({
   onSelectChannel,
   onNewProject,
   onNewChannel,
+  currentUser,
+  onLogout,
   isOpen = false,
   onClose
 }) {
@@ -29,12 +31,20 @@ export default function ProjectSidebar({
       <div className="workspace-header">
         <div>
           <strong>{project.name}</strong>
-          <span>captain@1moment.co.kr</span>
+          <span>{currentUser?.email}</span>
         </div>
         <div className="sidebar-header-actions">
           <button className="icon-button" onClick={onNewProject} aria-label="프로젝트 생성">+</button>
           <button className="icon-button sidebar-close-button" onClick={onClose} aria-label="채널 패널 닫기">×</button>
         </div>
+      </div>
+
+      <div className="user-card">
+        <div>
+          <strong>{currentUser?.name}</strong>
+          <span>{currentUser?.handle} · {currentUser?.role === "admin" ? "관리자" : "멤버"}</span>
+        </div>
+        <button className="ghost-button" type="button" onClick={onLogout}>로그아웃</button>
       </div>
 
       <div className="project-switcher">

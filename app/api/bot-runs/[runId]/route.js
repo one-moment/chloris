@@ -1,3 +1,4 @@
+import { requireCurrentUser } from "../../../../lib/auth";
 import { createFileRecord, findChannelContext, notFound, readState, updateBotRunForAction, updateState } from "../../../../lib/serverState";
 
 function findRunContext(state, runId) {
@@ -11,6 +12,9 @@ function findRunContext(state, runId) {
 }
 
 export async function GET(_request, { params }) {
+  const user = await requireCurrentUser();
+  if (!user) return Response.json({ error: "Authentication required." }, { status: 401 });
+
   const { runId } = await params;
   const context = findRunContext(await readState(), runId);
   if (!context) return notFound("Bot run not found.");
@@ -19,6 +23,9 @@ export async function GET(_request, { params }) {
 }
 
 export async function PATCH(request, { params }) {
+  const user = await requireCurrentUser();
+  if (!user) return Response.json({ error: "Authentication required." }, { status: 401 });
+
   const { runId } = await params;
   const { action } = await request.json();
 

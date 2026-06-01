@@ -28,6 +28,101 @@
   grid-template-columns: 292px minmax(0, 1fr);
 }
 
+.loading-shell,
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  padding: 24px;
+}
+
+.auth-card {
+  width: min(430px, 100%);
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+.auth-heading {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-heading span,
+.auth-card label,
+.user-card span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.auth-heading h1 {
+  font-size: 24px;
+}
+
+.auth-heading p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  border-radius: var(--radius);
+  background: var(--surface-subtle);
+  padding: 4px;
+}
+
+.auth-tabs button {
+  height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.auth-tabs button.active {
+  background: var(--surface);
+  color: var(--blue);
+  box-shadow: 0 1px 5px rgba(31, 41, 51, 0.12);
+}
+
+.auth-card label {
+  display: grid;
+  gap: 7px;
+}
+
+.auth-card input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0 12px;
+  color: var(--text);
+}
+
+.auth-error {
+  border: 1px solid #fecdd3;
+  border-radius: var(--radius);
+  background: #fff1f2;
+  color: var(--danger);
+  padding: 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.auth-submit {
+  width: 100%;
+}
+
 .main-area {
   min-width: 0;
   display: flex;
@@ -141,6 +236,27 @@
 .sidebar-close-button,
 .sidebar-backdrop {
   display: none;
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-subtle);
+  padding: 10px;
+}
+
+.user-card strong,
+.user-card span {
+  display: block;
+}
+
+.user-card span {
+  margin-top: 3px;
 }
 
 .project-pill,

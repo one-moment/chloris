@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import AuthScreen from "../components/AuthScreen";
 import AutomationPanel from "../components/AutomationPanel";
 import FilesView from "../components/FilesView";
 import IdeasView from "../components/IdeasView";
 import MessagesView from "../components/MessagesView";
 import ProjectSidebar from "../components/ProjectSidebar";
 import Topbar from "../components/Topbar";
-import { CURRENT_USER, STORAGE_KEY } from "../lib/constants";
 import { createInitialState } from "../lib/initialData";
 
 const MAX_ATTACHMENT_SIZE = 1_500_000;
@@ -28,10 +28,16 @@ export default function Home() {
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [showChannelDialog, setShowChannelDialog] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [authLoaded, setAuthLoaded] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [authError, setAuthError] = useState("");
+  const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
 
   async function requestJson(url, options = {}) {
     const response = await fetch(url, {
       ...options,
+      credentials: "same-origin",
       headers: {
         "Content-Type": "application/json",
         ...(options.headers ?? {})
@@ -61,6 +67,7 @@ export default function Home() {
         preferredSelection.channelId ?? state.selectedChannelId
       );
       setState(nextState);
+      setUsers(serverState.users ?? []);
       setStateLoaded(true);
       return nextState;
     }
@@ -114,41 +121,38 @@ export default function Home() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadState() {
+    async function loadSession() {
       try {
-        const serverState = await requestJson("/api/state");
-        if (!cancelled && serverState?.projects?.[0]?.channels) {
-          setState(serverState);
+        const session = await requestJson("/api/auth/me");
+        if (cancelled) return;
+        setCurrentUser(session.currentUser);
+        setUsers(session.users ?? []);
+        setAuthLoaded(true);
+
+        if (session.currentUser) {
+          const serverState = await requestJson("/api/state");
+          if (!cancelled && serverState?.projects?.[0]?.channels) {
+            setState(serverState);
+            setUsers(serverState.users ?? []);
+            setStateLoaded(true);
+          }
+        } else {
           setStateLoaded(true);
-          return;
         }
-      } catch {
-        const saved = window.localStorage.getItem(STORAGE_KEY);
-        if (!saved) {
+      } catch (error) {
+        console.error(error);
+        if (!cancelled) {
+          setAuthLoaded(true);
           setStateLoaded(true);
-          return;
-        }
-        try {
-          const parsed = JSON.parse(saved);
-          if (!cancelled && parsed?.projects?.[0]?.channels) setState(parsed);
-        } catch {
-          window.localStorage.removeItem(STORAGE_KEY);
         }
       }
-
-      if (!cancelled) setStateLoaded(true);
     }
 
-    loadState();
+    loadSession();
     return () => {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (!stateLoaded) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state, stateLoaded]);
 
   const project = useMemo(
     () => state.projects.find((item) => item.id === state.selectedProjectId) ?? state.projects[0],
@@ -167,13 +171,15 @@ export default function Home() {
 
   const filteredPosts = useMemo(() => {
     if (activeFilter === "mentions") {
+      const mention = currentUser?.handle;
+      if (!mention) return [];
       return channel.posts.filter(
-        (post) => post.body.includes(CURRENT_USER) || (post.comments ?? []).some((comment) => comment.body.includes(CURRENT_USER))
+        (post) => post.title.includes(mention) || post.body.includes(mention) || (post.comments ?? []).some((comment) => comment.body.includes(mention))
       );
     }
     if (activeFilter === "open") return channel.posts.filter((post) => post.status !== "완료");
     return channel.posts;
-  }, [activeFilter, channel.posts]);
+  }, [activeFilter, channel.posts, currentUser?.handle]);
 
   const counts = useMemo(
     () => ({
@@ -201,6 +207,37 @@ export default function Home() {
     setState((current) => ({ ...current, selectedChannelId: channelId }));
     setActiveTab("ideas");
     setActiveFilter("all");
+  }
+
+  async function authenticate(url, body) {
+    setAuthError("");
+    setIsAuthSubmitting(true);
+    try {
+      const result = await requestJson(url, {
+        method: "POST",
+        body: JSON.stringify(body)
+      });
+      setCurrentUser(result.user);
+      const session = await requestJson("/api/auth/me");
+      setUsers(session.users ?? []);
+      setAuthLoaded(true);
+      await refreshState();
+    } catch (error) {
+      setAuthError(error.message);
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  }
+
+  async function logout() {
+    try {
+      await requestJson("/api/auth/logout", { method: "POST" });
+    } catch (error) {
+      console.error(error);
+    }
+    setCurrentUser(null);
+    setUsers([]);
+    setStateLoaded(true);
   }
 
   async function createProject(event) {
@@ -253,7 +290,6 @@ export default function Home() {
     try {
       await mutateAndRefresh(`/api/channels/${channel.id}/messages`, {
         body,
-        author: "captain",
         attachments: messageAttachments
       }, "POST", {
         projectId: state.selectedProjectId,
@@ -280,7 +316,6 @@ export default function Home() {
           title,
           body,
           status: postDraft.status,
-          author: "captain",
           attachments: postAttachments
         },
         "POST",
@@ -312,7 +347,7 @@ export default function Home() {
     const body = commentDrafts[postId]?.trim();
     if (!body) return;
     try {
-      await mutateAndRefresh(`/api/posts/${postId}/comments`, { body, author: "captain" }, "POST", {
+      await mutateAndRefresh(`/api/posts/${postId}/comments`, { body }, "POST", {
         projectId: state.selectedProjectId,
         channelId: channel.id
       });
@@ -349,8 +384,7 @@ export default function Home() {
       await mutateAndRefresh(
         `/api/channels/${channel.id}/bot-runs`,
         {
-          botId: bot.id,
-          requester: "@captain"
+          botId: bot.id
         },
         "POST",
         {
@@ -397,6 +431,16 @@ export default function Home() {
   }
 
   return (
+    !authLoaded || !stateLoaded ? (
+      <main className="loading-shell">불러오는 중...</main>
+    ) : !currentUser ? (
+      <AuthScreen
+        onLogin={(form) => authenticate("/api/auth/login", form)}
+        onRegister={(form) => authenticate("/api/auth/register", form)}
+        error={authError}
+        isSubmitting={isAuthSubmitting}
+      />
+    ) : (
     <main className="app-shell">
       <ProjectSidebar
         projects={state.projects}
@@ -406,6 +450,8 @@ export default function Home() {
         onSelectChannel={selectChannel}
         onNewProject={() => setShowProjectDialog(true)}
         onNewChannel={() => setShowChannelDialog(true)}
+        currentUser={currentUser}
+        onLogout={logout}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
@@ -436,6 +482,7 @@ export default function Home() {
             <IdeasView
               channel={channel}
               posts={filteredPosts}
+              users={users}
               counts={counts}
               activeFilter={activeFilter}
               onFilterChange={setActiveFilter}
@@ -498,5 +545,6 @@ export default function Home() {
         </div>
       )}
     </main>
+    )
   );
 }

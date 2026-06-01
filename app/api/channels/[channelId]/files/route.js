@@ -1,6 +1,10 @@
+import { requireCurrentUser } from "../../../../../lib/auth";
 import { badRequest, createFileRecord, findChannelContext, notFound, updateState } from "../../../../../lib/serverState";
 
 export async function POST(request, { params }) {
+  const user = await requireCurrentUser();
+  if (!user) return Response.json({ error: "Authentication required." }, { status: 401 });
+
   const { channelId } = await params;
   const { name, source } = await request.json();
   const trimmedName = name?.trim();

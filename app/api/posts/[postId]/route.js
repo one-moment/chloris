@@ -1,8 +1,12 @@
+import { requireCurrentUser } from "../../../../lib/auth";
 import { badRequest, findPostContext, notFound, updateState } from "../../../../lib/serverState";
 
 const ALLOWED_STATUSES = new Set(["검토중", "진행중", "완료"]);
 
 export async function PATCH(request, { params }) {
+  const user = await requireCurrentUser();
+  if (!user) return Response.json({ error: "Authentication required." }, { status: 401 });
+
   const { postId } = await params;
   const { status } = await request.json();
   if (!ALLOWED_STATUSES.has(status)) return badRequest("Invalid post status.");
