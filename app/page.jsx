@@ -43,8 +43,16 @@ export default function Home() {
         ...(options.headers ?? {})
       }
     });
-    const data = await response.json().catch(() => null);
-    if (!response.ok) throw new Error(data?.error ?? "API request failed");
+    const text = await response.text();
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+    if (!response.ok) {
+      throw new Error(data?.error ?? `API request failed (${response.status})`);
+    }
     return data;
   }, []);
 
@@ -271,10 +279,16 @@ export default function Home() {
         body: JSON.stringify(body)
       });
       setCurrentUser(result.user);
-      const session = await requestJson("/api/auth/me");
-      setUsers(session.users ?? []);
       setAuthLoaded(true);
-      await refreshState();
+      try {
+        const session = await requestJson("/api/auth/me");
+        setUsers(session.users ?? []);
+        await refreshState();
+      } catch (sessionError) {
+        console.error(sessionError);
+        setStateLoaded(true);
+        setAuthError("계정은 생성됐지만 화면 데이터를 불러오지 못했습니다. 새로고침 후 다시 확인해주세요.");
+      }
     } catch (error) {
       setAuthError(error.message);
     } finally {
