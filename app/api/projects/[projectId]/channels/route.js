@@ -1,5 +1,6 @@
 import { requireCurrentUser } from "../../../../../lib/auth";
-import { badRequest, createChannelRecord, findProject, notFound, readState, updateState } from "../../../../../lib/serverState";
+import { badRequest, createChannelRecord, findProject, notFound, readState } from "../../../../../lib/serverState";
+import { prisma } from "../../../../../lib/prisma";
 
 export async function GET(_request, { params }) {
   const user = await requireCurrentUser();
@@ -21,17 +22,28 @@ export async function POST(request, { params }) {
   const trimmedName = name?.trim();
   if (!trimmedName) return badRequest("Channel name is required.");
 
-  const created = await updateState((state) => {
-    const project = findProject(state, projectId);
-    if (!project) return null;
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
+  if (!project) return notFound("Project not found.");
 
-    const channel = createChannelRecord({ name: trimmedName, type });
-    project.channels.push(channel);
-    state.selectedProjectId = project.id;
-    state.selectedChannelId = channel.id;
-    return channel;
+  const channel = createChannelRecord({ name: trimmedName, type });
+  await prisma.channel.create({
+    data: {
+      id: channel.id,
+      projectId,
+      name: channel.name,
+      type: channel.type,
+      messages: {
+        create: channel.messages.map((message) => ({
+          id: message.id,
+          authorId: message.authorId,
+          author: message.author,
+          body: message.body,
+          attachmentsJson: JSON.stringify(message.attachments ?? []),
+          bot: Boolean(message.bot)
+        }))
+      }
+    }
   });
 
-  if (!created) return notFound("Project not found.");
-  return Response.json(created, { status: 201 });
+  return Response.json(channel, { status: 201 });
 }

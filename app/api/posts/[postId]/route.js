@@ -1,5 +1,6 @@
 import { requireCurrentUser } from "../../../../lib/auth";
-import { badRequest, findPostContext, notFound, updateState } from "../../../../lib/serverState";
+import { badRequest, notFound, serializePost } from "../../../../lib/serverState";
+import { prisma } from "../../../../lib/prisma";
 
 const ALLOWED_STATUSES = new Set(["검토중", "진행중", "완료"]);
 
@@ -11,14 +12,14 @@ export async function PATCH(request, { params }) {
   const { status } = await request.json();
   if (!ALLOWED_STATUSES.has(status)) return badRequest("Invalid post status.");
 
-  const updated = await updateState((state) => {
-    const context = findPostContext(state, postId);
-    if (!context) return null;
+  const existing = await prisma.post.findUnique({ where: { id: postId }, select: { id: true } });
+  if (!existing) return notFound("Post not found.");
 
-    context.post.status = status;
-    return context.post;
+  const updated = await prisma.post.update({
+    where: { id: postId },
+    data: { status },
+    include: { comments: { orderBy: { createdAt: "asc" } } }
   });
 
-  if (!updated) return notFound("Post not found.");
-  return Response.json(updated);
+  return Response.json(serializePost(updated));
 }

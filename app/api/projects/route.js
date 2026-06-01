@@ -1,5 +1,6 @@
 import { requireCurrentUser } from "../../../lib/auth";
-import { badRequest, createProjectRecord, readState, updateState } from "../../../lib/serverState";
+import { badRequest, createProjectRecord, readState } from "../../../lib/serverState";
+import { prisma } from "../../../lib/prisma";
 
 export async function GET() {
   const user = await requireCurrentUser();
@@ -16,13 +17,32 @@ export async function POST(request) {
   const trimmedName = name?.trim();
   if (!trimmedName) return badRequest("Project name is required.");
 
-  const created = await updateState((state) => {
-    const { project, firstChannel } = createProjectRecord(trimmedName);
-    state.projects.push(project);
-    state.selectedProjectId = project.id;
-    state.selectedChannelId = firstChannel.id;
-    return project;
+  const { project } = createProjectRecord(trimmedName);
+
+  await prisma.project.create({
+    data: {
+      id: project.id,
+      name: project.name,
+      description: project.description,
+      channels: {
+        create: project.channels.map((channel) => ({
+          id: channel.id,
+          name: channel.name,
+          type: channel.type,
+          messages: {
+            create: channel.messages.map((message) => ({
+              id: message.id,
+              authorId: message.authorId,
+              author: message.author,
+              body: message.body,
+              attachmentsJson: JSON.stringify(message.attachments ?? []),
+              bot: Boolean(message.bot)
+            }))
+          }
+        }))
+      }
+    }
   });
 
-  return Response.json(created, { status: 201 });
+  return Response.json(project, { status: 201 });
 }

@@ -1,5 +1,6 @@
 import { requireCurrentUser } from "../../../../../lib/auth";
-import { badRequest, createFileRecord, findChannelContext, notFound, updateState } from "../../../../../lib/serverState";
+import { badRequest, createFileRecord, notFound } from "../../../../../lib/serverState";
+import { prisma } from "../../../../../lib/prisma";
 
 export async function POST(request, { params }) {
   const user = await requireCurrentUser();
@@ -10,15 +11,18 @@ export async function POST(request, { params }) {
   const trimmedName = name?.trim();
   if (!trimmedName) return badRequest("File name is required.");
 
-  const created = await updateState((state) => {
-    const context = findChannelContext(state, channelId);
-    if (!context) return null;
+  const channel = await prisma.channel.findUnique({ where: { id: channelId }, select: { id: true } });
+  if (!channel) return notFound("Channel not found.");
 
-    const file = createFileRecord({ name: trimmedName, source });
-    context.channel.files.unshift(file);
-    return file;
+  const file = createFileRecord({ name: trimmedName, source });
+  await prisma.file.create({
+    data: {
+      id: file.id,
+      channelId,
+      name: file.name,
+      source: file.source
+    }
   });
 
-  if (!created) return notFound("Channel not found.");
-  return Response.json(created, { status: 201 });
+  return Response.json(file, { status: 201 });
 }
