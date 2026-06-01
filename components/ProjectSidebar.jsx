@@ -7,18 +7,34 @@ export default function ProjectSidebar({
   onSelectProject,
   onSelectChannel,
   onNewProject,
-  onNewChannel
+  onNewChannel,
+  isOpen = false,
+  onClose
 }) {
   const project = projects.find((item) => item.id === selectedProjectId) ?? projects[0];
+  const sidebarClassName = isOpen ? "sidebar mobile-open" : "sidebar";
+
+  function handleSelectProject(projectId) {
+    onSelectProject(projectId);
+    onClose?.();
+  }
+
+  function handleSelectChannel(channelId) {
+    onSelectChannel(channelId);
+    onClose?.();
+  }
 
   return (
-    <aside className="sidebar">
+    <aside className={sidebarClassName}>
       <div className="workspace-header">
         <div>
           <strong>{project.name}</strong>
           <span>captain@1moment.co.kr</span>
         </div>
-        <button className="icon-button" onClick={onNewProject} aria-label="프로젝트 생성">+</button>
+        <div className="sidebar-header-actions">
+          <button className="icon-button" onClick={onNewProject} aria-label="프로젝트 생성">+</button>
+          <button className="icon-button sidebar-close-button" onClick={onClose} aria-label="채널 패널 닫기">×</button>
+        </div>
       </div>
 
       <div className="project-switcher">
@@ -26,7 +42,7 @@ export default function ProjectSidebar({
           <button
             key={item.id}
             className={item.id === selectedProjectId ? "project-pill active" : "project-pill"}
-            onClick={() => onSelectProject(item.id)}
+            onClick={() => handleSelectProject(item.id)}
           >
             {item.name}
           </button>
@@ -44,7 +60,7 @@ export default function ProjectSidebar({
             <button
               key={channel.id}
               className={channel.id === selectedChannelId ? "channel-item active" : "channel-item"}
-              onClick={() => onSelectChannel(channel.id)}
+              onClick={() => handleSelectChannel(channel.id)}
             >
               <span className="channel-name"># {channel.name}</span>
               <small>{CHANNEL_TYPES[channel.type]?.label}</small>

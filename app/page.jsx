@@ -10,19 +10,24 @@ import Topbar from "../components/Topbar";
 import { CURRENT_USER, STORAGE_KEY } from "../lib/constants";
 import { createInitialState } from "../lib/initialData";
 
+const MAX_ATTACHMENT_SIZE = 1_500_000;
+
 export default function Home() {
   const [state, setState] = useState(createInitialState);
   const [stateLoaded, setStateLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState("ideas");
   const [activeFilter, setActiveFilter] = useState("all");
   const [postDraft, setPostDraft] = useState({ title: "", body: "", status: "검토중" });
+  const [postAttachments, setPostAttachments] = useState([]);
   const [messageDraft, setMessageDraft] = useState("");
+  const [messageAttachments, setMessageAttachments] = useState([]);
   const [commentDrafts, setCommentDrafts] = useState({});
   const [fileDraft, setFileDraft] = useState({ name: "", source: "수동 추가" });
   const [projectDraft, setProjectDraft] = useState("");
   const [channelDraft, setChannelDraft] = useState({ name: "", type: "general" });
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [showChannelDialog, setShowChannelDialog] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   async function requestJson(url, options = {}) {
     const response = await fetch(url, {
@@ -37,22 +42,73 @@ export default function Home() {
     return data;
   }
 
-  async function refreshState() {
+  function withSelection(serverState, preferredProjectId, preferredChannelId) {
+    const selectedProject = serverState.projects.find((item) => item.id === preferredProjectId) ?? serverState.projects[0];
+    const selectedChannel = selectedProject?.channels.find((item) => item.id === preferredChannelId) ?? selectedProject?.channels[0];
+    return {
+      ...serverState,
+      selectedProjectId: selectedProject?.id,
+      selectedChannelId: selectedChannel?.id
+    };
+  }
+
+  async function refreshState(preferredSelection = {}) {
     const serverState = await requestJson("/api/state");
     if (serverState?.projects?.[0]?.channels) {
-      setState(serverState);
+      const nextState = withSelection(
+        serverState,
+        preferredSelection.projectId ?? state.selectedProjectId,
+        preferredSelection.channelId ?? state.selectedChannelId
+      );
+      setState(nextState);
       setStateLoaded(true);
+      return nextState;
     }
     return serverState;
   }
 
-  async function mutateAndRefresh(url, body, method = "POST") {
+  async function mutateAndRefresh(url, body, method = "POST", preferredSelection) {
     const result = await requestJson(url, {
       method,
       body: JSON.stringify(body)
     });
-    await refreshState();
+    await refreshState(preferredSelection);
     return result;
+  }
+
+  async function filesToAttachments(fileList) {
+    const files = Array.from(fileList ?? []);
+    const validFiles = files.filter((file) => file.size <= MAX_ATTACHMENT_SIZE);
+    if (validFiles.length !== files.length) {
+      window.alert("1.5MB 이하 파일만 첨부할 수 있습니다.");
+    }
+
+    return Promise.all(validFiles.map((file) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({
+        id: `attachment-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name: file.name,
+        type: file.type || "application/octet-stream",
+        size: file.size,
+        dataUrl: reader.result
+      });
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    })));
+  }
+
+  async function addMessageAttachments(fileList) {
+    const attachments = await filesToAttachments(fileList);
+    setMessageAttachments((current) => [...current, ...attachments]);
+  }
+
+  async function addPostAttachments(fileList) {
+    const attachments = await filesToAttachments(fileList);
+    setPostAttachments((current) => [...current, ...attachments]);
+  }
+
+  function removeAttachment(setter, index) {
+    setter((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
   useEffect(() => {
@@ -138,11 +194,13 @@ export default function Home() {
       };
     });
     setActiveTab("ideas");
+    setActiveFilter("all");
   }
 
   function selectChannel(channelId) {
     setState((current) => ({ ...current, selectedChannelId: channelId }));
     setActiveTab("ideas");
+    setActiveFilter("all");
   }
 
   async function createProject(event) {
@@ -150,7 +208,14 @@ export default function Home() {
     const name = projectDraft.trim();
     if (!name) return;
     try {
-      await mutateAndRefresh("/api/projects", { name });
+      const created = await mutateAndRefresh("/api/projects", { name }, "POST", {
+        projectId: null,
+        channelId: null
+      });
+      await refreshState({
+        projectId: created.id,
+        channelId: created.channels?.[0]?.id
+      });
       setProjectDraft("");
       setShowProjectDialog(false);
       setActiveTab("ideas");
@@ -164,9 +229,15 @@ export default function Home() {
     const name = channelDraft.name.trim();
     if (!name) return;
     try {
-      await mutateAndRefresh(`/api/projects/${state.selectedProjectId}/channels`, {
+      const created = await mutateAndRefresh(`/api/projects/${state.selectedProjectId}/channels`, {
         name,
         type: channelDraft.type
+      }, "POST", {
+        projectId: state.selectedProjectId
+      });
+      await refreshState({
+        projectId: state.selectedProjectId,
+        channelId: created.id
       });
       setChannelDraft({ name: "", type: "general" });
       setShowChannelDialog(false);
@@ -178,23 +249,49 @@ export default function Home() {
 
   async function sendMessage() {
     const body = messageDraft.trim();
-    if (!body) return;
+    if (!body && messageAttachments.length === 0) return;
     try {
-      await mutateAndRefresh(`/api/channels/${channel.id}/messages`, { body, author: "captain" });
+      await mutateAndRefresh(`/api/channels/${channel.id}/messages`, {
+        body,
+        author: "captain",
+        attachments: messageAttachments
+      }, "POST", {
+        projectId: state.selectedProjectId,
+        channelId: channel.id
+      });
       setMessageDraft("");
+      setMessageAttachments([]);
     } catch (error) {
       console.error(error);
     }
   }
 
   async function createPost() {
-    if (!postDraft.title.trim() || !postDraft.body.trim()) return;
+    const title = postDraft.title.trim()
+      || postDraft.body.trim().slice(0, 40)
+      || postAttachments[0]?.name
+      || "";
+    const body = postDraft.body.trim();
+    if (!title && !body && postAttachments.length === 0) return;
     try {
-      await mutateAndRefresh(`/api/channels/${channel.id}/posts`, {
-        ...postDraft,
-        author: "captain"
-      });
+      await mutateAndRefresh(
+        `/api/channels/${channel.id}/posts`,
+        {
+          title,
+          body,
+          status: postDraft.status,
+          author: "captain",
+          attachments: postAttachments
+        },
+        "POST",
+        {
+          projectId: state.selectedProjectId,
+          channelId: channel.id
+        }
+      );
       setPostDraft({ title: "", body: "", status: "검토중" });
+      setPostAttachments([]);
+      setActiveFilter("all");
     } catch (error) {
       console.error(error);
     }
@@ -202,7 +299,10 @@ export default function Home() {
 
   async function changePostStatus(postId, status) {
     try {
-      await mutateAndRefresh(`/api/posts/${postId}`, { status }, "PATCH");
+      await mutateAndRefresh(`/api/posts/${postId}`, { status }, "PATCH", {
+        projectId: state.selectedProjectId,
+        channelId: channel.id
+      });
     } catch (error) {
       console.error(error);
     }
@@ -212,7 +312,10 @@ export default function Home() {
     const body = commentDrafts[postId]?.trim();
     if (!body) return;
     try {
-      await mutateAndRefresh(`/api/posts/${postId}/comments`, { body, author: "captain" });
+      await mutateAndRefresh(`/api/posts/${postId}/comments`, { body, author: "captain" }, "POST", {
+        projectId: state.selectedProjectId,
+        channelId: channel.id
+      });
       setCommentDrafts((current) => ({ ...current, [postId]: "" }));
     } catch (error) {
       console.error(error);
@@ -223,10 +326,18 @@ export default function Home() {
     const name = fileDraft.name.trim();
     if (!name) return;
     try {
-      await mutateAndRefresh(`/api/channels/${channel.id}/files`, {
-        name,
-        source: fileDraft.source || "수동 추가"
-      });
+      await mutateAndRefresh(
+        `/api/channels/${channel.id}/files`,
+        {
+          name,
+          source: fileDraft.source || "수동 추가"
+        },
+        "POST",
+        {
+          projectId: state.selectedProjectId,
+          channelId: channel.id
+        }
+      );
       setFileDraft({ name: "", source: "수동 추가" });
     } catch (error) {
       console.error(error);
@@ -235,10 +346,18 @@ export default function Home() {
 
   async function runBot(bot) {
     try {
-      await mutateAndRefresh(`/api/channels/${channel.id}/bot-runs`, {
-        botId: bot.id,
-        requester: "@captain"
-      });
+      await mutateAndRefresh(
+        `/api/channels/${channel.id}/bot-runs`,
+        {
+          botId: bot.id,
+          requester: "@captain"
+        },
+        "POST",
+        {
+          projectId: state.selectedProjectId,
+          channelId: channel.id
+        }
+      );
     } catch (error) {
       console.error(error);
     }
@@ -246,7 +365,10 @@ export default function Home() {
 
   async function completeRun(runId) {
     try {
-      await mutateAndRefresh(`/api/bot-runs/${runId}`, { action: "complete" }, "PATCH");
+      await mutateAndRefresh(`/api/bot-runs/${runId}`, { action: "complete" }, "PATCH", {
+        projectId: state.selectedProjectId,
+        channelId: channel.id
+      });
     } catch (error) {
       console.error(error);
     }
@@ -254,7 +376,10 @@ export default function Home() {
 
   async function approveRun(runId) {
     try {
-      await mutateAndRefresh(`/api/bot-runs/${runId}`, { action: "approve" }, "PATCH");
+      await mutateAndRefresh(`/api/bot-runs/${runId}`, { action: "approve" }, "PATCH", {
+        projectId: state.selectedProjectId,
+        channelId: channel.id
+      });
     } catch (error) {
       console.error(error);
     }
@@ -262,7 +387,10 @@ export default function Home() {
 
   async function rejectRun(runId) {
     try {
-      await mutateAndRefresh(`/api/bot-runs/${runId}`, { action: "reject" }, "PATCH");
+      await mutateAndRefresh(`/api/bot-runs/${runId}`, { action: "reject" }, "PATCH", {
+        projectId: state.selectedProjectId,
+        channelId: channel.id
+      });
     } catch (error) {
       console.error(error);
     }
@@ -278,14 +406,31 @@ export default function Home() {
         onSelectChannel={selectChannel}
         onNewProject={() => setShowProjectDialog(true)}
         onNewChannel={() => setShowChannelDialog(true)}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
+      {isSidebarOpen && <button className="sidebar-backdrop" type="button" onClick={() => setIsSidebarOpen(false)} aria-label="채널 패널 닫기" />}
 
       <section className="main-area">
-        <Topbar project={project} channel={channel} activeTab={activeTab} onTabChange={setActiveTab} />
+        <Topbar
+          project={project}
+          channel={channel}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onToggleSidebar={() => setIsSidebarOpen(true)}
+        />
 
         <div className="work-surface">
           {activeTab === "messages" && (
-            <MessagesView channel={channel} draft={messageDraft} onDraftChange={setMessageDraft} onSend={sendMessage} />
+            <MessagesView
+              channel={channel}
+              draft={messageDraft}
+              attachments={messageAttachments}
+              onDraftChange={setMessageDraft}
+              onAttachmentsChange={addMessageAttachments}
+              onRemoveAttachment={(index) => removeAttachment(setMessageAttachments, index)}
+              onSend={sendMessage}
+            />
           )}
           {activeTab === "ideas" && (
             <IdeasView
@@ -296,6 +441,9 @@ export default function Home() {
               onFilterChange={setActiveFilter}
               draft={postDraft}
               onDraftChange={setPostDraft}
+              attachments={postAttachments}
+              onAttachmentsChange={addPostAttachments}
+              onRemoveAttachment={(index) => removeAttachment(setPostAttachments, index)}
               onCreatePost={createPost}
               commentDrafts={commentDrafts}
               onCommentDraftChange={(postId, value) => setCommentDrafts((current) => ({ ...current, [postId]: value }))}

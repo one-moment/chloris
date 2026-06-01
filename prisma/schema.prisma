@@ -31,26 +31,28 @@ model Channel {
 }
 
 model Message {
-  id        String   @id
-  channelId String
-  author    String
-  body      String
-  createdAt DateTime @default(now())
-  bot       Boolean  @default(false)
-  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  id              String   @id
+  channelId       String
+  author          String
+  body            String
+  attachmentsJson String   @default("[]")
+  createdAt       DateTime @default(now())
+  bot             Boolean  @default(false)
+  channel         Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
 }
 
 model Post {
-  id        String    @id
-  channelId String
-  title     String
-  body      String
-  author    String
-  status    String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  channel   Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  comments  Comment[]
+  id              String    @id
+  channelId       String
+  title           String
+  body            String
+  attachmentsJson String    @default("[]")
+  author          String
+  status          String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  channel         Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  comments        Comment[]
 }
 
 model Comment {

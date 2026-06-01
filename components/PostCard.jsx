@@ -1,4 +1,5 @@
 import { POST_STATUSES } from "../lib/constants";
+import AttachmentList from "./AttachmentList";
 
 export default function PostCard({ post, commentDraft, onStatusChange, onCommentDraftChange, onAddComment }) {
   return (
@@ -14,6 +15,7 @@ export default function PostCard({ post, commentDraft, onStatusChange, onComment
       </div>
 
       <p className="post-body">{post.body}</p>
+      <AttachmentList attachments={post.attachments} />
 
       <div className="comment-list">
         {(post.comments ?? []).map((comment) => (

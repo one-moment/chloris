@@ -2,15 +2,15 @@ import { badRequest, createMessageRecord, findChannelContext, notFound, updateSt
 
 export async function POST(request, { params }) {
   const { channelId } = await params;
-  const { body, author, bot } = await request.json();
-  const trimmedBody = body?.trim();
-  if (!trimmedBody) return badRequest("Message body is required.");
+  const { body, author, bot, attachments = [] } = await request.json();
+  const trimmedBody = body?.trim() ?? "";
+  if (!trimmedBody && attachments.length === 0) return badRequest("Message body or attachment is required.");
 
   const created = await updateState((state) => {
     const context = findChannelContext(state, channelId);
     if (!context) return null;
 
-    const message = createMessageRecord({ body: trimmedBody, author, bot });
+    const message = createMessageRecord({ body: trimmedBody, author, bot, attachments });
     context.channel.messages.unshift(message);
     return message;
   });
