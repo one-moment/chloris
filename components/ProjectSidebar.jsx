@@ -6,6 +6,7 @@ export default function ProjectSidebar({
   selectedChannelId,
   onSelectProject,
   onSelectChannel,
+  onDeleteChannel,
   onNewProject,
   onNewChannel,
   currentUser,
@@ -67,14 +68,29 @@ export default function ProjectSidebar({
 
         <nav className="channel-list">
           {project.channels.map((channel) => (
-            <button
+            <div
               key={channel.id}
-              className={channel.id === selectedChannelId ? "channel-item active" : "channel-item"}
-              onClick={() => handleSelectChannel(channel.id)}
+              className={channel.id === selectedChannelId ? "channel-row active" : "channel-row"}
             >
-              <span className="channel-name"># {channel.name}</span>
-              <small>{CHANNEL_TYPES[channel.type]?.label}</small>
-            </button>
+              <button
+                className="channel-item"
+                type="button"
+                onClick={() => handleSelectChannel(channel.id)}
+              >
+                <span className="channel-name"># {channel.name}</span>
+                <small>{CHANNEL_TYPES[channel.type]?.label}</small>
+              </button>
+              <button
+                className="channel-delete-button"
+                type="button"
+                onClick={() => onDeleteChannel(channel.id)}
+                disabled={project.channels.length <= 1}
+                aria-label={`${channel.name} 채널 삭제`}
+                title={project.channels.length <= 1 ? "프로젝트에는 최소 1개 채널이 필요합니다" : "채널 삭제"}
+              >
+                삭제
+              </button>
+            </div>
           ))}
         </nav>
       </div>

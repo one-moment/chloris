@@ -319,6 +319,41 @@ export default function Home() {
     setActiveFilter("all");
   }
 
+  async function deleteChannel(channelId) {
+    const targetChannel = project.channels.find((item) => item.id === channelId);
+    if (!targetChannel || project.channels.length <= 1) return;
+    const confirmed = window.confirm(`${targetChannel.name} 채널을 삭제할까요? 메시지, 게시글, 파일 목록도 함께 삭제됩니다.`);
+    if (!confirmed) return;
+
+    const previousState = state;
+    const remainingChannels = project.channels.filter((item) => item.id !== channelId);
+    const selectedChannelId = channelId === state.selectedChannelId
+      ? remainingChannels[0]?.id
+      : state.selectedChannelId;
+
+    setActionError("");
+    setState((current) => ({
+      ...current,
+      selectedChannelId,
+      projects: current.projects.map((projectItem) => (
+        projectItem.id === project.id ? { ...projectItem, channels: remainingChannels } : projectItem
+      ))
+    }));
+    setActiveFilter("all");
+
+    try {
+      const result = await requestJson(`/api/channels/${channelId}`, { method: "DELETE" });
+      refreshStateInBackground({
+        projectId: result.projectId ?? project.id,
+        channelId: result.selectedChannelId ?? selectedChannelId
+      });
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+      setState(previousState);
+    }
+  }
+
   async function authenticate(url, body) {
     setAuthError("");
     setIsAuthSubmitting(true);
@@ -687,6 +722,7 @@ export default function Home() {
         selectedChannelId={state.selectedChannelId}
         onSelectProject={selectProject}
         onSelectChannel={selectChannel}
+        onDeleteChannel={deleteChannel}
         onNewProject={() => setShowProjectDialog(true)}
         onNewChannel={() => setShowChannelDialog(true)}
         currentUser={currentUser}
@@ -779,6 +815,7 @@ export default function Home() {
               <option value="inbound">입고</option>
               <option value="outbound">출고</option>
               <option value="inventory">재고관리</option>
+              <option value="improvement">개선 건의</option>
             </select>
             <div className="modal-actions">
               <button type="button" onClick={() => setShowChannelDialog(false)}>취소</button>
