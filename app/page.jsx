@@ -19,7 +19,7 @@ function makeClientId(prefix) {
 export default function Home() {
   const [state, setState] = useState(createInitialState);
   const [stateLoaded, setStateLoaded] = useState(false);
-  const [activeTab, setActiveTab] = useState("ideas");
+  const [activeTab, setActiveTab] = useState("messages");
   const [activeFilter, setActiveFilter] = useState("all");
   const [postDraft, setPostDraft] = useState({ title: "", body: "", status: "검토중" });
   const [postAttachments, setPostAttachments] = useState([]);

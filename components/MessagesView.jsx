@@ -2,7 +2,15 @@ import { useEffect, useRef } from "react";
 import { EmptyState } from "./common";
 import AttachmentList from "./AttachmentList";
 
-export default function MessagesView({ channel, currentUser, draft, attachments, error, onDraftChange, onAttachmentsChange, onRemoveAttachment, onSend }) {
+function getInitial(author) {
+  return String(author || "?").trim().slice(0, 1).toUpperCase();
+}
+
+function getAuthorKey(message) {
+  return message.authorId || message.author || "unknown";
+}
+
+export default function MessagesView({ channel, draft, attachments, error, onDraftChange, onAttachmentsChange, onRemoveAttachment, onSend }) {
   const messages = [...channel.messages].reverse();
   const listRef = useRef(null);
 
@@ -24,26 +32,25 @@ export default function MessagesView({ channel, currentUser, draft, attachments,
         {messages.length === 0 ? (
           <EmptyState title="아직 메시지가 없습니다" body="채널 안에서 빠른 대화를 시작해보세요." />
         ) : (
-          messages.map((message) => {
-            const isMine = message.authorId && message.authorId === currentUser?.id;
-            const className = [
-              "chat-message",
-              isMine ? "mine" : "",
-              message.bot ? "bot" : ""
-            ].filter(Boolean).join(" ");
+          messages.map((message, index) => {
+            const previousMessage = messages[index - 1];
+            const isStacked = previousMessage && !message.bot && !previousMessage.bot && getAuthorKey(previousMessage) === getAuthorKey(message);
 
             return (
-              <article key={message.id} className={className}>
-                {!message.bot && !isMine && <div className="chat-avatar">{message.author.slice(0, 1)}</div>}
-                <div className="chat-bubble">
-                  {!message.bot && (
+              <article key={message.id} className={`chat-message${message.bot ? " bot" : ""}${isStacked ? " stacked" : ""}`}>
+                {isStacked ? (
+                  <div className="chat-avatar-spacer" aria-hidden="true" />
+                ) : (
+                  <div className="chat-avatar" aria-hidden="true">{getInitial(message.author)}</div>
+                )}
+                <div className="chat-message-content">
+                  {!isStacked && (
                     <div className="chat-meta">
                       <strong>{message.author}</strong>
                       <span>{message.createdAt}</span>
                     </div>
                   )}
-                  {message.bot && <span className="chat-system-label">{message.author}</span>}
-                  <p>{message.body}</p>
+                  <p className="chat-text">{message.body}</p>
                   <AttachmentList attachments={message.attachments} />
                 </div>
               </article>
