@@ -8,6 +8,7 @@ import IdeasView from "../components/IdeasView";
 import MessagesView from "../components/MessagesView";
 import ProjectSidebar from "../components/ProjectSidebar";
 import Topbar from "../components/Topbar";
+import { getPostStatuses } from "../lib/constants";
 import { createInitialState } from "../lib/initialData";
 
 const MAX_INLINE_ATTACHMENT_SIZE = 1_500_000;
@@ -268,6 +269,16 @@ export default function Home() {
     [state.bots, channel.type]
   );
 
+  const postStatuses = useMemo(() => getPostStatuses(channel), [channel]);
+  const defaultPostStatus = postStatuses[0];
+  const donePostStatus = postStatuses[postStatuses.length - 1];
+
+  useEffect(() => {
+    setPostDraft((current) => (
+      postStatuses.includes(current.status) ? current : { ...current, status: defaultPostStatus }
+    ));
+  }, [defaultPostStatus, postStatuses]);
+
   const filteredPosts = useMemo(() => {
     if (activeFilter === "mentions") {
       const mention = currentUser?.handle;
@@ -276,17 +287,17 @@ export default function Home() {
         (post) => post.title.includes(mention) || post.body.includes(mention) || (post.comments ?? []).some((comment) => comment.body.includes(mention))
       );
     }
-    if (activeFilter === "open") return channel.posts.filter((post) => post.status !== "완료");
+    if (activeFilter === "open") return channel.posts.filter((post) => post.status !== donePostStatus);
     return channel.posts;
-  }, [activeFilter, channel.posts, currentUser?.handle]);
+  }, [activeFilter, channel.posts, currentUser?.handle, donePostStatus]);
 
   const counts = useMemo(
     () => ({
-      review: channel.posts.filter((post) => post.status === "검토중").length,
-      progress: channel.posts.filter((post) => post.status === "진행중").length,
-      done: channel.posts.filter((post) => post.status === "완료").length
+      review: channel.posts.filter((post) => post.status === postStatuses[0]).length,
+      progress: channel.posts.filter((post) => post.status === postStatuses[1]).length,
+      done: channel.posts.filter((post) => post.status === postStatuses[2]).length
     }),
-    [channel.posts]
+    [channel.posts, postStatuses]
   );
 
   function selectProject(projectId) {
@@ -524,7 +535,7 @@ export default function Home() {
       comments: []
     };
     setActionError("");
-    setPostDraft({ title: "", body: "", status: "검토중" });
+    setPostDraft({ title: "", body: "", status: defaultPostStatus });
     setPostAttachments([]);
     setActiveFilter("all");
     updateChannel(channelId, (channelItem) => ({
@@ -715,6 +726,7 @@ export default function Home() {
               users={users}
               counts={counts}
               activeFilter={activeFilter}
+              postStatuses={postStatuses}
               onFilterChange={setActiveFilter}
               draft={postDraft}
               onDraftChange={setPostDraft}

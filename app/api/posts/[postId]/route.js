@@ -1,8 +1,9 @@
 import { requireCurrentUser } from "../../../../lib/auth";
+import { ALL_POST_STATUSES } from "../../../../lib/constants";
 import { badRequest, notFound, serializePost } from "../../../../lib/serverState";
 import { prisma } from "../../../../lib/prisma";
 
-const ALLOWED_STATUSES = new Set(["검토중", "진행중", "완료"]);
+const ALLOWED_STATUSES = new Set(ALL_POST_STATUSES);
 
 export async function PATCH(request, { params }) {
   const user = await requireCurrentUser();

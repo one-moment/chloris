@@ -1,7 +1,8 @@
-import { POST_STATUSES } from "../lib/constants";
 import AttachmentList from "./AttachmentList";
 
-export default function PostCard({ post, commentDraft, onStatusChange, onCommentDraftChange, onAddComment }) {
+export default function PostCard({ post, postStatuses, commentDraft, onStatusChange, onCommentDraftChange, onAddComment }) {
+  const statusOptions = postStatuses.includes(post.status) ? postStatuses : [post.status, ...postStatuses];
+
   return (
     <article className="post-card">
       <div className="post-card-header">
@@ -10,7 +11,7 @@ export default function PostCard({ post, commentDraft, onStatusChange, onComment
           <span>{post.author} · {post.createdAt}</span>
         </div>
         <select className="status-select" value={post.status} onChange={(event) => onStatusChange(post.id, event.target.value)}>
-          {POST_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+          {statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}
         </select>
       </div>
 

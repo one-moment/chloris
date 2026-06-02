@@ -1,4 +1,3 @@
-import { POST_STATUSES } from "../lib/constants";
 import AttachmentList from "./AttachmentList";
 import { EmptyState } from "./common";
 import PostCard from "./PostCard";
@@ -19,7 +18,8 @@ export default function IdeasView({
   commentDrafts,
   onCommentDraftChange,
   onAddComment,
-  onStatusChange
+  onStatusChange,
+  postStatuses
 }) {
   return (
     <section className="content-column">
@@ -37,7 +37,7 @@ export default function IdeasView({
           <label className="field-stack" htmlFor="post-status-select">
             <span>상태</span>
             <select id="post-status-select" value={draft.status} onChange={(event) => onDraftChange({ ...draft, status: event.target.value })}>
-              {POST_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+              {postStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
             </select>
           </label>
         </div>
@@ -65,9 +65,9 @@ export default function IdeasView({
       </div>
 
       <div className="status-summary">
-        <span>검토중 {counts.review}</span>
-        <span>진행중 {counts.progress}</span>
-        <span>완료 {counts.done}</span>
+        <span>{postStatuses[0]} {counts.review}</span>
+        <span>{postStatuses[1]} {counts.progress}</span>
+        <span>{postStatuses[2]} {counts.done}</span>
       </div>
 
       <div className="post-list">
@@ -78,6 +78,7 @@ export default function IdeasView({
             <PostCard
               key={post.id}
               post={post}
+              postStatuses={postStatuses}
               commentDraft={commentDrafts[post.id]}
               onStatusChange={onStatusChange}
               onCommentDraftChange={onCommentDraftChange}
