@@ -698,6 +698,7 @@ export default function Home() {
           {activeTab === "messages" && (
             <MessagesView
               channel={channel}
+              currentUser={currentUser}
               draft={messageDraft}
               attachments={messageAttachments}
               error={actionError}
