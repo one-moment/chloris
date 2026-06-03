@@ -17,6 +17,10 @@ function makeClientId(prefix) {
   return `${prefix}-client-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function isTransientFetchError(error) {
+  return error instanceof TypeError && error.message === "Failed to fetch";
+}
+
 export default function Home() {
   const [state, setState] = useState(createInitialState);
   const [stateLoaded, setStateLoaded] = useState(false);
@@ -237,15 +241,20 @@ export default function Home() {
 
   useEffect(() => {
     if (!currentUser) return undefined;
+    let isRefreshing = false;
 
     const intervalId = window.setInterval(async () => {
+      if (isRefreshing || document.hidden) return;
+      isRefreshing = true;
       try {
         const serverState = await requestJson("/api/state");
         if (!serverState?.projects?.[0]?.channels) return;
         setState((current) => withSelection(serverState, current.selectedProjectId, current.selectedChannelId));
         setUsers(serverState.users ?? []);
       } catch (error) {
-        console.error(error);
+        if (!isTransientFetchError(error)) console.error(error);
+      } finally {
+        isRefreshing = false;
       }
     }, 5000);
 
