@@ -609,6 +609,10 @@
   background: #f6f7f8;
 }
 
+.chat-message.pending {
+  opacity: 0.72;
+}
+
 .chat-message + .chat-message:not(.stacked) {
   margin-top: 8px;
 }
@@ -669,6 +673,10 @@
 
 .chat-message-content .attachment-list {
   margin-top: 8px;
+}
+
+.post-card.pending {
+  opacity: 0.72;
 }
 
 .post-card-header span,

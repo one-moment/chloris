@@ -77,6 +77,8 @@ model Message {
   bot             Boolean  @default(false)
   channel         Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
   authorUser      User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([channelId, createdAt(sort: Desc)], map: "idx_messages_channel_created")
 }
 
 model Post {
@@ -93,6 +95,8 @@ model Post {
   channel         Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
   authorUser      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
   comments        Comment[]
+
+  @@index([channelId, createdAt(sort: Desc)], map: "idx_posts_channel_created")
 }
 
 model Comment {
@@ -104,6 +108,8 @@ model Comment {
   createdAt DateTime @default(now())
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   authorUser User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([postId, createdAt(sort: Asc)], map: "idx_comments_post_created")
 }
 
 model File {

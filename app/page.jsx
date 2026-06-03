@@ -507,45 +507,27 @@ export default function Home() {
     const body = draftBody.trim();
     if (!body && messageAttachments.length === 0) return;
     const channelId = channel.id;
-    const optimisticMessage = {
-      id: makeClientId("msg"),
-      authorId: currentUser.id,
-      author: currentUser.name,
-      body,
-      attachments: messageAttachments,
-      createdAt: "방금 전",
-      bot: false
-    };
+    const attachments = messageAttachments;
     setActionError("");
     setMessageAttachments([]);
-    updateChannel(channelId, (channelItem) => ({
-      ...channelItem,
-      messages: [optimisticMessage, ...channelItem.messages]
-    }));
     try {
       const created = await requestJson(`/api/channels/${channelId}/messages`, {
         method: "POST",
         body: JSON.stringify({
           body,
-          attachments: optimisticMessage.attachments
+          attachments
         })
       });
       updateChannel(channelId, (channelItem) => ({
         ...channelItem,
-        messages: channelItem.messages.map((message) => (
-          message.id === optimisticMessage.id ? created : message
-        ))
+        messages: [created, ...channelItem.messages]
       }));
       refreshStateInBackground({ projectId: state.selectedProjectId, channelId });
       return { ok: true };
     } catch (error) {
       console.error(error);
       setActionError(error.message);
-      updateChannel(channelId, (channelItem) => ({
-        ...channelItem,
-        messages: channelItem.messages.filter((message) => message.id !== optimisticMessage.id)
-      }));
-      setMessageAttachments(optimisticMessage.attachments);
+      setMessageAttachments(attachments);
       return { ok: false };
     }
   }
@@ -558,50 +540,30 @@ export default function Home() {
     const body = draft.body.trim();
     if (!title && !body && postAttachments.length === 0) return;
     const channelId = channel.id;
-    const optimisticPost = {
-      id: makeClientId("post"),
-      title,
-      body,
-      attachments: postAttachments,
-      authorId: currentUser.id,
-      author: currentUser.name,
-      status: draft.status,
-      createdAt: "방금 전",
-      comments: []
-    };
+    const attachments = postAttachments;
     setActionError("");
     setPostAttachments([]);
     setActiveFilter("all");
-    updateChannel(channelId, (channelItem) => ({
-      ...channelItem,
-      posts: [optimisticPost, ...channelItem.posts]
-    }));
     try {
       const created = await requestJson(`/api/channels/${channelId}/posts`, {
         method: "POST",
         body: JSON.stringify({
           title,
           body,
-          status: optimisticPost.status,
-          attachments: optimisticPost.attachments
+          status: draft.status,
+          attachments
         })
       });
       updateChannel(channelId, (channelItem) => ({
         ...channelItem,
-        posts: channelItem.posts.map((post) => (
-          post.id === optimisticPost.id ? created : post
-        ))
+        posts: [created, ...channelItem.posts]
       }));
       refreshStateInBackground({ projectId: state.selectedProjectId, channelId });
       return { ok: true };
     } catch (error) {
       console.error(error);
       setActionError(error.message);
-      updateChannel(channelId, (channelItem) => ({
-        ...channelItem,
-        posts: channelItem.posts.filter((post) => post.id !== optimisticPost.id)
-      }));
-      setPostAttachments(optimisticPost.attachments);
+      setPostAttachments(attachments);
       return { ok: false };
     }
   }
@@ -757,6 +719,7 @@ export default function Home() {
             <IdeasView
               channel={channel}
               posts={filteredPosts}
+              currentUser={currentUser}
               users={users}
               counts={counts}
               activeFilter={activeFilter}

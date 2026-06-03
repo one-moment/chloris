@@ -6,6 +6,7 @@ import PostCard from "./PostCard";
 export default function IdeasView({
   channel,
   posts,
+  currentUser,
   counts,
   activeFilter,
   onFilterChange,
@@ -21,20 +22,41 @@ export default function IdeasView({
   postStatuses
 }) {
   const [draft, setDraft] = useState({ title: "", body: "", status: postStatuses[0] });
+  const [pendingPosts, setPendingPosts] = useState([]);
+  const visiblePosts = [...pendingPosts, ...posts];
 
   useEffect(() => {
     setDraft({ title: "", body: "", status: postStatuses[0] });
+    setPendingPosts([]);
   }, [channel.id, postStatuses]);
 
   async function submitPost() {
+    const title = draft.title.trim()
+      || draft.body.trim().slice(0, 40)
+      || attachments[0]?.name
+      || "";
     const nextDraft = {
-      title: draft.title.trim(),
+      title,
       body: draft.body.trim(),
       status: draft.status
     };
     if (!nextDraft.title && !nextDraft.body && attachments.length === 0) return;
+    const pendingPost = {
+      id: `pending-post-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      title: nextDraft.title,
+      body: nextDraft.body,
+      status: nextDraft.status,
+      author: currentUser?.name ?? "나",
+      createdAt: "전송 중",
+      attachments,
+      comments: [],
+      pending: true
+    };
     setDraft({ title: "", body: "", status: postStatuses[0] });
+    setPendingPosts((current) => [pendingPost, ...current]);
+    onFilterChange("all");
     const result = await onCreatePost(nextDraft);
+    setPendingPosts((current) => current.filter((post) => post.id !== pendingPost.id));
     if (result?.ok === false) setDraft(nextDraft);
   }
 
@@ -88,10 +110,10 @@ export default function IdeasView({
       </div>
 
       <div className="post-list">
-        {posts.length === 0 ? (
+        {visiblePosts.length === 0 ? (
           <EmptyState title="게시글이 없습니다" body="이 채널의 Ideas에 첫 업무 글을 작성해보세요." />
         ) : (
-          posts.map((post) => (
+          visiblePosts.map((post) => (
             <PostCard
               key={post.id}
               post={post}

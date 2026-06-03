@@ -10,8 +10,9 @@ function getAuthorKey(message) {
   return message.authorId || message.author || "unknown";
 }
 
-export default function MessagesView({ channel, attachments, error, onAttachmentsChange, onRemoveAttachment, onSend }) {
-  const messages = [...channel.messages].reverse();
+export default function MessagesView({ channel, currentUser, attachments, error, onAttachmentsChange, onRemoveAttachment, onSend }) {
+  const [pendingMessages, setPendingMessages] = useState([]);
+  const messages = [...pendingMessages, ...channel.messages].reverse();
   const listRef = useRef(null);
   const textareaRef = useRef(null);
   const [hasDraft, setHasDraft] = useState(false);
@@ -27,6 +28,7 @@ export default function MessagesView({ channel, attachments, error, onAttachment
     if (!textarea) return;
     textarea.value = "";
     setHasDraft(false);
+    setPendingMessages([]);
   }, [channel.id]);
 
   function updateHasDraft(event) {
@@ -38,9 +40,21 @@ export default function MessagesView({ channel, attachments, error, onAttachment
     const textarea = textareaRef.current;
     const body = textarea?.value.trim() ?? "";
     if (!body && attachments.length === 0) return;
+    const pendingMessage = {
+      id: `pending-message-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      authorId: currentUser?.id,
+      author: currentUser?.name ?? "나",
+      body,
+      attachments,
+      createdAt: "전송 중",
+      bot: false,
+      pending: true
+    };
     if (textarea) textarea.value = "";
     setHasDraft(false);
+    setPendingMessages((current) => [pendingMessage, ...current]);
     const result = await onSend(body);
+    setPendingMessages((current) => current.filter((message) => message.id !== pendingMessage.id));
     if (result?.ok === false && textarea) {
       textarea.value = body;
       setHasDraft(Boolean(body));
@@ -65,7 +79,7 @@ export default function MessagesView({ channel, attachments, error, onAttachment
             const isStacked = previousMessage && !message.bot && !previousMessage.bot && getAuthorKey(previousMessage) === getAuthorKey(message);
 
             return (
-              <article key={message.id} className={`chat-message${message.bot ? " bot" : ""}${isStacked ? " stacked" : ""}`}>
+              <article key={message.id} className={`chat-message${message.bot ? " bot" : ""}${isStacked ? " stacked" : ""}${message.pending ? " pending" : ""}`}>
                 {isStacked ? (
                   <div className="chat-avatar-spacer" aria-hidden="true" />
                 ) : (
