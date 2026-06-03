@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import AttachmentList from "./AttachmentList";
 import { EmptyState } from "./common";
 import PostCard from "./PostCard";
@@ -8,8 +9,6 @@ export default function IdeasView({
   counts,
   activeFilter,
   onFilterChange,
-  draft,
-  onDraftChange,
   attachments,
   error,
   onAttachmentsChange,
@@ -21,6 +20,24 @@ export default function IdeasView({
   onStatusChange,
   postStatuses
 }) {
+  const [draft, setDraft] = useState({ title: "", body: "", status: postStatuses[0] });
+
+  useEffect(() => {
+    setDraft({ title: "", body: "", status: postStatuses[0] });
+  }, [channel.id, postStatuses]);
+
+  async function submitPost() {
+    const nextDraft = {
+      title: draft.title.trim(),
+      body: draft.body.trim(),
+      status: draft.status
+    };
+    if (!nextDraft.title && !nextDraft.body && attachments.length === 0) return;
+    setDraft({ title: "", body: "", status: postStatuses[0] });
+    const result = await onCreatePost(nextDraft);
+    if (result?.ok === false) setDraft(nextDraft);
+  }
+
   return (
     <section className="content-column">
       <div className="composer">
@@ -30,20 +47,20 @@ export default function IdeasView({
             <input
               id="post-title-input"
               value={draft.title}
-              onChange={(event) => onDraftChange({ ...draft, title: event.target.value })}
+              onChange={(event) => setDraft({ ...draft, title: event.target.value })}
               placeholder={`${channel.name}에 올릴 제목`}
             />
           </label>
           <label className="field-stack" htmlFor="post-status-select">
             <span>상태</span>
-            <select id="post-status-select" value={draft.status} onChange={(event) => onDraftChange({ ...draft, status: event.target.value })}>
+            <select id="post-status-select" value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}>
               {postStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
             </select>
           </label>
         </div>
         <textarea
           value={draft.body}
-          onChange={(event) => onDraftChange({ ...draft, body: event.target.value })}
+          onChange={(event) => setDraft({ ...draft, body: event.target.value })}
           placeholder="업무 요청, 공유사항, 자동화봇에 전달할 내용을 작성하세요. @멘션을 사용할 수 있습니다."
         />
         <AttachmentList attachments={attachments} onRemove={onRemoveAttachment} />
@@ -58,7 +75,7 @@ export default function IdeasView({
               파일 첨부
               <input type="file" multiple onChange={(event) => onAttachmentsChange(event.target.files)} />
             </label>
-            <button className="primary-button" type="button" onClick={onCreatePost} disabled={!draft.title.trim() && !draft.body.trim() && attachments.length === 0}>Post</button>
+            <button className="primary-button" type="button" onClick={submitPost} disabled={!draft.title.trim() && !draft.body.trim() && attachments.length === 0}>Post</button>
           </div>
         </div>
         {error && <p className="action-error">{error}</p>}

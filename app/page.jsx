@@ -22,9 +22,7 @@ export default function Home() {
   const [stateLoaded, setStateLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState("messages");
   const [activeFilter, setActiveFilter] = useState("all");
-  const [postDraft, setPostDraft] = useState({ title: "", body: "", status: "검토중" });
   const [postAttachments, setPostAttachments] = useState([]);
-  const [messageDraft, setMessageDraft] = useState("");
   const [messageAttachments, setMessageAttachments] = useState([]);
   const [commentDrafts, setCommentDrafts] = useState({});
   const [fileDraft, setFileDraft] = useState({ name: "", source: "수동 추가" });
@@ -270,14 +268,7 @@ export default function Home() {
   );
 
   const postStatuses = useMemo(() => getPostStatuses(channel), [channel]);
-  const defaultPostStatus = postStatuses[0];
   const donePostStatus = postStatuses[postStatuses.length - 1];
-
-  useEffect(() => {
-    setPostDraft((current) => (
-      postStatuses.includes(current.status) ? current : { ...current, status: defaultPostStatus }
-    ));
-  }, [defaultPostStatus, postStatuses]);
 
   const filteredPosts = useMemo(() => {
     if (activeFilter === "mentions") {
@@ -503,8 +494,8 @@ export default function Home() {
     }
   }
 
-  async function sendMessage() {
-    const body = messageDraft.trim();
+  async function sendMessage(draftBody) {
+    const body = draftBody.trim();
     if (!body && messageAttachments.length === 0) return;
     const channelId = channel.id;
     const optimisticMessage = {
@@ -517,7 +508,6 @@ export default function Home() {
       bot: false
     };
     setActionError("");
-    setMessageDraft("");
     setMessageAttachments([]);
     updateChannel(channelId, (channelItem) => ({
       ...channelItem,
@@ -538,6 +528,7 @@ export default function Home() {
         ))
       }));
       refreshStateInBackground({ projectId: state.selectedProjectId, channelId });
+      return { ok: true };
     } catch (error) {
       console.error(error);
       setActionError(error.message);
@@ -545,17 +536,17 @@ export default function Home() {
         ...channelItem,
         messages: channelItem.messages.filter((message) => message.id !== optimisticMessage.id)
       }));
-      setMessageDraft(body);
       setMessageAttachments(optimisticMessage.attachments);
+      return { ok: false };
     }
   }
 
-  async function createPost() {
-    const title = postDraft.title.trim()
-      || postDraft.body.trim().slice(0, 40)
+  async function createPost(draft) {
+    const title = draft.title.trim()
+      || draft.body.trim().slice(0, 40)
       || postAttachments[0]?.name
       || "";
-    const body = postDraft.body.trim();
+    const body = draft.body.trim();
     if (!title && !body && postAttachments.length === 0) return;
     const channelId = channel.id;
     const optimisticPost = {
@@ -565,12 +556,11 @@ export default function Home() {
       attachments: postAttachments,
       authorId: currentUser.id,
       author: currentUser.name,
-      status: postDraft.status,
+      status: draft.status,
       createdAt: "방금 전",
       comments: []
     };
     setActionError("");
-    setPostDraft({ title: "", body: "", status: defaultPostStatus });
     setPostAttachments([]);
     setActiveFilter("all");
     updateChannel(channelId, (channelItem) => ({
@@ -594,6 +584,7 @@ export default function Home() {
         ))
       }));
       refreshStateInBackground({ projectId: state.selectedProjectId, channelId });
+      return { ok: true };
     } catch (error) {
       console.error(error);
       setActionError(error.message);
@@ -601,8 +592,8 @@ export default function Home() {
         ...channelItem,
         posts: channelItem.posts.filter((post) => post.id !== optimisticPost.id)
       }));
-      setPostDraft({ title: postDraft.title, body: postDraft.body, status: optimisticPost.status });
       setPostAttachments(optimisticPost.attachments);
+      return { ok: false };
     }
   }
 
@@ -746,10 +737,8 @@ export default function Home() {
             <MessagesView
               channel={channel}
               currentUser={currentUser}
-              draft={messageDraft}
               attachments={messageAttachments}
               error={actionError}
-              onDraftChange={setMessageDraft}
               onAttachmentsChange={addMessageAttachments}
               onRemoveAttachment={(index) => removeAttachment(setMessageAttachments, index)}
               onSend={sendMessage}
@@ -764,8 +753,6 @@ export default function Home() {
               activeFilter={activeFilter}
               postStatuses={postStatuses}
               onFilterChange={setActiveFilter}
-              draft={postDraft}
-              onDraftChange={setPostDraft}
               attachments={postAttachments}
               error={actionError}
               onAttachmentsChange={addPostAttachments}
