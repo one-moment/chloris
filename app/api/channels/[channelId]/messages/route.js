@@ -1,19 +1,20 @@
 import { requireCurrentUser } from "../../../../../lib/auth";
 import { createApiPerfLogger } from "../../../../../lib/apiPerf";
-import { badRequest, createMessageRecord, notFound, serializeMessage } from "../../../../../lib/serverState";
+import { createMessageRecord, serializeMessage } from "../../../../../lib/serverState";
 import { prisma } from "../../../../../lib/prisma";
 
 export const runtime = "nodejs";
 export const preferredRegion = "icn1";
 
 export async function POST(request, { params }) {
-  const perf = createApiPerfLogger("messages.create");
-  perf.log("request received");
+  const perf = createApiPerfLogger("messages.create", request);
+  const headers = perf.responseHeaders();
+  perf.log("request received", { preferredRegion });
 
   const user = await perf.measure("auth/session check", "authMs", () => requireCurrentUser());
   if (!user) {
     perf.done({ status: 401 });
-    return Response.json({ error: "Authentication required." }, { status: 401 });
+    return Response.json({ error: "Authentication required." }, { status: 401, headers });
   }
 
   const { channelId } = await params;
@@ -21,7 +22,7 @@ export async function POST(request, { params }) {
   const trimmedBody = body?.trim() ?? "";
   if (!trimmedBody && attachments.length === 0) {
     perf.done({ status: 400 });
-    return badRequest("Message body or attachment is required.");
+    return Response.json({ error: "Message body or attachment is required." }, { status: 400, headers });
   }
 
   const channel = await perf.measure("permission check", "permissionMs", () => (
@@ -29,7 +30,7 @@ export async function POST(request, { params }) {
   ));
   if (!channel) {
     perf.done({ status: 404 });
-    return notFound("Channel not found.");
+    return Response.json({ error: "Channel not found." }, { status: 404, headers });
   }
 
   const message = createMessageRecord({ body: trimmedBody, author: user.name, authorId: user.id, bot, attachments });
@@ -57,5 +58,5 @@ export async function POST(request, { params }) {
   perf.log("optional select/join start", { skipped: true });
   perf.log("optional select/join end", { skipped: true, optionalSelectMs: 0, reason: "insert returns selected row" });
   perf.done({ status: 201 });
-  return Response.json(serializeMessage(created), { status: 201 });
+  return Response.json(serializeMessage(created), { status: 201, headers });
 }
