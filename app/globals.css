@@ -871,7 +871,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(100% + 6px);
+  top: calc(100% + 6px);
   z-index: 4;
   display: grid;
   gap: 2px;

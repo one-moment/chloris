@@ -5,7 +5,7 @@ function activeMentionQuery(value) {
   const text = String(value ?? "");
   const cursor = text.length;
   const beforeCursor = text.slice(0, cursor);
-  const match = beforeCursor.match(/(?:^|\s)@([^\s@]*)$/);
+  const match = beforeCursor.match(/(?:^|\s)@([^\s@]*)$/u);
   if (!match) return null;
   return {
     query: match[1],

@@ -7,6 +7,7 @@ export default function IdeasView({
   channel,
   posts,
   currentUser,
+  users = [],
   counts,
   activeFilter,
   onFilterChange,
@@ -26,6 +27,16 @@ export default function IdeasView({
   const [draft, setDraft] = useState({ title: "", body: "", status: postStatuses[0] });
   const [pendingPosts, setPendingPosts] = useState([]);
   const visiblePosts = [...pendingPosts, ...posts];
+  const channelUserIds = new Set([
+    currentUser?.id,
+    ...(channel.messages ?? []).map((message) => message.authorId),
+    ...(channel.posts ?? []).map((post) => post.authorId),
+    ...(channel.posts ?? []).flatMap((post) => (post.comments ?? []).map((comment) => comment.authorId))
+  ].filter(Boolean));
+  const mentionUsers = [
+    ...users.filter((user) => channelUserIds.has(user.id)),
+    ...users.filter((user) => !channelUserIds.has(user.id))
+  ];
 
   useEffect(() => {
     setDraft({ title: "", body: "", status: postStatuses[0] });
@@ -121,7 +132,7 @@ export default function IdeasView({
               post={post}
               postStatuses={postStatuses}
               currentUser={currentUser}
-              users={users}
+              users={mentionUsers}
               commentDraft={commentDrafts[post.id]}
               onStatusChange={onStatusChange}
               onCommentDraftChange={onCommentDraftChange}
