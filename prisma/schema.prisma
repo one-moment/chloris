@@ -74,6 +74,8 @@ model Message {
   body            String
   attachmentsJson String   @default("[]")
   createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  editedAt        DateTime?
   bot             Boolean  @default(false)
   channel         Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
   authorUser      User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
@@ -92,6 +94,7 @@ model Post {
   status          String
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  editedAt        DateTime?
   channel         Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
   authorUser      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
   comments        Comment[]
@@ -105,7 +108,10 @@ model Comment {
   authorId  String?
   author    String
   body      String
+  mentionsJson String   @default("[]")
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  editedAt  DateTime?
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   authorUser User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
 

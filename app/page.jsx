@@ -10,6 +10,7 @@ import ProjectSidebar from "../components/ProjectSidebar";
 import Topbar from "../components/Topbar";
 import { getPostStatuses } from "../lib/constants";
 import { createInitialState } from "../lib/initialData";
+import { getMentionedUserIds } from "../lib/mentions";
 
 const MAX_INLINE_ATTACHMENT_SIZE = 1_500_000;
 
@@ -116,6 +117,24 @@ export default function Home() {
           channelItem.id === channelId ? mutator(channelItem) : channelItem
         ))
       }))
+    }));
+  }
+
+  function replacePostInState(postId, nextPost) {
+    updateChannel(channel.id, (channelItem) => ({
+      ...channelItem,
+      posts: channelItem.posts.map((post) => post.id === postId ? nextPost : post)
+    }));
+  }
+
+  function replaceCommentInState(postId, nextComment) {
+    updateChannel(channel.id, (channelItem) => ({
+      ...channelItem,
+      posts: channelItem.posts.map((post) => (
+        post.id === postId
+          ? { ...post, comments: (post.comments ?? []).map((comment) => comment.id === nextComment.id ? nextComment : comment) }
+          : post
+      ))
     }));
   }
 
@@ -282,14 +301,16 @@ export default function Home() {
   const filteredPosts = useMemo(() => {
     if (activeFilter === "mentions") {
       const mention = currentUser?.handle;
-      if (!mention) return [];
+      if (!mention && !currentUser?.id) return [];
       return channel.posts.filter(
-        (post) => post.title.includes(mention) || post.body.includes(mention) || (post.comments ?? []).some((comment) => comment.body.includes(mention))
+        (post) => post.title.includes(mention) || post.body.includes(mention) || (post.comments ?? []).some((comment) => (
+          comment.body.includes(mention) || (comment.mentions ?? []).includes(currentUser?.id)
+        ))
       );
     }
     if (activeFilter === "open") return channel.posts.filter((post) => post.status !== donePostStatus);
     return channel.posts;
-  }, [activeFilter, channel.posts, currentUser?.handle, donePostStatus]);
+  }, [activeFilter, channel.posts, currentUser?.handle, currentUser?.id, donePostStatus]);
 
   const counts = useMemo(
     () => ({
@@ -579,11 +600,65 @@ export default function Home() {
     }
   }
 
+  async function editMessage(messageId, body) {
+    try {
+      const updated = await requestJson(`/api/messages/${messageId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ body })
+      });
+      updateChannel(channel.id, (channelItem) => ({
+        ...channelItem,
+        messages: channelItem.messages.map((message) => message.id === messageId ? updated : message)
+      }));
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+      return { ok: false };
+    }
+  }
+
+  async function editPost(postId, patch) {
+    try {
+      const updated = await requestJson(`/api/posts/${postId}`, {
+        method: "PATCH",
+        body: JSON.stringify(patch)
+      });
+      replacePostInState(postId, updated);
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+      return { ok: false };
+    }
+  }
+
+  async function editComment(postId, commentId, body) {
+    try {
+      const updated = await requestJson(`/api/comments/${commentId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          body,
+          mentions: getMentionedUserIds(body, users)
+        })
+      });
+      replaceCommentInState(postId, updated);
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+      return { ok: false };
+    }
+  }
+
   async function addComment(postId) {
     const body = commentDrafts[postId]?.trim();
     if (!body) return;
     try {
-      await mutateAndRefresh(`/api/posts/${postId}/comments`, { body }, "POST", {
+      await mutateAndRefresh(`/api/posts/${postId}/comments`, { body, mentions: getMentionedUserIds(body, users) }, "POST", {
         projectId: state.selectedProjectId,
         channelId: channel.id
       });
@@ -713,6 +788,7 @@ export default function Home() {
               onAttachmentsChange={addMessageAttachments}
               onRemoveAttachment={(index) => removeAttachment(setMessageAttachments, index)}
               onSend={sendMessage}
+              onEditMessage={editMessage}
             />
           )}
           {activeTab === "ideas" && (
@@ -734,6 +810,8 @@ export default function Home() {
               onCommentDraftChange={(postId, value) => setCommentDrafts((current) => ({ ...current, [postId]: value }))}
               onAddComment={addComment}
               onStatusChange={changePostStatus}
+              onEditPost={editPost}
+              onEditComment={editComment}
             />
           )}
           {activeTab === "files" && (

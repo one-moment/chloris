@@ -1,6 +1,7 @@
 import { requireCurrentUser } from "../../../../../lib/auth";
 import { createApiPerfLogger } from "../../../../../lib/apiPerf";
 import { createCommentRecord } from "../../../../../lib/serverState";
+import { normalizeMentionIds } from "../../../../../lib/mentions";
 import { prisma } from "../../../../../lib/prisma";
 
 export const runtime = "nodejs";
@@ -18,7 +19,7 @@ export async function POST(request, { params }) {
   }
 
   const { postId } = await params;
-  const { body } = await request.json();
+  const { body, mentions = [] } = await request.json();
   const trimmedBody = body?.trim();
   if (!trimmedBody) {
     perf.done({ status: 400 });
@@ -33,6 +34,8 @@ export async function POST(request, { params }) {
     return Response.json({ error: "Post not found." }, { status: 404, headers });
   }
 
+  const users = await prisma.user.findMany({ select: { id: true } });
+  const mentionIds = normalizeMentionIds(mentions, users);
   const comment = createCommentRecord({ body: trimmedBody, author: user.name, authorId: user.id });
   const created = await perf.measure("DB insert", "dbInsertMs", () => prisma.comment.create({
     data: {
@@ -40,14 +43,18 @@ export async function POST(request, { params }) {
       postId,
       authorId: user.id,
       author: comment.author,
-      body: comment.body
+      body: comment.body,
+      mentionsJson: JSON.stringify(mentionIds)
     },
     select: {
       id: true,
       authorId: true,
       author: true,
       body: true,
-      createdAt: true
+      mentionsJson: true,
+      createdAt: true,
+      updatedAt: true,
+      editedAt: true
     }
   }));
 
@@ -59,6 +66,13 @@ export async function POST(request, { params }) {
     authorId: created.authorId,
     author: created.author,
     body: created.body,
-    createdAt: "방금 전"
+    mentions: mentionIds,
+    createdAt: "방금 전",
+    createdAtIso: created.createdAt.toISOString(),
+    updatedAt: "방금 전",
+    updatedAtIso: created.updatedAt.toISOString(),
+    editedAt: null,
+    editedAtIso: null,
+    isEdited: false
   }, { status: 201, headers });
 }

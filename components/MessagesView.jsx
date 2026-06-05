@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { EmptyState } from "./common";
 import AttachmentList from "./AttachmentList";
+import ChatDateDivider from "./ChatDateDivider";
+import Timestamp from "./Timestamp";
+import { isSameKoreanDate } from "../lib/time";
 
 function getInitial(author) {
   return String(author || "?").trim().slice(0, 1).toUpperCase();
@@ -10,9 +13,24 @@ function getAuthorKey(message) {
   return message.authorId || message.author || "unknown";
 }
 
-export default function MessagesView({ channel, currentUser, attachments, error, onAttachmentsChange, onRemoveAttachment, onSend }) {
+function canEditMessage(message, currentUser) {
+  if (!currentUser || message.pending || message.bot) return false;
+  if (currentUser.role === "admin") return true;
+  if (message.authorId) return message.authorId === currentUser.id;
+  return message.author === currentUser.name;
+}
+
+function messageTime(message) {
+  const date = new Date(message.createdAtIso ?? message.createdAt);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+}
+
+export default function MessagesView({ channel, currentUser, attachments, error, onAttachmentsChange, onRemoveAttachment, onSend, onEditMessage }) {
   const [pendingMessages, setPendingMessages] = useState([]);
-  const messages = [...pendingMessages, ...channel.messages].reverse();
+  const [editingId, setEditingId] = useState(null);
+  const [editBody, setEditBody] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const messages = [...channel.messages, ...pendingMessages].sort((a, b) => messageTime(a) - messageTime(b));
   const listRef = useRef(null);
   const textareaRef = useRef(null);
   const [hasDraft, setHasDraft] = useState(false);
@@ -47,6 +65,7 @@ export default function MessagesView({ channel, currentUser, attachments, error,
       body,
       attachments,
       createdAt: "전송 중",
+      createdAtIso: new Date().toISOString(),
       bot: false,
       pending: true
     };
@@ -59,6 +78,24 @@ export default function MessagesView({ channel, currentUser, attachments, error,
       textarea.value = body;
       setHasDraft(Boolean(body));
     }
+  }
+
+  function beginEdit(message) {
+    setEditingId(message.id);
+    setEditBody(message.body);
+  }
+
+  async function saveEdit(message) {
+    const body = editBody.trim();
+    if (!body) return;
+    if (body === message.body) {
+      setEditingId(null);
+      return;
+    }
+    setSavingEdit(true);
+    const result = await onEditMessage(message.id, body);
+    setSavingEdit(false);
+    if (result?.ok !== false) setEditingId(null);
   }
 
   function handleKeyDown(event) {
@@ -76,26 +113,53 @@ export default function MessagesView({ channel, currentUser, attachments, error,
         ) : (
           messages.map((message, index) => {
             const previousMessage = messages[index - 1];
-            const isStacked = previousMessage && !message.bot && !previousMessage.bot && getAuthorKey(previousMessage) === getAuthorKey(message);
+            const showDivider = !previousMessage || !isSameKoreanDate(previousMessage.createdAtIso ?? previousMessage.createdAt, message.createdAtIso ?? message.createdAt);
+            const isStacked = !showDivider && previousMessage && !message.bot && !previousMessage.bot && getAuthorKey(previousMessage) === getAuthorKey(message);
 
             return (
-              <article key={message.id} className={`chat-message${message.bot ? " bot" : ""}${isStacked ? " stacked" : ""}${message.pending ? " pending" : ""}`}>
-                {isStacked ? (
-                  <div className="chat-avatar-spacer" aria-hidden="true" />
-                ) : (
-                  <div className="chat-avatar" aria-hidden="true">{getInitial(message.author)}</div>
-                )}
-                <div className="chat-message-content">
-                  {!isStacked && (
-                    <div className="chat-meta">
-                      <strong>{message.author}</strong>
-                      <span>{message.createdAt}</span>
+              <div key={message.id}>
+                {showDivider && <ChatDateDivider date={message.createdAtIso ?? message.createdAt} />}
+                <article className={`chat-message${message.bot ? " bot" : ""}${isStacked ? " stacked" : ""}${message.pending ? " pending" : ""}`}>
+                  {isStacked ? (
+                    <div className="chat-avatar-spacer" aria-hidden="true" />
+                  ) : (
+                    <div className="chat-avatar" aria-hidden="true">{getInitial(message.author)}</div>
+                  )}
+                  <div className="chat-message-content">
+                    {!isStacked && (
+                      <div className="chat-meta">
+                        <strong>{message.author}</strong>
+                        {message.pending ? <span>전송 중</span> : <Timestamp createdAt={message.createdAtIso ?? message.createdAt} updatedAt={message.updatedAtIso} isEdited={message.isEdited} />}
+                      </div>
+                    )}
+                    {editingId === message.id ? (
+                      <div className="inline-editor">
+                        <textarea value={editBody} onChange={(event) => setEditBody(event.target.value)} onKeyDown={(event) => {
+                          if (event.key === "Escape") setEditingId(null);
+                          if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+                            event.preventDefault();
+                            saveEdit(message);
+                          }
+                        }} />
+                        <div className="inline-editor-actions">
+                          <button type="button" onClick={() => saveEdit(message)} disabled={savingEdit || !editBody.trim()}>저장</button>
+                          <button type="button" onClick={() => setEditingId(null)} disabled={savingEdit}>취소</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="chat-text">{message.body}</p>
+                        <AttachmentList attachments={message.attachments} />
+                      </>
+                    )}
+                  </div>
+                  {canEditMessage(message, currentUser) && editingId !== message.id && (
+                    <div className="message-actions">
+                      <button type="button" onClick={() => beginEdit(message)}>수정</button>
                     </div>
                   )}
-                  <p className="chat-text">{message.body}</p>
-                  <AttachmentList attachments={message.attachments} />
-                </div>
-              </article>
+                </article>
+              </div>
             );
           })
         )}

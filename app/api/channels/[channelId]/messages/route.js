@@ -51,6 +51,8 @@ export async function POST(request, { params }) {
       body: true,
       attachmentsJson: true,
       createdAt: true,
+      updatedAt: true,
+      editedAt: true,
       bot: true
     }
   }));

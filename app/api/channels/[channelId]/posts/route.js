@@ -54,7 +54,9 @@ export async function POST(request, { params }) {
       authorId: true,
       author: true,
       status: true,
-      createdAt: true
+      createdAt: true,
+      updatedAt: true,
+      editedAt: true
     }
   }));
 

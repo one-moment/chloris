@@ -19,6 +19,8 @@ export default function IdeasView({
   onCommentDraftChange,
   onAddComment,
   onStatusChange,
+  onEditPost,
+  onEditComment,
   postStatuses
 }) {
   const [draft, setDraft] = useState({ title: "", body: "", status: postStatuses[0] });
@@ -118,10 +120,14 @@ export default function IdeasView({
               key={post.id}
               post={post}
               postStatuses={postStatuses}
+              currentUser={currentUser}
+              users={users}
               commentDraft={commentDrafts[post.id]}
               onStatusChange={onStatusChange}
               onCommentDraftChange={onCommentDraftChange}
               onAddComment={onAddComment}
+              onEditPost={onEditPost}
+              onEditComment={onEditComment}
             />
           ))
         )}
