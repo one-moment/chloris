@@ -8,6 +8,7 @@ import {
   failedResult,
   humanRequiredResult,
   observedPrice,
+  openHumanBrowser,
   openTaskPage,
   priceLimitResult,
   saveScreenshot
@@ -19,8 +20,9 @@ export async function runCoupangTask(page: Page, task: PurchaseWorkerTask): Prom
 
     if (await detectAccessBlocked(page)) {
       const screenshotPath = await saveScreenshot(page, task, "coupang-access-blocked");
+      await openHumanBrowser(task.url);
       return {
-        ...humanRequiredResult("쿠팡이 자동화 브라우저 접근을 차단했습니다. 사람이 브라우저에서 직접 열어 확인해야 합니다."),
+        ...humanRequiredResult("쿠팡이 자동화 브라우저 접근을 차단했습니다. 실제 Chrome으로 상품 페이지를 열었으니 사람이 직접 확인해 장바구니/결제를 진행해야 합니다."),
         screenshotPath
       };
     }

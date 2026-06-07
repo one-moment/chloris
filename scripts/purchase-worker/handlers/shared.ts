@@ -1,9 +1,12 @@
+import { execFile } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
+import { promisify } from "node:util";
 import type { Locator, Page } from "playwright";
 import { config } from "../config";
 import type { PurchaseWorkerTask, WorkerResult } from "../client";
 
+const execFileAsync = promisify(execFile);
 const PAYMENT_BUTTON_TEXT = /(결제|결제하기|주문\s*완료|최종\s*주문|place\s*order|pay\s*now)/i;
 const HUMAN_REQUIRED_TEXT = /(로그인|본인인증|휴대폰\s*인증|captcha|보안문자|2단계|two-factor|otp|카드번호|cvc|cvv|결제수단)/i;
 const ACCESS_BLOCKED_TEXT = /(access denied|permission to access|errors\.edgesuite\.net|접근\s*거부)/i;
@@ -38,6 +41,20 @@ export async function saveScreenshot(page: Page, task: PurchaseWorkerTask, label
   const screenshotPath = path.join(config.screenshotDir, `${timestamp}-${task.id}-${label}.png`);
   await page.screenshot({ path: screenshotPath, fullPage: true });
   return screenshotPath;
+}
+
+export async function openHumanBrowser(url: string) {
+  if (process.platform === "darwin") {
+    await execFileAsync("open", ["-a", config.handoffBrowser, url]);
+    return;
+  }
+
+  if (process.platform === "win32") {
+    await execFileAsync("cmd", ["/c", "start", "", url]);
+    return;
+  }
+
+  await execFileAsync("xdg-open", [url]);
 }
 
 export async function observedPrice(page: Page) {

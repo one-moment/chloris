@@ -11,6 +11,7 @@ export const config = {
   token: process.env.PURCHASE_BOT_WORKER_TOKEN ?? "local-dev-worker-token",
   headless: process.env.PURCHASE_BOT_BROWSER_HEADLESS === "true",
   browserChannel: process.env.PURCHASE_BOT_BROWSER_CHANNEL || undefined,
+  handoffBrowser: process.env.PURCHASE_BOT_HANDOFF_BROWSER ?? "Google Chrome",
   runOnce: process.env.PURCHASE_BOT_RUN_ONCE === "true",
   pollIntervalMs: Number(process.env.PURCHASE_BOT_POLL_INTERVAL_MS ?? 5000),
   userDataDir: expandHome(process.env.PURCHASE_BOT_USER_DATA_DIR ?? "~/.purchase-bot/browser-profile"),

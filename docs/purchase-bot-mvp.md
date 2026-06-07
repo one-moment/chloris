@@ -27,6 +27,7 @@ PURCHASE_BOT_WORKER_TOKEN="replace-with-long-random-token"
 PURCHASE_BOT_SERVER_URL="https://your-vercel-app.vercel.app"
 PURCHASE_BOT_BROWSER_HEADLESS="false"
 PURCHASE_BOT_BROWSER_CHANNEL="chrome"
+PURCHASE_BOT_HANDOFF_BROWSER="Google Chrome"
 PURCHASE_BOT_POLL_INTERVAL_MS="5000"
 PURCHASE_BOT_RUN_ONCE="false"
 ```
@@ -116,4 +117,5 @@ POST /api/purchase-bot/worker/tasks/:taskId/result
 - Approve/reject is API-first. A later UI pass should add buttons in the bot message.
 - Coupang automation only attempts safe cart preparation. Selector tuning is expected after real product URLs are added.
 - Swadpia often requires design file or option checks, so the MVP opens the page and asks for human continuation.
+- If Coupang blocks automated browsing, the worker opens the product URL in the local human browser and reports `needs_human`.
 - Screenshots are stored on the local worker machine. Uploading them to object storage can be added later.
