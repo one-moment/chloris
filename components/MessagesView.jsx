@@ -51,6 +51,11 @@ function getPurchaseWorkerTaskId(message) {
   return message.body.match(PURCHASE_WORKER_TASK_ID_PATTERN)?.[1] ?? null;
 }
 
+function isLocalWorkerStartAvailable() {
+  if (typeof window === "undefined") return false;
+  return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+}
+
 export default function MessagesView({
   channel,
   currentUser,
@@ -68,6 +73,7 @@ export default function MessagesView({
   const [editBody, setEditBody] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [purchaseActionBusy, setPurchaseActionBusy] = useState({});
+  const [canStartPurchaseWorker, setCanStartPurchaseWorker] = useState(false);
   const messages = [...channel.messages, ...pendingMessages].sort((a, b) => messageTime(a) - messageTime(b));
   const purchaseRequestsById = useMemo(
     () => new Map(purchaseRequests.map((request) => [request.id, request])),
@@ -94,6 +100,10 @@ export default function MessagesView({
     setHasDraft(false);
     setPendingMessages([]);
   }, [channel.id]);
+
+  useEffect(() => {
+    setCanStartPurchaseWorker(isLocalWorkerStartAvailable());
+  }, []);
 
   function updateHasDraft(event) {
     const nextHasDraft = Boolean(event.target.value.trim());
@@ -221,6 +231,7 @@ export default function MessagesView({
                               requestId={requestId ?? request?.id}
                               busy={purchaseActionBusy}
                               onAction={submitPurchaseAction}
+                              canStartLocalWorker={canStartPurchaseWorker}
                             />
                           );
                         })()}
@@ -260,12 +271,13 @@ export default function MessagesView({
   );
 }
 
-function PurchaseRequestActions({ message, request, requestId, busy, onAction }) {
+function PurchaseRequestActions({ message, request, requestId, busy, onAction, canStartLocalWorker }) {
   if (!requestId) return null;
 
   const status = request?.status ?? "pending_approval";
   const isActionable = ACTIONABLE_PURCHASE_STATUSES.has(status);
   const isRunnable = RUNNABLE_PURCHASE_STATUSES.has(status) && request?.workerTaskId;
+  const showRunButton = isRunnable && canStartLocalWorker;
   const approveBusy = Boolean(busy[`${requestId}:approve`]);
   const rejectBusy = Boolean(busy[`${requestId}:reject`]);
   const runBusy = Boolean(busy[`${requestId}:run`]);
@@ -287,13 +299,15 @@ function PurchaseRequestActions({ message, request, requestId, busy, onAction })
             {rejectBusy ? "반려 중" : "반려"}
           </button>
         </div>
-      ) : isRunnable ? (
+      ) : showRunButton ? (
         <div className="purchase-action-buttons">
           <button className="primary-button" type="button" onClick={() => onAction(requestId, "run")} disabled={disabled}>
             {runBusy ? "실행 요청 중" : "작업 실행"}
           </button>
           <span className="purchase-action-note">Chrome에서 장바구니 준비를 시작합니다.</span>
         </div>
+      ) : isRunnable ? (
+        <span className="purchase-action-note">로컬 worker 대기 중입니다. 맥북 worker가 자동으로 가져가 처리합니다.</span>
       ) : (
         <span className="purchase-action-note">처리된 구매요청입니다.</span>
       )}
