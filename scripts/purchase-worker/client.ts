@@ -21,6 +21,7 @@ export type WorkerResult = {
   screenshotType?: string;
   screenshotSize?: number;
   observedPrice?: number;
+  observedQuantity?: number;
   errorCode?: string;
 };
 

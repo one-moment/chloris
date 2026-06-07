@@ -112,6 +112,52 @@ export async function openHumanBrowser(url: string) {
   await execFileAsync("xdg-open", [url]);
 }
 
+export async function navigateChromeToUrl(url: string) {
+  if (process.platform !== "darwin") {
+    await openHumanBrowser(url);
+    return false;
+  }
+
+  const script = [
+    `set targetUrl to ${JSON.stringify(url)}`,
+    "tell application \"Google Chrome\"",
+    "activate",
+    "if (count of windows) = 0 then make new window",
+    "set URL of active tab of front window to targetUrl",
+    "return URL of active tab of front window",
+    "end tell"
+  ];
+
+  const { stdout } = await execFileAsync("osascript", script.flatMap((line) => ["-e", line]));
+  return stdout.trim();
+}
+
+export async function activateChromeTabByUrl(urlPart: string) {
+  if (process.platform !== "darwin") return false;
+
+  const script = [
+    `set targetUrl to ${JSON.stringify(urlPart)}`,
+    "tell application \"Google Chrome\"",
+    "activate",
+    "repeat with windowIndex from 1 to count of windows",
+    "set targetWindow to window windowIndex",
+    "repeat with tabIndex from 1 to count of tabs of targetWindow",
+    "set targetTab to tab tabIndex of targetWindow",
+    "if (URL of targetTab contains targetUrl) then",
+    "set active tab index of targetWindow to tabIndex",
+    "set index of targetWindow to 1",
+    "return URL of targetTab",
+    "end if",
+    "end repeat",
+    "end repeat",
+    "return \"\"",
+    "end tell"
+  ];
+
+  const { stdout } = await execFileAsync("osascript", script.flatMap((line) => ["-e", line])).catch(() => ({ stdout: "" }));
+  return stdout.trim().includes(urlPart);
+}
+
 export async function executeChromeJavaScript(script: string) {
   if (process.platform !== "darwin") {
     throw new Error("Chrome JavaScript handoff currently supports macOS only.");

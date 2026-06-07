@@ -11,6 +11,11 @@ const items = [
     id: "boro-namecard",
     name: "보로 강남점 명함",
     aliasesJson: JSON.stringify(["보로 명함", "강남점 명함"])
+  },
+  {
+    id: "kitchen-towel",
+    name: "키친타올",
+    aliasesJson: JSON.stringify(["키친타월", "주방타올", "주방타월"])
   }
 ];
 
@@ -36,6 +41,12 @@ assert.equal(multiOrder[0].itemQuery, "A4용지");
 assert.equal(multiOrder[0].quantity, 2);
 assert.equal(multiOrder[1].itemQuery, "보로 명함");
 assert.equal(multiOrder[1].quantity, 500);
+
+const kitchenTowel = parsePurchaseCommand("@구매봇 키친타올 3개 주문");
+assert.equal(kitchenTowel.itemQuery, "키친타올");
+assert.equal(kitchenTowel.quantity, 3);
+assert.equal(kitchenTowel.unitLabel, "개");
+assert.equal(matchPurchaseItems(kitchenTowel, items)[0].id, "kitchen-towel");
 
 assert.deepEqual(parseAliases("not-json"), []);
 assert.deepEqual(parseAliases(JSON.stringify(["a", "b"])), ["a", "b"]);

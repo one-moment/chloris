@@ -1,0 +1,40 @@
+INSERT INTO "PurchaseItem" (
+  "id", "name", "aliasesJson", "vendor", "url", "defaultQuantity", "unitLabel",
+  "minQuantity", "maxQuantity", "expectedPrice", "maxAllowedPrice",
+  "defaultShippingLocation", "approvalRequired", "automationLevel", "isActive", "notes", "updatedAt"
+) VALUES (
+  'kitchen-towel',
+  '키친타올',
+  '["키친타올","키친타월","주방타올","주방타월","kitchen towel"]',
+  'coupang',
+  'https://www.coupang.com/vp/products/6577880987?itemId=19013354588&vendorItemId=86137970853',
+  3,
+  '개',
+  1,
+  10,
+  NULL,
+  NULL,
+  '본사',
+  true,
+  'add_to_cart',
+  true,
+  '사용자가 제공한 쿠팡 키친타올 상품 URL입니다.',
+  CURRENT_TIMESTAMP
+)
+ON CONFLICT ("id") DO UPDATE SET
+  "name" = EXCLUDED."name",
+  "aliasesJson" = EXCLUDED."aliasesJson",
+  "vendor" = EXCLUDED."vendor",
+  "url" = EXCLUDED."url",
+  "defaultQuantity" = EXCLUDED."defaultQuantity",
+  "unitLabel" = EXCLUDED."unitLabel",
+  "minQuantity" = EXCLUDED."minQuantity",
+  "maxQuantity" = EXCLUDED."maxQuantity",
+  "expectedPrice" = EXCLUDED."expectedPrice",
+  "maxAllowedPrice" = EXCLUDED."maxAllowedPrice",
+  "defaultShippingLocation" = EXCLUDED."defaultShippingLocation",
+  "approvalRequired" = EXCLUDED."approvalRequired",
+  "automationLevel" = EXCLUDED."automationLevel",
+  "isActive" = EXCLUDED."isActive",
+  "notes" = EXCLUDED."notes",
+  "updatedAt" = CURRENT_TIMESTAMP;
