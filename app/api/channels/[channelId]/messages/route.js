@@ -1,5 +1,6 @@
 import { requireCurrentUser } from "../../../../../lib/auth";
 import { createApiPerfLogger } from "../../../../../lib/apiPerf";
+import { handlePurchaseBotCommand } from "../../../../../lib/purchaseBot/service";
 import { createMessageRecord, serializeMessage } from "../../../../../lib/serverState";
 import { prisma } from "../../../../../lib/prisma";
 
@@ -56,6 +57,17 @@ export async function POST(request, { params }) {
       bot: true
     }
   }));
+
+  if (!created.bot) {
+    await handlePurchaseBotCommand({
+      body: created.body,
+      channelId,
+      messageId: created.id,
+      requester: user
+    }).catch((error) => {
+      console.error("purchase_bot_command_failed", error);
+    });
+  }
 
   perf.log("optional select/join start", { skipped: true });
   perf.log("optional select/join end", { skipped: true, optionalSelectMs: 0, reason: "insert returns selected row" });

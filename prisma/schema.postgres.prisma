@@ -84,6 +84,81 @@ model Message {
   @@index([channelId, createdAt(sort: Desc)], map: "idx_messages_channel_created")
 }
 
+model PurchaseItem {
+  id                      String            @id
+  name                    String
+  aliasesJson             String
+  vendor                  String
+  url                     String
+  defaultQuantity         Int
+  unitLabel               String
+  minQuantity             Int
+  maxQuantity             Int
+  expectedPrice           Int?
+  maxAllowedPrice         Int?
+  defaultDeliveryMemo     String?
+  defaultShippingLocation String?
+  approvalRequired        Boolean           @default(true)
+  automationLevel         String
+  isActive                Boolean           @default(true)
+  notes                   String?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  requests                PurchaseRequest[]
+}
+
+model PurchaseRequest {
+  id                  String              @id
+  requesterId         String
+  channelId           String?
+  messageId           String?
+  itemId              String
+  itemName            String
+  vendor              String
+  url                 String
+  quantity            Int
+  unitLabel           String
+  expectedPrice       Int?
+  maxAllowedPrice     Int?
+  shippingLocation    String?
+  approvalRequired    Boolean             @default(true)
+  approvedBy          String?
+  approvedAt          DateTime?
+  status              String
+  workerTaskId        String?
+  resultScreenshotUrl String?
+  resultMessage       String?
+  orderNumber         String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  item                PurchaseItem        @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  workerTask          PurchaseWorkerTask?
+
+  @@index([channelId, createdAt(sort: Desc)], map: "idx_purchase_requests_channel_created")
+  @@index([status, createdAt], map: "idx_purchase_requests_status_created")
+}
+
+model PurchaseWorkerTask {
+  id                String          @id
+  purchaseRequestId String          @unique
+  vendor            String
+  url               String
+  quantity          Int
+  automationLevel   String
+  maxAllowedPrice   Int?
+  status            String
+  resultMessage     String?
+  screenshotPath    String?
+  observedPrice     Int?
+  errorCode         String?
+  lockedAt          DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  purchaseRequest   PurchaseRequest @relation(fields: [purchaseRequestId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt], map: "idx_purchase_worker_tasks_status_created")
+}
+
 model Post {
   id              String    @id
   channelId       String

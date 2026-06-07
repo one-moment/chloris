@@ -7,6 +7,8 @@ out/
 dist/
 build/
 backups/
+.purchase-bot/
+purchase-bot-screenshots/
 
 .env
 .env.production
