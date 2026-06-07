@@ -741,6 +741,22 @@ export default function Home() {
     }
   }
 
+  async function actOnPurchaseRequest(requestId, action) {
+    setActionError("");
+    try {
+      await requestJson(`/api/purchase-bot/requests/${requestId}/${action}`, {
+        method: "POST"
+      });
+      await refreshState({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: false };
+    }
+  }
+
   return (
     !authLoaded || !stateLoaded ? (
       <main className="loading-shell">불러오는 중...</main>
@@ -789,6 +805,8 @@ export default function Home() {
               onRemoveAttachment={(index) => removeAttachment(setMessageAttachments, index)}
               onSend={sendMessage}
               onEditMessage={editMessage}
+              purchaseRequests={state.purchaseRequests ?? []}
+              onPurchaseRequestAction={actOnPurchaseRequest}
             />
           )}
           {activeTab === "ideas" && (

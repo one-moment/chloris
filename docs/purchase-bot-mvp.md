@@ -5,10 +5,11 @@ This branch adds a minimal purchase bot to the existing internal communication t
 ## Scope
 
 - Users request repeat purchases in a channel message, for example `@구매봇 A4용지 2박스 주문`.
+- Users can request multiple repeat purchases in one message, for example `@구매봇 A4용지 1박스, A4용지 2박스 주문`.
 - The server parses the command, matches a registered `PurchaseItem`, creates a `PurchaseRequest`, and posts a bot reply.
 - An approver calls the approve API to queue a `PurchaseWorkerTask`.
-- A local Playwright worker running on a trusted Mac claims queued tasks and opens the vendor site.
-- The worker may open the product page and prepare a cart, but it must stop before final payment.
+- A local worker running on a trusted Mac claims queued tasks and opens the vendor site in the human Chrome session.
+- The worker may open the product page, attempt safe cart preparation, capture the Coupang cart window, and upload that screenshot to the channel, but it must stop before final payment.
 
 ## Safety Rules
 
@@ -76,7 +77,7 @@ Run the worker:
 npm run purchase-worker
 ```
 
-After a human moves Chrome to the cart or order review screen, capture that screen back into the channel:
+After a human moves Chrome to the cart or order review screen, capture the Chrome window back into the channel:
 
 ```bash
 npm run purchase-worker:capture -- <worker-task-id>
@@ -117,13 +118,13 @@ POST /api/purchase-bot/worker/tasks/:taskId/result
 3. Confirm the bot posts a request summary with approve/reject API paths.
 4. Approve the request from an admin session.
 5. Run `npm run purchase-worker`.
-6. Confirm the worker posts a result message with a screenshot path and stops before payment.
+6. Confirm the worker posts a result message with a cart screenshot attachment and stops before payment.
 
 ## Current Limitations
 
 - Approve/reject is API-first. A later UI pass should add buttons in the bot message.
-- Coupang automation only attempts safe cart preparation. Selector tuning is expected after real product URLs are added.
+- Coupang handoff only attempts safe cart preparation and cart-window capture. Selector tuning is expected after real product URLs are added.
 - Swadpia often requires design file or option checks, so the MVP opens the page and asks for human continuation.
 - By default the worker uses browser handoff only: it opens the product URL in the local human browser and reports `needs_human`.
 - It does not enter payment passwords or complete payment. Final payment must remain a human action.
-- Screenshots are stored on the local worker machine. Uploading them to object storage can be added later.
+- Screenshots are stored on the local worker machine and also attached inline to the channel result message. Object storage can be added later.

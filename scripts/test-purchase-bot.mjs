@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { matchPurchaseItems, parseAliases, parsePurchaseCommand } from "../lib/purchaseBot/parser.js";
+import { matchPurchaseItems, parseAliases, parsePurchaseCommand, parsePurchaseCommands } from "../lib/purchaseBot/parser.js";
 
 const items = [
   {
@@ -29,6 +29,13 @@ assert.equal(namecard.itemQuery, "보로 명함");
 assert.equal(namecard.quantity, 500);
 assert.equal(namecard.unitLabel, "매");
 assert.equal(matchPurchaseItems(namecard, items)[0].id, "boro-namecard");
+
+const multiOrder = parsePurchaseCommands("@구매봇 A4용지 2박스, 보로 명함 500매 주문");
+assert.equal(multiOrder.length, 2);
+assert.equal(multiOrder[0].itemQuery, "A4용지");
+assert.equal(multiOrder[0].quantity, 2);
+assert.equal(multiOrder[1].itemQuery, "보로 명함");
+assert.equal(multiOrder[1].quantity, 500);
 
 assert.deepEqual(parseAliases("not-json"), []);
 assert.deepEqual(parseAliases(JSON.stringify(["a", "b"])), ["a", "b"]);

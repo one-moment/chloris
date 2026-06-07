@@ -1,24 +1,5 @@
-import { execFile } from "node:child_process";
-import { mkdir } from "node:fs/promises";
-import path from "node:path";
-import { promisify } from "node:util";
 import { reportTaskResult } from "./client";
-import { config } from "./config";
-
-const execFileAsync = promisify(execFile);
-
-async function captureScreen(taskId: string) {
-  await mkdir(config.screenshotDir, { recursive: true });
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const screenshotPath = path.join(config.screenshotDir, `${timestamp}-${taskId}-human-order-screen.png`);
-
-  if (process.platform !== "darwin") {
-    throw new Error("purchase-worker:capture currently supports macOS screencapture only.");
-  }
-
-  await execFileAsync("screencapture", ["-x", screenshotPath]);
-  return screenshotPath;
-}
+import { captureScreenFile, screenshotAttachmentFromPath } from "./handlers/shared";
 
 async function main() {
   const taskId = process.argv[2];
@@ -28,12 +9,14 @@ async function main() {
   }
 
   try {
-    const screenshotPath = await captureScreen(taskId);
+    const screenshotPath = await captureScreenFile(taskId, "human-cart-screen");
+    const screenshotAttachment = await screenshotAttachmentFromPath(screenshotPath);
     await reportTaskResult(taskId, {
       status: "needs_human",
       screenshotPath,
+      ...screenshotAttachment,
       errorCode: "HUMAN_ORDER_SCREEN_CAPTURED",
-      message: "현재 Chrome/주문서 화면을 캡쳐했습니다. 주문 내역 확인용이며 최종 결제는 사람이 직접 진행해야 합니다."
+      message: "현재 Chrome 장바구니/주문서 화면을 캡쳐해 소통채널 메시지에 첨부했습니다. 최종 결제는 사람이 직접 진행해야 합니다."
     });
 
     console.log(`[purchase-worker] captured ${screenshotPath}`);

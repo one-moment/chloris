@@ -16,6 +16,10 @@ export type WorkerResult = {
   status: "needs_human" | "cart_ready" | "checkout_ready" | "failed";
   message: string;
   screenshotPath?: string;
+  screenshotDataUrl?: string;
+  screenshotName?: string;
+  screenshotType?: string;
+  screenshotSize?: number;
   observedPrice?: number;
   errorCode?: string;
 };
