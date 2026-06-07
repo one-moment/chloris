@@ -26,7 +26,9 @@ Set the same worker token in Vercel and in the local worker environment:
 PURCHASE_BOT_WORKER_TOKEN="replace-with-long-random-token"
 PURCHASE_BOT_SERVER_URL="https://your-vercel-app.vercel.app"
 PURCHASE_BOT_BROWSER_HEADLESS="false"
+PURCHASE_BOT_BROWSER_CHANNEL="chrome"
 PURCHASE_BOT_POLL_INTERVAL_MS="5000"
+PURCHASE_BOT_RUN_ONCE="false"
 ```
 
 Optional local paths:

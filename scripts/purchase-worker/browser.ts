@@ -11,6 +11,7 @@ export async function withBrowser<T>(callback: (session: BrowserSession) => Prom
   await mkdir(config.userDataDir, { recursive: true });
 
   const context = await chromium.launchPersistentContext(config.userDataDir, {
+    channel: config.browserChannel,
     headless: config.headless,
     viewport: { width: 1365, height: 900 }
   });

@@ -23,13 +23,28 @@ async function tick() {
   if (!task) return;
 
   console.log(`[purchase-worker] claimed ${task.id} ${task.vendor} ${task.itemName} ${task.quantity}${task.unitLabel}`);
-  const result = await runTask(task);
+  let result: WorkerResult;
+  try {
+    result = await runTask(task);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    result = {
+      status: "failed",
+      errorCode: "WORKER_ERROR",
+      message
+    };
+  }
   await reportTaskResult(task.id, result);
   console.log(`[purchase-worker] reported ${task.id} ${result.status}`);
 }
 
 async function main() {
   console.log(`[purchase-worker] server=${config.serverUrl} headless=${config.headless} interval=${config.pollIntervalMs}ms`);
+  if (config.runOnce) {
+    await tick();
+    return;
+  }
+
   for (;;) {
     try {
       await tick();
