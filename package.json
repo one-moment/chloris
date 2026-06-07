@@ -16,6 +16,7 @@
     "purchase-worker": "tsx scripts/purchase-worker/index.ts",
     "purchase-worker:login:coupang": "tsx scripts/purchase-worker/login.ts coupang",
     "purchase-worker:login:swadpia": "tsx scripts/purchase-worker/login.ts swadpia",
+    "purchase-worker:capture": "tsx scripts/purchase-worker/capture.ts",
     "purchase-bot:test": "tsx scripts/test-purchase-bot.mjs"
   },
   "dependencies": {

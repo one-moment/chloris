@@ -2,11 +2,14 @@ import { withBrowser } from "./browser";
 import { fetchNextTask, reportTaskResult, type PurchaseWorkerTask, type WorkerResult } from "./client";
 import { config } from "./config";
 import { runCoupangTask } from "./handlers/coupang";
+import { runHandoffTask } from "./handlers/handoff";
 import { runSwadpiaTask } from "./handlers/swadpia";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function runTask(task: PurchaseWorkerTask): Promise<WorkerResult> {
+  if (config.handoffOnly) return runHandoffTask(task);
+
   return withBrowser(async ({ page }) => {
     if (task.vendor === "coupang") return runCoupangTask(page, task);
     if (task.vendor === "swadpia") return runSwadpiaTask(page, task);
