@@ -2,6 +2,7 @@ import type { Page } from "playwright";
 import type { PurchaseWorkerTask, WorkerResult } from "../client";
 import {
   clickFirstVisible,
+  detectAccessBlocked,
   detectHumanRequired,
   ensureNotPaymentStep,
   failedResult,
@@ -15,6 +16,14 @@ import {
 export async function runCoupangTask(page: Page, task: PurchaseWorkerTask): Promise<WorkerResult> {
   try {
     await openTaskPage(page, task);
+
+    if (await detectAccessBlocked(page)) {
+      const screenshotPath = await saveScreenshot(page, task, "coupang-access-blocked");
+      return {
+        ...humanRequiredResult("쿠팡이 자동화 브라우저 접근을 차단했습니다. 사람이 브라우저에서 직접 열어 확인해야 합니다."),
+        screenshotPath
+      };
+    }
 
     if (await detectHumanRequired(page)) {
       const screenshotPath = await saveScreenshot(page, task, "coupang-human-required");

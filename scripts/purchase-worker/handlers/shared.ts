@@ -6,6 +6,7 @@ import type { PurchaseWorkerTask, WorkerResult } from "../client";
 
 const PAYMENT_BUTTON_TEXT = /(결제|결제하기|주문\s*완료|최종\s*주문|place\s*order|pay\s*now)/i;
 const HUMAN_REQUIRED_TEXT = /(로그인|본인인증|휴대폰\s*인증|captcha|보안문자|2단계|two-factor|otp|카드번호|cvc|cvv|결제수단)/i;
+const ACCESS_BLOCKED_TEXT = /(access denied|permission to access|errors\.edgesuite\.net|접근\s*거부)/i;
 const PRICE_PATTERN = /([0-9][0-9,]{2,})\s*원/g;
 
 export async function openTaskPage(page: Page, task: PurchaseWorkerTask) {
@@ -16,6 +17,11 @@ export async function openTaskPage(page: Page, task: PurchaseWorkerTask) {
 export async function detectHumanRequired(page: Page) {
   const text = await readBodyText(page);
   return HUMAN_REQUIRED_TEXT.test(text);
+}
+
+export async function detectAccessBlocked(page: Page) {
+  const text = await readBodyText(page);
+  return ACCESS_BLOCKED_TEXT.test(text);
 }
 
 export async function ensureNotPaymentStep(page: Page) {
