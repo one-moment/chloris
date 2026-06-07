@@ -14,6 +14,7 @@ model Project {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   channels    Channel[]
+  botInstallations BotInstallation[]
 }
 
 model Channel {
@@ -28,6 +29,8 @@ model Channel {
   posts     Post[]
   files     File[]
   botRuns   BotRun[]
+  botInstallations ChannelBotInstallation[]
+  botEventLogs BotEventLog[]
 }
 
 model User {
@@ -43,6 +46,98 @@ model User {
   messages     Message[]
   posts        Post[]
   comments     Comment[]
+}
+
+model BotApp {
+  id                     String                   @id
+  slug                   String                   @unique
+  name                   String
+  type                   String
+  status                 String                   @default("active")
+  description            String?
+  webhookUrl             String?
+  signingSecretHash      String?
+  eventSubscriptionsJson String                   @default("[]")
+  configJson             String                   @default("{}")
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  installations          BotInstallation[]
+  channelInstallations   ChannelBotInstallation[]
+  credentials            BotCredential[]
+  eventLogs              BotEventLog[]
+}
+
+model BotInstallation {
+  id             String      @id
+  botAppId       String
+  projectId      String?
+  status         String      @default("installed")
+  configJson     String      @default("{}")
+  installedById  String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  botApp         BotApp      @relation(fields: [botAppId], references: [id], onDelete: Cascade)
+  project        Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  credentials    BotCredential[]
+
+  @@unique([botAppId, projectId], map: "uniq_bot_installation_project")
+  @@index([projectId], map: "idx_bot_installations_project")
+}
+
+model ChannelBotInstallation {
+  id             String   @id
+  botAppId       String
+  channelId      String
+  enabled        Boolean  @default(true)
+  configJson     String   @default("{}")
+  installedById  String?
+  enabledAt      DateTime?
+  disabledAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  botApp         BotApp   @relation(fields: [botAppId], references: [id], onDelete: Cascade)
+  channel        Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  credentials    BotCredential[]
+
+  @@unique([botAppId, channelId], map: "uniq_channel_bot_installation")
+  @@index([channelId, enabled], map: "idx_channel_bot_installations_channel_enabled")
+}
+
+model BotCredential {
+  id                           String                  @id
+  botAppId                     String
+  installationId               String?
+  channelBotInstallationId     String?
+  name                         String
+  tokenHash                    String                  @unique
+  scopesJson                   String                  @default("[]")
+  createdById                  String?
+  lastUsedAt                   DateTime?
+  revokedAt                    DateTime?
+  createdAt                    DateTime                @default(now())
+  botApp                       BotApp                  @relation(fields: [botAppId], references: [id], onDelete: Cascade)
+  installation                 BotInstallation?        @relation(fields: [installationId], references: [id], onDelete: Cascade)
+  channelBotInstallation       ChannelBotInstallation? @relation(fields: [channelBotInstallationId], references: [id], onDelete: Cascade)
+
+  @@index([botAppId, revokedAt], map: "idx_bot_credentials_bot_revoked")
+}
+
+model BotEventLog {
+  id                  String    @id
+  botAppId            String
+  channelId           String?
+  eventType           String
+  status              String
+  requestPayloadJson  String    @default("{}")
+  responsePayloadJson String    @default("{}")
+  error               String?
+  durationMs          Int?
+  createdAt           DateTime  @default(now())
+  botApp              BotApp    @relation(fields: [botAppId], references: [id], onDelete: Cascade)
+  channel             Channel?  @relation(fields: [channelId], references: [id], onDelete: SetNull)
+
+  @@index([botAppId, createdAt(sort: Desc)], map: "idx_bot_event_logs_bot_created")
+  @@index([channelId, createdAt(sort: Desc)], map: "idx_bot_event_logs_channel_created")
 }
 
 model Session {

@@ -1,5 +1,6 @@
 import { requireCurrentUser } from "../../../../../lib/auth";
 import { createApiPerfLogger } from "../../../../../lib/apiPerf";
+import { dispatchBotEvent } from "../../../../../lib/botIntegrations/service";
 import { handlePurchaseBotCommand } from "../../../../../lib/purchaseBot/service";
 import { createMessageRecord, serializeMessage } from "../../../../../lib/serverState";
 import { prisma } from "../../../../../lib/prisma";
@@ -66,6 +67,17 @@ export async function POST(request, { params }) {
       requester: user
     }).catch((error) => {
       console.error("purchase_bot_command_failed", error);
+    });
+
+    dispatchBotEvent({
+      channelId,
+      eventType: "message.created",
+      payload: {
+        message: serializeMessage(created),
+        actor: user
+      }
+    }).catch((error) => {
+      console.error("bot_event_dispatch_failed", error);
     });
   }
 

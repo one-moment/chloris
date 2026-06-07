@@ -1135,6 +1135,133 @@
   line-height: 1.55;
 }
 
+.bot-settings-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.bot-settings-group {
+  display: grid;
+  gap: 9px;
+}
+
+.bot-settings-group > strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.channel-bot-list,
+.available-bot-list {
+  display: grid;
+  gap: 8px;
+}
+
+.channel-bot-row,
+.available-bot-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #ffffff;
+  padding: 9px;
+}
+
+.channel-bot-row > div,
+.available-bot-card > div {
+  min-width: 0;
+}
+
+.channel-bot-row strong,
+.available-bot-card strong {
+  display: block;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.channel-bot-row span,
+.available-bot-card span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.switch-button,
+.available-bot-card button {
+  min-width: 56px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.switch-button.on {
+  border-color: #86efac;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.purchase-config-form {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.settings-field,
+.settings-switch-row {
+  display: grid;
+  gap: 6px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.settings-switch-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.settings-field select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #ffffff;
+  padding: 8px 9px;
+  color: var(--ink);
+  font: inherit;
+}
+
+.settings-check-list {
+  display: grid;
+  gap: 6px;
+}
+
+.settings-check-list label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #ffffff;
+  padding: 8px 9px;
+  color: var(--ink);
+}
+
+.settings-save-button {
+  width: 100%;
+}
+
+.available-bot-card button {
+  border-radius: var(--radius);
+}
+
 .run-header span {
   border-radius: 999px;
   background: var(--surface);

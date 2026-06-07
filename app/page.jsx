@@ -744,10 +744,17 @@ export default function Home() {
   async function actOnPurchaseRequest(requestId, action) {
     setActionError("");
     try {
-      await requestJson(`/api/purchase-bot/requests/${requestId}/${action}`, {
+      const endpoint = action === "run"
+        ? `/api/purchase-bot/requests/${requestId}/run`
+        : `/api/purchase-bot/requests/${requestId}/${action}`;
+      await requestJson(endpoint, {
         method: "POST"
       });
       await refreshState({ projectId: state.selectedProjectId, channelId: channel.id });
+      if (action === "run") {
+        setTimeout(() => refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id }), 1800);
+        setTimeout(() => refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id }), 6000);
+      }
       return { ok: true };
     } catch (error) {
       console.error(error);
@@ -838,6 +845,9 @@ export default function Home() {
           <AutomationPanel
             channel={channel}
             bots={availableBots}
+            currentUser={currentUser}
+            users={users}
+            requestJson={requestJson}
             onRunBot={runBot}
             onCompleteRun={completeRun}
             onApproveRun={approveRun}
