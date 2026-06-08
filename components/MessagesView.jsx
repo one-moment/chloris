@@ -27,6 +27,7 @@ function messageTime(message) {
 
 const PURCHASE_REQUEST_ID_PATTERN = /\/api\/purchase-bot\/requests\/([^/\s]+)\/approve/;
 const PURCHASE_WORKER_TASK_ID_PATTERN = /작업 ID:\s*([^\s]+)/;
+const PURCHASE_ORDER_DRAFT_ID_PATTERN = /초안 ID:\s*([^\s]+)/;
 const ACTIONABLE_PURCHASE_STATUSES = new Set(["pending_approval", "approved"]);
 const RUNNABLE_PURCHASE_STATUSES = new Set(["queued"]);
 const PURCHASE_STATUS_LABELS = {
@@ -40,6 +41,31 @@ const PURCHASE_STATUS_LABELS = {
   rejected: "반려됨",
   failed: "실패"
 };
+const PURCHASE_ORDER_DRAFT_STATUS_LABELS = {
+  draft: "초안 검토",
+  approved: "초안 승인됨",
+  rejected: "초안 반려됨",
+  converted: "작업 분리됨"
+};
+const DRAFT_LINE_STATUS_LABELS = {
+  needs_review: "검토 필요",
+  needs_item_match: "상품 매칭 필요",
+  vendor_bot_needed: "거래처 봇 필요",
+  queued: "worker 대기",
+  ready: "준비됨"
+};
+const VENDOR_LABELS = {
+  coupang: "쿠팡",
+  swadpia: "성원애드피아",
+  gmarket: "지마켓",
+  hyundaideco: "현대데코"
+};
+const VENDOR_TASK_STATUS_LABELS = {
+  queued: "worker 대기",
+  partially_queued: "일부 대기",
+  needs_item_match: "상품 매칭 필요",
+  vendor_bot_needed: "거래처 봇 필요"
+};
 
 function getPurchaseRequestId(message) {
   if (!message.bot || !message.body?.startsWith("구매요청을 생성했습니다.")) return null;
@@ -49,6 +75,11 @@ function getPurchaseRequestId(message) {
 function getPurchaseWorkerTaskId(message) {
   if (!message.bot || !message.body?.startsWith("로컬 구매봇 작업 대기열에 등록되었습니다.")) return null;
   return message.body.match(PURCHASE_WORKER_TASK_ID_PATTERN)?.[1] ?? null;
+}
+
+function getPurchaseOrderDraftId(message) {
+  if (!message.bot || !message.body?.includes("구매요청서 초안을 만들었습니다.")) return null;
+  return message.body.match(PURCHASE_ORDER_DRAFT_ID_PATTERN)?.[1] ?? null;
 }
 
 function isLocalWorkerStartAvailable() {
@@ -66,13 +97,18 @@ export default function MessagesView({
   onSend,
   onEditMessage,
   purchaseRequests = [],
-  onPurchaseRequestAction
+  onPurchaseRequestAction,
+  purchaseOrderDrafts = [],
+  onPurchaseOrderDraftUpdate,
+  onPurchaseOrderDraftApprove
 }) {
   const [pendingMessages, setPendingMessages] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editBody, setEditBody] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [purchaseActionBusy, setPurchaseActionBusy] = useState({});
+  const [draftActionBusy, setDraftActionBusy] = useState({});
+  const [editingDraft, setEditingDraft] = useState(null);
   const [canStartPurchaseWorker, setCanStartPurchaseWorker] = useState(false);
   const messages = [...channel.messages, ...pendingMessages].sort((a, b) => messageTime(a) - messageTime(b));
   const purchaseRequestsById = useMemo(
@@ -82,6 +118,10 @@ export default function MessagesView({
   const purchaseRequestsByWorkerTaskId = useMemo(
     () => new Map(purchaseRequests.filter((request) => request.workerTaskId).map((request) => [request.workerTaskId, request])),
     [purchaseRequests]
+  );
+  const purchaseOrderDraftsById = useMemo(
+    () => new Map(purchaseOrderDrafts.map((draft) => [draft.id, draft])),
+    [purchaseOrderDrafts]
   );
   const listRef = useRef(null);
   const textareaRef = useRef(null);
@@ -166,6 +206,31 @@ export default function MessagesView({
     return result;
   }
 
+  async function submitDraftUpdate(draftId, payload) {
+    const busyKey = `${draftId}:update`;
+    setDraftActionBusy((current) => ({ ...current, [busyKey]: true }));
+    const result = await onPurchaseOrderDraftUpdate?.(draftId, payload);
+    setDraftActionBusy((current) => {
+      const nextBusy = { ...current };
+      delete nextBusy[busyKey];
+      return nextBusy;
+    });
+    return result;
+  }
+
+  async function submitDraftApprove(draftId) {
+    const busyKey = `${draftId}:approve`;
+    setDraftActionBusy((current) => ({ ...current, [busyKey]: true }));
+    const result = await onPurchaseOrderDraftApprove?.(draftId);
+    setDraftActionBusy((current) => {
+      const nextBusy = { ...current };
+      delete nextBusy[busyKey];
+      return nextBusy;
+    });
+    if (result?.ok !== false) setEditingDraft(null);
+    return result;
+  }
+
   function handleKeyDown(event) {
     if (event.isComposing || event.nativeEvent?.isComposing || event.keyCode === 229) return;
     if (event.key !== "Enter" || event.shiftKey) return;
@@ -221,18 +286,28 @@ export default function MessagesView({
                         {(() => {
                           const requestId = getPurchaseRequestId(message);
                           const workerTaskId = getPurchaseWorkerTaskId(message);
+                          const draftId = getPurchaseOrderDraftId(message);
                           const request = requestId
                             ? purchaseRequestsById.get(requestId)
                             : purchaseRequestsByWorkerTaskId.get(workerTaskId);
                           return (
-                            <PurchaseRequestActions
-                              message={message}
-                              request={request}
-                              requestId={requestId ?? request?.id}
-                              busy={purchaseActionBusy}
-                              onAction={submitPurchaseAction}
-                              canStartLocalWorker={canStartPurchaseWorker}
-                            />
+                            <>
+                              <PurchaseRequestActions
+                                message={message}
+                                request={request}
+                                requestId={requestId ?? request?.id}
+                                busy={purchaseActionBusy}
+                                onAction={submitPurchaseAction}
+                                canStartLocalWorker={canStartPurchaseWorker}
+                              />
+                              <PurchaseOrderDraftActions
+                                draftId={draftId}
+                                draft={draftId ? purchaseOrderDraftsById.get(draftId) : null}
+                                busy={draftActionBusy}
+                                onEdit={() => setEditingDraft(draftId ? purchaseOrderDraftsById.get(draftId) ?? { id: draftId, lines: [] } : null)}
+                                onApprove={submitDraftApprove}
+                              />
+                            </>
                           );
                         })()}
                       </>
@@ -249,6 +324,16 @@ export default function MessagesView({
           })
         )}
       </div>
+
+      {editingDraft && (
+        <PurchaseOrderDraftModal
+          draft={editingDraft}
+          busy={draftActionBusy}
+          onClose={() => setEditingDraft(null)}
+          onSave={submitDraftUpdate}
+          onApprove={submitDraftApprove}
+        />
+      )}
 
       <div className="composer compact chat-composer">
         <textarea
@@ -269,6 +354,205 @@ export default function MessagesView({
       </div>
     </section>
   );
+}
+
+function PurchaseOrderDraftActions({ draftId, draft, busy, onEdit, onApprove }) {
+  if (!draftId) return null;
+
+  const status = draft?.status ?? "draft";
+  const approveBusy = Boolean(busy[`${draftId}:approve`]);
+  const lineCount = draft?.lines?.length ?? 0;
+  const vendorCount = draft?.lines ? new Set(draft.lines.map((line) => line.vendor)).size : 0;
+  const taskCount = draft?.vendorTasks?.length ?? 0;
+
+  return (
+    <div className="purchase-action-card purchase-draft-card">
+      <div>
+        <span className={`purchase-status status-${status}`}>{PURCHASE_ORDER_DRAFT_STATUS_LABELS[status] ?? status}</span>
+        <strong>구매요청서 초안</strong>
+        <small>{draftId}{lineCount ? ` · ${lineCount}개 품목 · ${vendorCount}개 거래처` : ""}{taskCount ? ` · 작업 ${taskCount}건` : ""}</small>
+        {taskCount > 0 && (
+          <div className="purchase-draft-task-summary">
+            {draft.vendorTasks.map((task) => (
+              <span key={task.id}>{VENDOR_LABELS[task.vendor] ?? task.vendor}: {VENDOR_TASK_STATUS_LABELS[task.status] ?? task.status}</span>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="purchase-action-buttons">
+        <button type="button" onClick={onEdit}>초안 확인/수정</button>
+        {status === "draft" && (
+          <button className="primary-button" type="button" onClick={() => onApprove(draftId)} disabled={approveBusy}>
+            {approveBusy ? "승인 중" : "초안 승인"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PurchaseOrderDraftModal({ draft, busy, onClose, onSave, onApprove }) {
+  const [draftForm, setDraftForm] = useState(() => createDraftForm(draft));
+  const [localError, setLocalError] = useState("");
+  const saveBusy = Boolean(busy[`${draft.id}:update`]);
+  const approveBusy = Boolean(busy[`${draft.id}:approve`]);
+  const isLocked = draft.status !== "draft";
+  const groupedLines = groupDraftLines(draftForm.lines);
+
+  function updateDraftField(field, value) {
+    setDraftForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateLine(lineId, field, value) {
+    setDraftForm((current) => ({
+      ...current,
+      lines: current.lines.map((line) => line.id === lineId ? { ...line, [field]: value } : line)
+    }));
+  }
+
+  async function save() {
+    setLocalError("");
+    const invalidLine = draftForm.lines.find((line) => !line.itemName.trim() || (line.quantity !== "" && Number(line.quantity) < 1));
+    if (invalidLine) {
+      setLocalError("품목명과 수량을 확인해주세요.");
+      return;
+    }
+
+    const result = await onSave(draft.id, {
+      requesterName: draftForm.requesterName,
+      requesterTeam: draftForm.requesterTeam,
+      lines: draftForm.lines.map((line) => ({
+        id: line.id,
+        itemName: line.itemName,
+        quantity: line.quantity === "" ? null : Number(line.quantity),
+        unitLabel: line.unitLabel,
+        url: line.url,
+        notes: line.notes,
+        status: line.status
+      }))
+    });
+    if (result?.ok !== false) onClose();
+  }
+
+  async function approve() {
+    const result = await onApprove(draft.id);
+    if (result?.ok !== false) onClose();
+  }
+
+  return (
+    <div className="next-dialog-fallback">
+      <section className="modal-card purchase-draft-modal" role="dialog" aria-modal="true" aria-labelledby="purchase-draft-title">
+        <div className="purchase-draft-modal-header">
+          <div>
+            <h2 id="purchase-draft-title">구매요청서 초안</h2>
+            <p>{draft.id}</p>
+          </div>
+          <span className={`purchase-status status-${draft.status}`}>{PURCHASE_ORDER_DRAFT_STATUS_LABELS[draft.status] ?? draft.status}</span>
+        </div>
+
+        <div className="purchase-draft-requester">
+          <label className="settings-field">
+            이름
+            <input value={draftForm.requesterName} onChange={(event) => updateDraftField("requesterName", event.target.value)} disabled={isLocked} />
+          </label>
+          <label className="settings-field">
+            소속
+            <input value={draftForm.requesterTeam} onChange={(event) => updateDraftField("requesterTeam", event.target.value)} disabled={isLocked} />
+          </label>
+        </div>
+
+        <div className="purchase-draft-lines">
+          {(draft.vendorTasks?.length ?? 0) > 0 && (
+            <section className="purchase-draft-vendor-tasks">
+              <h3>거래처별 작업</h3>
+              <div className="purchase-draft-task-summary">
+                {draft.vendorTasks.map((task) => (
+                  <span key={task.id}>
+                    {VENDOR_LABELS[task.vendor] ?? task.vendor}: {VENDOR_TASK_STATUS_LABELS[task.status] ?? task.status}
+                    {task.purchaseRequestIds?.length ? ` / worker ${task.purchaseRequestIds.length}건` : ""}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+          {groupedLines.map(([vendor, lines]) => (
+            <section className="purchase-draft-vendor" key={vendor}>
+              <h3>{VENDOR_LABELS[vendor] ?? vendor}</h3>
+              {lines.map((line) => (
+                <div className="purchase-draft-line" key={line.id}>
+                  <label>
+                    품목
+                    <input value={line.itemName} onChange={(event) => updateLine(line.id, "itemName", event.target.value)} disabled={isLocked} />
+                  </label>
+                  <label>
+                    수량
+                    <input type="number" min="1" value={line.quantity} onChange={(event) => updateLine(line.id, "quantity", event.target.value)} disabled={isLocked} />
+                  </label>
+                  <label>
+                    단위
+                    <input value={line.unitLabel} onChange={(event) => updateLine(line.id, "unitLabel", event.target.value)} disabled={isLocked} />
+                  </label>
+                  <label>
+                    URL
+                    <input value={line.url} onChange={(event) => updateLine(line.id, "url", event.target.value)} disabled={isLocked} />
+                  </label>
+                  <label>
+                    메모
+                    <input value={line.notes} onChange={(event) => updateLine(line.id, "notes", event.target.value)} disabled={isLocked} />
+                  </label>
+                  <label>
+                    상태
+                    <select value={line.status} onChange={(event) => updateLine(line.id, "status", event.target.value)} disabled={isLocked}>
+                      {Object.entries(DRAFT_LINE_STATUS_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              ))}
+            </section>
+          ))}
+        </div>
+
+        {localError && <p className="action-error">{localError}</p>}
+        <div className="modal-actions">
+          <button type="button" onClick={onClose}>닫기</button>
+          {!isLocked && <button type="button" onClick={save} disabled={saveBusy}>{saveBusy ? "저장 중" : "저장"}</button>}
+          {!isLocked && (
+            <button className="primary-button" type="button" onClick={approve} disabled={approveBusy}>
+              {approveBusy ? "승인 중" : "초안 승인"}
+            </button>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function createDraftForm(draft) {
+  return {
+    requesterName: draft.requesterName ?? "",
+    requesterTeam: draft.requesterTeam ?? "",
+    lines: (draft.lines ?? []).map((line) => ({
+      ...line,
+      itemName: line.itemName ?? "",
+      quantity: line.quantity ?? "",
+      unitLabel: line.unitLabel ?? "",
+      url: line.url ?? "",
+      notes: line.notes ?? "",
+      status: line.status ?? "needs_review"
+    }))
+  };
+}
+
+function groupDraftLines(lines) {
+  const grouped = new Map();
+  for (const line of lines) {
+    const current = grouped.get(line.vendor) ?? [];
+    current.push(line);
+    grouped.set(line.vendor, current);
+  }
+  return [...grouped.entries()];
 }
 
 function PurchaseRequestActions({ message, request, requestId, busy, onAction, canStartLocalWorker }) {

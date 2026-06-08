@@ -764,6 +764,39 @@ export default function Home() {
     }
   }
 
+  async function updatePurchaseOrderDraft(draftId, payload) {
+    setActionError("");
+    try {
+      await requestJson(`/api/purchase-order-drafts/${draftId}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload)
+      });
+      await refreshState({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: false };
+    }
+  }
+
+  async function approvePurchaseOrderDraft(draftId) {
+    setActionError("");
+    try {
+      await requestJson(`/api/purchase-order-drafts/${draftId}/approve`, {
+        method: "POST"
+      });
+      await refreshState({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: false };
+    }
+  }
+
   return (
     !authLoaded || !stateLoaded ? (
       <main className="loading-shell">불러오는 중...</main>
@@ -814,6 +847,9 @@ export default function Home() {
               onEditMessage={editMessage}
               purchaseRequests={state.purchaseRequests ?? []}
               onPurchaseRequestAction={actOnPurchaseRequest}
+              purchaseOrderDrafts={state.purchaseOrderDrafts ?? []}
+              onPurchaseOrderDraftUpdate={updatePurchaseOrderDraft}
+              onPurchaseOrderDraftApprove={approvePurchaseOrderDraft}
             />
           )}
           {activeTab === "ideas" && (

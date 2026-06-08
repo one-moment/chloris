@@ -1,4 +1,5 @@
 import { requireCurrentUser } from "../../../../../lib/auth";
+import { handleMessageWithAgentGateway } from "../../../../../lib/agentGateway/service";
 import { createApiPerfLogger } from "../../../../../lib/apiPerf";
 import { dispatchBotEvent } from "../../../../../lib/botIntegrations/service";
 import { handlePurchaseBotCommand } from "../../../../../lib/purchaseBot/service";
@@ -60,7 +61,17 @@ export async function POST(request, { params }) {
   }));
 
   if (!created.bot) {
-    await handlePurchaseBotCommand({
+    const agentResult = await handleMessageWithAgentGateway({
+      body: created.body,
+      channelId,
+      messageId: created.id,
+      requester: user
+    }).catch((error) => {
+      console.error("agent_gateway_message_failed", error);
+      return { handled: false };
+    });
+
+    if (!agentResult?.handled) await handlePurchaseBotCommand({
       body: created.body,
       channelId,
       messageId: created.id,

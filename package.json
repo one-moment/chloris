@@ -19,7 +19,9 @@
     "purchase-worker:login:swadpia": "tsx scripts/purchase-worker/login.ts swadpia",
     "purchase-worker:capture": "tsx scripts/purchase-worker/capture.ts",
     "purchase-bot:test": "tsx scripts/test-purchase-bot.mjs",
-    "bot-integrations:test": "tsx scripts/test-bot-integrations.mjs"
+    "bot-integrations:test": "tsx scripts/test-bot-integrations.mjs",
+    "agent-gateway:test": "tsx scripts/test-agent-gateway.mjs",
+    "agent-layer:test": "tsx scripts/test-agent-layer.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1057.0",
