@@ -1,6 +1,9 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import { homedir } from "node:os";
 import path from "node:path";
+
+dotenv.config({ path: ".env.local", quiet: true });
+dotenv.config({ quiet: true });
 
 function expandHome(value: string) {
   return value.startsWith("~/") ? path.join(homedir(), value.slice(2)) : value;
@@ -16,5 +19,6 @@ export const config = {
   runOnce: process.env.PURCHASE_BOT_RUN_ONCE === "true",
   pollIntervalMs: Number(process.env.PURCHASE_BOT_POLL_INTERVAL_MS ?? 5000),
   userDataDir: expandHome(process.env.PURCHASE_BOT_USER_DATA_DIR ?? "~/.purchase-bot/browser-profile"),
-  screenshotDir: expandHome(process.env.PURCHASE_BOT_SCREENSHOT_DIR ?? "~/.purchase-bot/screenshots")
+  screenshotDir: expandHome(process.env.PURCHASE_BOT_SCREENSHOT_DIR ?? "~/.purchase-bot/screenshots"),
+  debugDir: expandHome(process.env.PURCHASE_BOT_DEBUG_DIR ?? "~/.purchase-bot/debug")
 };
