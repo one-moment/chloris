@@ -1,31 +1,67 @@
-## 작업 원칙
+# AGENTS.md
 
-- 운영 자동화 코드는 추측으로 수정하지 않는다.
-- 브라우저 자동화 오류는 먼저 debug artifact를 확인한다.
-- selector 수정 전 screenshot, HTML, trace를 확보한다.
-- 전체 플로우 리팩토링은 명시적 승인 없이는 하지 않는다.
-- DB schema 변경은 명시적 승인 없이는 하지 않는다.
-- 결제 자동화는 구현하지 않는다. 최종 결제는 사람 검토로 넘긴다.
+## Project Rules
 
-## Playwright 원칙
+- Start every work session by reading `HANDOFF.md`, `TODO.md`, `DECISIONS.md`, and `BUG_LOG.md`.
+- Before ending a work session, update `HANDOFF.md` and `TODO.md`.
+- If a new decision is made, update `DECISIONS.md`.
+- If a bug is found, debugged, fixed, or intentionally deferred, update `BUG_LOG.md`.
+- Do not store raw API keys, DB URLs, passwords, customer data, payroll data, browser session data, or other sensitive data in repository documents.
+- Do not run production DB migrations, send real emails, perform real payments, or delete data unless the user explicitly approves that exact action.
+- Do not implement final payment automation. Final purchase/payment must remain a human-reviewed step.
+- Keep changes scoped. Do not perform broad rewrites or full flow refactors unless explicitly approved.
+- When asked to update deployment logs, write them to the `#배포로그` channel's Ideas board, not to chat messages.
 
-- page 전체에서 input/button을 직접 찾지 않는다.
-- 먼저 대상 row/container를 특정한 뒤, 그 내부에서 locator를 찾는다.
-- 클릭 후에는 반드시 상태 검증을 한다.
-- 수량 변경 실패 시 다음 단계로 진행하지 않는다.
-- 실패 시 screenshot, outerHTML, page HTML, trace를 저장한다.
+## Engineering Rules
 
-## 보고 형식
+- Prefer existing project patterns and helper APIs.
+- Use Prisma migrations for schema changes. Do not use `db push` for production.
+- Apply production migrations only after explicit user approval.
+- Keep `DATABASE_URL` and `DIRECT_URL` usage aligned with Prisma/Supabase pooler guidance.
+- Run relevant tests before reporting completion.
+- If deploying to production, verify:
+  - health endpoint
+  - database status
+  - migration status
+  - Vercel deployment readiness
+  - recent Vercel logs
+  - sensitive API protection
 
-수정 전:
-- 원인 후보
-- 근거 코드
-- 최소 수정 범위
-- 리스크
-- 테스트 방법
+## Browser Automation Rules
 
-수정 후:
-- 변경 파일
-- 변경 함수
-- 테스트 결과
-- 남은 리스크
+- Do not modify browser automation selectors by guesswork.
+- Before selector changes, collect debug artifacts:
+  - full screenshot
+  - target row/container screenshot
+  - `page.content()`
+  - target row `outerHTML`
+  - selector match counts
+  - selected element index
+  - trace/log if available
+- Do not search page-wide for input/button when a target row/container can be scoped first.
+- Clicks must be followed by state verification.
+- If quantity correction fails, stop the worker task and require human review.
+
+## Purchase Automation Rules
+
+- Purchase Agent may structure purchase requests, create drafts, route vendor tasks, and enqueue local worker jobs.
+- Purchase Agent must not complete final payment.
+- Coupang automation is allowed only up to cart/handoff flow.
+- Local worker can use the user's local browser/session, but secrets and session details must not be written to repository docs.
+- For vendor bots not implemented yet, mark the task as requiring a vendor bot or manual handoff.
+
+## Reporting Format
+
+Before risky code changes:
+- Cause candidates
+- Evidence in code
+- Minimum change scope
+- Risk
+- Test method
+
+After implementation:
+- Changed files
+- Changed behavior
+- Test results
+- Remaining risk
+- Deployment/migration status

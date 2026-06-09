@@ -62,4 +62,20 @@ assert.equal(sampleBulkOrder.lines.filter((line) => line.vendor === "gmarket").l
 assert.equal(sampleBulkOrder.lines.filter((line) => line.vendor === "hyundaideco").length, 2);
 assert.equal(sampleBulkOrder.lines.find((line) => line.itemName === "디자인 샘플용 부자재")?.quantity, 1);
 
+const metadataBulkOrder = parseBulkPurchaseOrder(`@구매에이전트
+[운영 테스트] 2026-06-09 Purchase Agent 복수주문
+이름/소속 : 테스트/운영검증
+주문상품 내역:
+(쿠팡)
+-키친타올 / 2
+https://www.coupang.com/vp/products/6577880987?itemId=19013354588&vendorItemId=86137970853
+(성원에드피아)
+가로명함 / 500개`);
+
+assert.equal(metadataBulkOrder.isBulkOrder, true);
+assert.equal(metadataBulkOrder.lines.length, 2);
+assert.equal(metadataBulkOrder.lines.some((line) => line.vendor === "unknown"), false);
+assert.equal(metadataBulkOrder.lines.find((line) => line.vendor === "coupang")?.itemName, "키친타올");
+assert.equal(metadataBulkOrder.lines.find((line) => line.vendor === "swadpia")?.itemName, "가로명함");
+
 console.log("agent gateway tests passed");
