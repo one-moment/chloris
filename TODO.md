@@ -2,6 +2,8 @@
 
 ## Next Session Priority
 
+- [x] Create Claude handoff document with local paths, GitHub links, project structure, commands, safety rules, and current branch status.
+- [ ] Push local commits if the next agent will continue from GitHub instead of this local folder.
 - [x] Confirm team-built Agent/Bot framework plan before deeper implementation:
   - [x] app registry lifecycle: draft/review/active/disabled/revoked
   - [x] capability declaration for agents, tools, bots, events, and permissions

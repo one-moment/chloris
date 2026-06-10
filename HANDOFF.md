@@ -71,13 +71,19 @@ The current priority is Purchase Agent stabilization:
   - confirmed Coupang line creates `PurchaseRequest` and `PurchaseWorkerTask` in queued state
   - found and fixed metadata-title parsing bug
 - Added `docs/agent-bot-framework.md` for team-built agent/bot framework direction.
+- Added `CLAUDE_HANDOFF.md` so Claude or another coding agent can continue from local path, GitHub branch, project structure, safety rules, and next-work context.
 
 ## Current State
 
 - Branch: `feature/purchase-bot-mvp`
+- Local repo path: `/Users/user/Documents/Codex/2026-05-28/github/mattermost`
+- GitHub remote: `https://github.com/one-moment/mattermost.git`
+- Claude handoff file: `CLAUDE_HANDOFF.md`
+- Local branch is ahead of `origin/feature/purchase-bot-mvp` by 3 commits as of 2026-06-10.
 - Latest local commits known:
-  - `e22e6b9 Add purchase agent workflow`
+  - `4069393 Document agent framework and stabilize bulk parser`
   - `2bdfda2 Restrict auth user list exposure`
+  - `e22e6b9 Add purchase agent workflow`
 - Production health was verified after deployment.
 - Production DB migration status was verified as up to date.
 - Recent Vercel logs showed no application errors during smoke checks.
@@ -99,7 +105,7 @@ The current priority is Purchase Agent stabilization:
 
 ## Next Work
 
-1. Commit the handoff/framework documentation changes and parser fix if not already committed.
+1. Push local commits before continuing from GitHub-only environments if needed.
 2. Stabilize Coupang worker for:
    - existing cart items
    - multiple items
