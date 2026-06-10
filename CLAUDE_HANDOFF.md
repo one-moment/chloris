@@ -18,24 +18,27 @@ Read this before making changes:
 - Local repo path: `/Users/user/Documents/Codex/2026-05-28/github/mattermost`
 - Parent workspace: `/Users/user/Documents/Codex/2026-05-28/github`
 - Current branch: `feature/purchase-bot-mvp`
-- Git remote: `https://github.com/one-moment/mattermost.git`
-- GitHub repo: `https://github.com/one-moment/mattermost`
+- Git remote: `https://github.com/one-moment/chloris.git`
+- GitHub repo: `https://github.com/one-moment/chloris`
 - Production URL: `https://mattermost-project-mvp.vercel.app`
 
-Important: the local branch is ahead of GitHub by 3 commits as of 2026-06-10.
-If Claude starts from GitHub only, push or otherwise provide these commits first:
+Important: verify `git status --short --branch` before Claude starts.
+If the local branch is ahead of GitHub, push or otherwise provide the local commits first.
+The recent handoff-critical commits are:
 - `e22e6b9 Add purchase agent workflow`
 - `2bdfda2 Restrict auth user list exposure`
 - `4069393 Document agent framework and stabilize bulk parser`
+- `8a30831 Add Claude handoff guide`
 
-After pushing, useful GitHub links should be:
-- Branch: `https://github.com/one-moment/mattermost/tree/feature/purchase-bot-mvp`
-- Agent rules: `https://github.com/one-moment/mattermost/blob/feature/purchase-bot-mvp/AGENTS.md`
-- Main handoff: `https://github.com/one-moment/mattermost/blob/feature/purchase-bot-mvp/HANDOFF.md`
-- TODO: `https://github.com/one-moment/mattermost/blob/feature/purchase-bot-mvp/TODO.md`
-- Decisions: `https://github.com/one-moment/mattermost/blob/feature/purchase-bot-mvp/DECISIONS.md`
-- Bug log: `https://github.com/one-moment/mattermost/blob/feature/purchase-bot-mvp/BUG_LOG.md`
-- Agent/Bot framework: `https://github.com/one-moment/mattermost/blob/feature/purchase-bot-mvp/docs/agent-bot-framework.md`
+Useful GitHub links:
+- Branch: `https://github.com/one-moment/chloris/tree/feature/purchase-bot-mvp`
+- Agent rules: `https://github.com/one-moment/chloris/blob/feature/purchase-bot-mvp/AGENTS.md`
+- Main handoff: `https://github.com/one-moment/chloris/blob/feature/purchase-bot-mvp/HANDOFF.md`
+- TODO: `https://github.com/one-moment/chloris/blob/feature/purchase-bot-mvp/TODO.md`
+- Decisions: `https://github.com/one-moment/chloris/blob/feature/purchase-bot-mvp/DECISIONS.md`
+- Bug log: `https://github.com/one-moment/chloris/blob/feature/purchase-bot-mvp/BUG_LOG.md`
+- Claude handoff: `https://github.com/one-moment/chloris/blob/feature/purchase-bot-mvp/CLAUDE_HANDOFF.md`
+- Agent/Bot framework: `https://github.com/one-moment/chloris/blob/feature/purchase-bot-mvp/docs/agent-bot-framework.md`
 
 ## Environment And Secrets
 
@@ -205,7 +208,8 @@ Not re-run at the final wrap-up:
 
 ## Next Recommended Work
 
-1. Push the local branch if Claude will work from GitHub:
+1. Confirm GitHub is current if Claude will work from GitHub:
+   - `git status --short --branch`
    - `git push origin feature/purchase-bot-mvp`
 2. Stabilize Coupang worker using artifacts, not selector guesses:
    - existing cart items
@@ -287,4 +291,3 @@ npm run agent-layer:test
 - Do not change Coupang selectors by guessing. Collect artifacts first.
 - Do not continue a purchase worker task after quantity mismatch.
 - Deployment logs belong in the `#배포로그` Ideas board, not chat messages.
-

@@ -77,9 +77,9 @@ The current priority is Purchase Agent stabilization:
 
 - Branch: `feature/purchase-bot-mvp`
 - Local repo path: `/Users/user/Documents/Codex/2026-05-28/github/mattermost`
-- GitHub remote: `https://github.com/one-moment/mattermost.git`
+- GitHub remote: `https://github.com/one-moment/chloris.git`
 - Claude handoff file: `CLAUDE_HANDOFF.md`
-- Local branch is ahead of `origin/feature/purchase-bot-mvp` by 3 commits as of 2026-06-10.
+- Check `git status --short --branch` before handoff; push `feature/purchase-bot-mvp` if local commits are ahead of origin.
 - Latest local commits known:
   - `4069393 Document agent framework and stabilize bulk parser`
   - `2bdfda2 Restrict auth user list exposure`
