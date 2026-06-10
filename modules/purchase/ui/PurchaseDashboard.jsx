@@ -38,7 +38,6 @@ const REQUEST_STATUS_LABELS = {
 };
 
 export default function PurchaseDashboard() {
-  const [currentUser, setCurrentUser] = useState(null);
   const [drafts, setDrafts] = useState([]);
   const [requests, setRequests] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -49,13 +48,6 @@ export default function PurchaseDashboard() {
 
     async function load() {
       try {
-        const session = await requestJson("/api/auth/me");
-        if (cancelled) return;
-        setCurrentUser(session.currentUser);
-        if (!session.currentUser) {
-          setIsLoaded(true);
-          return;
-        }
         const state = await requestJson("/api/state");
         if (cancelled) return;
         setDrafts(state.purchaseOrderDrafts ?? []);
@@ -77,17 +69,10 @@ export default function PurchaseDashboard() {
   }, []);
 
   if (!isLoaded) {
-    return <main className="loading-shell">불러오는 중...</main>;
-  }
-
-  if (!currentUser) {
     return (
-      <main className="loading-shell">
-        <div>
-          <p>로그인이 필요합니다.</p>
-          <Link href="/">채팅으로 이동</Link>
-        </div>
-      </main>
+      <div className="work-page">
+        <p className="work-empty">불러오는 중...</p>
+      </div>
     );
   }
 
@@ -100,7 +85,7 @@ export default function PurchaseDashboard() {
   const pendingApprovals = requests.filter((request) => request.status === "pending_approval").length;
 
   return (
-    <main className="work-page">
+    <div className="work-page">
       <header className="work-page-header">
         <div>
           <h1>구매 관리</h1>
@@ -211,6 +196,6 @@ export default function PurchaseDashboard() {
           </table>
         )}
       </section>
-    </main>
+    </div>
   );
 }

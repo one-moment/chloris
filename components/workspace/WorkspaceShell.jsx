@@ -1,20 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import AuthScreen from "../components/AuthScreen";
-import AutomationPanel from "../components/AutomationPanel";
-import FilesView from "../components/FilesView";
-import IdeasView from "../components/IdeasView";
-import MessagesView from "../components/MessagesView";
-import ProjectSidebar from "../components/ProjectSidebar";
-import SearchDialog from "../components/SearchDialog";
-import Topbar from "../components/Topbar";
-import { getPostStatuses } from "../lib/constants";
-import { requestJson as apiRequestJson } from "../lib/core/apiClient";
-import { createInitialState } from "../lib/initialData";
-import { getMentionedUserIds } from "../lib/mentions";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import AuthScreen from "../AuthScreen";
+import ProjectSidebar from "../ProjectSidebar";
+import SearchDialog from "../SearchDialog";
+import { getPostStatuses } from "../../lib/constants";
+import { requestJson as apiRequestJson } from "../../lib/core/apiClient";
+import { createInitialState } from "../../lib/initialData";
+import { getMentionedUserIds } from "../../lib/mentions";
 
 const MAX_INLINE_ATTACHMENT_SIZE = 1_500_000;
+
+const WorkspaceContext = createContext(null);
+
+export function useWorkspace() {
+  const context = useContext(WorkspaceContext);
+  if (!context) throw new Error("useWorkspace must be used within WorkspaceShell.");
+  return context;
+}
 
 function makeClientId(prefix) {
   return `${prefix}-client-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -24,7 +28,8 @@ function isTransientFetchError(error) {
   return error instanceof TypeError && error.message === "Failed to fetch";
 }
 
-export default function Home() {
+export default function WorkspaceShell({ children }) {
+  const router = useRouter();
   const [state, setState] = useState(createInitialState);
   const [stateLoaded, setStateLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState("messages");
@@ -418,6 +423,19 @@ export default function Home() {
       });
   }, [channel?.id, channelInsights, currentUser, requestJson, state.readStates]);
 
+  const applyChannelFromUrl = useCallback((channelId) => {
+    setState((current) => {
+      const targetProject = current.projects.find((item) => item.channels.some((channelItem) => channelItem.id === channelId));
+      if (!targetProject) return current;
+      if (current.selectedProjectId === targetProject.id && current.selectedChannelId === channelId) return current;
+      return {
+        ...current,
+        selectedProjectId: targetProject.id,
+        selectedChannelId: channelId
+      };
+    });
+  }, []);
+
   function navigateTo({ projectId, channelId, tab }) {
     setState((current) => {
       const targetProject = current.projects.find((item) => item.id === projectId)
@@ -432,25 +450,27 @@ export default function Home() {
     });
     if (tab) setActiveTab(tab);
     setActiveFilter("all");
+    if (channelId) router.push(`/chat/${channelId}`);
   }
 
   function selectProject(projectId) {
-    setState((current) => {
-      const nextProject = current.projects.find((item) => item.id === projectId) ?? current.projects[0];
-      return {
-        ...current,
-        selectedProjectId: nextProject.id,
-        selectedChannelId: nextProject.channels[0]?.id
-      };
-    });
+    const nextProject = state.projects.find((item) => item.id === projectId) ?? state.projects[0];
+    const nextChannelId = nextProject?.channels[0]?.id;
+    setState((current) => ({
+      ...current,
+      selectedProjectId: nextProject?.id,
+      selectedChannelId: nextChannelId
+    }));
     setActiveTab("ideas");
     setActiveFilter("all");
+    if (nextChannelId) router.push(`/chat/${nextChannelId}`);
   }
 
   function selectChannel(channelId) {
     setState((current) => ({ ...current, selectedChannelId: channelId }));
     setActiveTab("ideas");
     setActiveFilter("all");
+    router.push(`/chat/${channelId}`);
   }
 
   async function deleteChannel(channelId) {
@@ -461,9 +481,8 @@ export default function Home() {
 
     const previousState = state;
     const remainingChannels = project.channels.filter((item) => item.id !== channelId);
-    const selectedChannelId = channelId === state.selectedChannelId
-      ? remainingChannels[0]?.id
-      : state.selectedChannelId;
+    const wasSelected = channelId === state.selectedChannelId;
+    const selectedChannelId = wasSelected ? remainingChannels[0]?.id : state.selectedChannelId;
 
     setActionError("");
     setState((current) => ({
@@ -474,6 +493,7 @@ export default function Home() {
       ))
     }));
     setActiveFilter("all");
+    if (wasSelected && selectedChannelId) router.replace(`/chat/${selectedChannelId}`);
 
     try {
       const result = await requestJson(`/api/channels/${channelId}`, { method: "DELETE" });
@@ -568,6 +588,7 @@ export default function Home() {
           projectItem.id === temporaryProject.id ? created : projectItem
         ))
       }));
+      if (created.channels?.[0]?.id) router.replace(`/chat/${created.channels[0].id}`);
       refreshStateInBackground({ projectId: created.id, channelId: created.channels?.[0]?.id });
     } catch (error) {
       console.error(error);
@@ -621,6 +642,7 @@ export default function Home() {
         body: JSON.stringify({ name, type: temporaryChannel.type, branchId })
       });
       replaceChannelId(temporaryChannel.id, created);
+      router.replace(`/chat/${created.id}`);
       refreshStateInBackground({ projectId, channelId: created.id });
     } catch (error) {
       console.error(error);
@@ -959,159 +981,141 @@ export default function Home() {
     }
   }
 
+  const workspaceValue = {
+    state,
+    stateLoaded,
+    currentUser,
+    users,
+    project,
+    channel,
+    activeTab,
+    setActiveTab,
+    activeFilter,
+    setActiveFilter,
+    filteredPosts,
+    counts,
+    postStatuses,
+    availableBots,
+    channelInsights,
+    actionError,
+    requestJson,
+    applyChannelFromUrl,
+    navigateTo,
+    openSearch: () => setShowSearchDialog(true),
+    openSidebar: () => setIsSidebarOpen(true),
+    messageAttachments,
+    postAttachments,
+    addMessageAttachments,
+    addPostAttachments,
+    removeMessageAttachment: (index) => removeAttachment(setMessageAttachments, index),
+    removePostAttachment: (index) => removeAttachment(setPostAttachments, index),
+    commentDrafts,
+    setCommentDraft: (postId, value) => setCommentDrafts((current) => ({ ...current, [postId]: value })),
+    fileDraft,
+    setFileDraft,
+    sendMessage,
+    editMessage,
+    createPost,
+    changePostStatus,
+    editPost,
+    editComment,
+    addComment,
+    addReply,
+    togglePostPin,
+    addFile,
+    runBot,
+    completeRun,
+    approveRun,
+    rejectRun,
+    actOnPurchaseRequest,
+    updatePurchaseOrderDraft,
+    approvePurchaseOrderDraft,
+    changeChannelBranch
+  };
+
   return (
-    !authLoaded || !stateLoaded ? (
-      <main className="loading-shell">불러오는 중...</main>
-    ) : !currentUser ? (
-      <AuthScreen
-        onLogin={(form) => authenticate("/api/auth/login", form)}
-        onRegister={(form) => authenticate("/api/auth/register", form)}
-        error={authError}
-        isSubmitting={isAuthSubmitting}
-      />
-    ) : (
-    <main className="app-shell">
-      <ProjectSidebar
-        projects={state.projects}
-        selectedProjectId={state.selectedProjectId}
-        selectedChannelId={state.selectedChannelId}
-        channelMeta={channelInsights.meta}
-        onSelectProject={selectProject}
-        onSelectChannel={selectChannel}
-        onDeleteChannel={deleteChannel}
-        onNewProject={() => setShowProjectDialog(true)}
-        onNewChannel={() => setShowChannelDialog(true)}
-        currentUser={currentUser}
-        onLogout={logout}
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
-      {isSidebarOpen && <button className="sidebar-backdrop" type="button" onClick={() => setIsSidebarOpen(false)} aria-label="채널 패널 닫기" />}
-
-      <section className="main-area">
-        <Topbar
-          project={project}
-          channel={channel}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          onToggleSidebar={() => setIsSidebarOpen(true)}
-          notifications={channelInsights.notifications}
-          onNotificationClick={navigateTo}
-          onOpenSearch={() => setShowSearchDialog(true)}
-          branches={state.branches ?? []}
-          currentUser={currentUser}
-          onChangeBranch={changeChannelBranch}
+    <WorkspaceContext.Provider value={workspaceValue}>
+      {!authLoaded || !stateLoaded ? (
+        <main className="loading-shell">불러오는 중...</main>
+      ) : !currentUser ? (
+        <AuthScreen
+          onLogin={(form) => authenticate("/api/auth/login", form)}
+          onRegister={(form) => authenticate("/api/auth/register", form)}
+          error={authError}
+          isSubmitting={isAuthSubmitting}
         />
-
-        <div className="work-surface">
-          {activeTab === "messages" && (
-            <MessagesView
-              channel={channel}
-              currentUser={currentUser}
-              users={users}
-              attachments={messageAttachments}
-              error={actionError}
-              onAttachmentsChange={addMessageAttachments}
-              onRemoveAttachment={(index) => removeAttachment(setMessageAttachments, index)}
-              onSend={sendMessage}
-              onEditMessage={editMessage}
-              purchaseRequests={state.purchaseRequests ?? []}
-              onPurchaseRequestAction={actOnPurchaseRequest}
-              purchaseOrderDrafts={state.purchaseOrderDrafts ?? []}
-              onPurchaseOrderDraftUpdate={updatePurchaseOrderDraft}
-              onPurchaseOrderDraftApprove={approvePurchaseOrderDraft}
-            />
-          )}
-          {activeTab === "ideas" && (
-            <IdeasView
-              channel={channel}
-              posts={filteredPosts}
-              currentUser={currentUser}
-              users={users}
-              counts={counts}
-              activeFilter={activeFilter}
-              postStatuses={postStatuses}
-              onFilterChange={setActiveFilter}
-              attachments={postAttachments}
-              error={actionError}
-              onAttachmentsChange={addPostAttachments}
-              onRemoveAttachment={(index) => removeAttachment(setPostAttachments, index)}
-              onCreatePost={createPost}
-              commentDrafts={commentDrafts}
-              onCommentDraftChange={(postId, value) => setCommentDrafts((current) => ({ ...current, [postId]: value }))}
-              onAddComment={addComment}
-              onStatusChange={changePostStatus}
-              onEditPost={editPost}
-              onEditComment={editComment}
-              onAddReply={addReply}
-              onTogglePin={togglePostPin}
-            />
-          )}
-          {activeTab === "files" && (
-            <FilesView channel={channel} draft={fileDraft} onDraftChange={setFileDraft} onAddFile={addFile} />
-          )}
-          <AutomationPanel
-            channel={channel}
-            bots={availableBots}
+      ) : (
+        <main className="app-shell">
+          <ProjectSidebar
+            projects={state.projects}
+            selectedProjectId={state.selectedProjectId}
+            selectedChannelId={state.selectedChannelId}
+            channelMeta={channelInsights.meta}
+            onSelectProject={selectProject}
+            onSelectChannel={selectChannel}
+            onDeleteChannel={deleteChannel}
+            onNewProject={() => setShowProjectDialog(true)}
+            onNewChannel={() => setShowChannelDialog(true)}
             currentUser={currentUser}
-            users={users}
-            requestJson={requestJson}
-            onRunBot={runBot}
-            onCompleteRun={completeRun}
-            onApproveRun={approveRun}
-            onRejectRun={rejectRun}
+            onLogout={logout}
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
           />
-        </div>
-      </section>
+          {isSidebarOpen && <button className="sidebar-backdrop" type="button" onClick={() => setIsSidebarOpen(false)} aria-label="채널 패널 닫기" />}
 
-      {showProjectDialog && (
-        <div className="next-dialog-fallback">
-          <form className="modal-card" onSubmit={createProject}>
-            <h2>프로젝트 생성</h2>
-            <input value={projectDraft} onChange={(event) => setProjectDraft(event.target.value)} placeholder="프로젝트 이름" autoFocus />
-            <div className="modal-actions">
-              <button type="button" onClick={() => setShowProjectDialog(false)}>취소</button>
-              <button className="primary-button" type="submit">생성</button>
+          <section className="main-area">
+            {children}
+          </section>
+
+          {showProjectDialog && (
+            <div className="next-dialog-fallback">
+              <form className="modal-card" onSubmit={createProject}>
+                <h2>프로젝트 생성</h2>
+                <input value={projectDraft} onChange={(event) => setProjectDraft(event.target.value)} placeholder="프로젝트 이름" autoFocus />
+                <div className="modal-actions">
+                  <button type="button" onClick={() => setShowProjectDialog(false)}>취소</button>
+                  <button className="primary-button" type="submit">생성</button>
+                </div>
+              </form>
             </div>
-          </form>
-        </div>
-      )}
+          )}
 
-      {showSearchDialog && (
-        <SearchDialog
-          requestJson={requestJson}
-          onNavigate={navigateTo}
-          onClose={() => setShowSearchDialog(false)}
-        />
-      )}
+          {showSearchDialog && (
+            <SearchDialog
+              requestJson={requestJson}
+              onNavigate={navigateTo}
+              onClose={() => setShowSearchDialog(false)}
+            />
+          )}
 
-      {showChannelDialog && (
-        <div className="next-dialog-fallback">
-          <form className="modal-card" onSubmit={createChannel}>
-            <h2>채널 생성</h2>
-            <input value={channelDraft.name} onChange={(event) => setChannelDraft({ ...channelDraft, name: event.target.value })} placeholder="채널 이름" autoFocus />
-            <select value={channelDraft.type} onChange={(event) => setChannelDraft({ ...channelDraft, type: event.target.value })}>
-              <option value="general">일반 소통</option>
-              <option value="purchase">구매요청</option>
-              <option value="inbound">입고</option>
-              <option value="outbound">출고</option>
-              <option value="inventory">재고관리</option>
-              <option value="improvement">개선 건의</option>
-            </select>
-            <select value={channelDraft.branchId} onChange={(event) => setChannelDraft({ ...channelDraft, branchId: event.target.value })} aria-label="지점 선택">
-              <option value="">지점 없음 (공통 채널)</option>
-              {(state.branches ?? []).map((branch) => (
-                <option key={branch.id} value={branch.id}>{branch.name}</option>
-              ))}
-            </select>
-            <div className="modal-actions">
-              <button type="button" onClick={() => setShowChannelDialog(false)}>취소</button>
-              <button className="primary-button" type="submit">생성</button>
+          {showChannelDialog && (
+            <div className="next-dialog-fallback">
+              <form className="modal-card" onSubmit={createChannel}>
+                <h2>채널 생성</h2>
+                <input value={channelDraft.name} onChange={(event) => setChannelDraft({ ...channelDraft, name: event.target.value })} placeholder="채널 이름" autoFocus />
+                <select value={channelDraft.type} onChange={(event) => setChannelDraft({ ...channelDraft, type: event.target.value })}>
+                  <option value="general">일반 소통</option>
+                  <option value="purchase">구매요청</option>
+                  <option value="inbound">입고</option>
+                  <option value="outbound">출고</option>
+                  <option value="inventory">재고관리</option>
+                  <option value="improvement">개선 건의</option>
+                </select>
+                <select value={channelDraft.branchId} onChange={(event) => setChannelDraft({ ...channelDraft, branchId: event.target.value })} aria-label="지점 선택">
+                  <option value="">지점 없음 (공통 채널)</option>
+                  {(state.branches ?? []).map((branch) => (
+                    <option key={branch.id} value={branch.id}>{branch.name}</option>
+                  ))}
+                </select>
+                <div className="modal-actions">
+                  <button type="button" onClick={() => setShowChannelDialog(false)}>취소</button>
+                  <button className="primary-button" type="submit">생성</button>
+                </div>
+              </form>
             </div>
-          </form>
-        </div>
+          )}
+        </main>
       )}
-    </main>
-    )
+    </WorkspaceContext.Provider>
   );
 }
