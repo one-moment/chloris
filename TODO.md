@@ -27,7 +27,20 @@ Deployment for batches 3-4 (completed 2026-06-10, user approved):
 - [x] Deploy log: `post-deploy-log-20260610-uiux-batch3-4-threads-search-notifications`.
 - [x] Branch pushed to origin (`cfca075`).
 
-Employee UI/UX proposal: ALL priority 1-3 items are now live in production. Next: architecture phase ordering decision (Phase 1-2 vs Coupang worker).
+Employee UI/UX proposal: ALL priority 1-3 items are now live in production.
+
+## Architecture Phase 1 (2026-06-11, in progress)
+
+Decided: Phase 1 is the main thread; Coupang worker runs in parallel on failure artifacts (see DECISIONS 2026-06-11).
+
+- [x] `lib/core/apiClient.js` extraction (page.jsx fetch util moved).
+- [x] `modules/registry.js` + `modules/purchase/index.js` manifest; sidebar 업무 section renders from registry.
+- [x] `/work/purchase` dashboard v0 (`modules/purchase/ui/PurchaseDashboard.jsx`): metrics, vendor tasks, drafts, requests.
+- [x] Module boundary guardrail: `scripts/check-module-boundaries.mjs` wired into `npm run lint` (verified to catch violations); AGENTS.md module rules added.
+- [x] `Branch` + `BranchAssignment` schema in both Prisma schemas; `Channel.branchId` nullable; migration `20260611090000_add_branch_layer` created, NOT applied (needs user approval).
+- [ ] Apply branch migration to production (user approval) + deploy Phase 1 code.
+- [ ] Remaining Phase 1 item: `/chat/[channelId]` URL routing (page.jsx layout split) — next increment.
+- [ ] Phase 2 after that: purchase server code into `modules/purchase/server/`, card registry, agent interface extraction, `/work/inbox`.
 
 Notes:
 - Image thumbnails already work (`AttachmentList` renders image previews + modal) — only style polish needed.

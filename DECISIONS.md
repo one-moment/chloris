@@ -48,6 +48,12 @@
 - Keep `AGENTS.md`, `HANDOFF.md`, `DECISIONS.md`, `TODO.md`, `ENV_CHECKLIST.md`, and `BUG_LOG.md` current.
 - Update `HANDOFF.md` and `TODO.md` before ending every future work session.
 
+## 2026-06-11: Phase 1 Start and Work Ordering
+
+- Architecture Phase 1 starts now as the main thread; Coupang worker stabilization runs in parallel, driven by real failure artifacts as they occur (worker work is artifact-gated per AGENTS.md, so waiting on it blocks nothing).
+- Branch default: schema supports multi-branch, but channel linkage (`Channel.branchId`) is nullable and unset initially. Branch records and channel mapping will be created when the user defines the branch structure; work records will then inherit branch from their channel.
+- Module boundary enforcement is a lint-stage script (`scripts/check-module-boundaries.mjs`), verified to fail on cross-module imports.
+
 ## 2026-06-10: Platform Architecture v2
 
 - Sidebar splits into communication / work / admin sections; work features get dedicated routes under `/work/*`, not channel tabs.

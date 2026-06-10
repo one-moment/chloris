@@ -7,7 +7,7 @@
     "build": "next build",
     "vercel-build": "prisma generate --schema prisma/schema.postgres.prisma && next build",
     "start": "next start",
-    "lint": "eslint \"app/**/*.{js,jsx}\" \"components/**/*.{js,jsx}\" \"lib/**/*.{js,jsx}\" next.config.mjs",
+    "lint": "eslint \"app/**/*.{js,jsx}\" \"components/**/*.{js,jsx}\" \"lib/**/*.{js,jsx}\" \"modules/**/*.{js,jsx}\" next.config.mjs && node scripts/check-module-boundaries.mjs",
     "db:push": "prisma db push",
     "db:push:postgres": "prisma db push --schema prisma/schema.postgres.prisma",
     "db:studio": "prisma studio",

@@ -12,6 +12,14 @@
 - Keep changes scoped. Do not perform broad rewrites or full flow refactors unless explicitly approved.
 - When asked to update deployment logs, write them to the `#배포로그` channel's Ideas board, not to chat messages.
 
+## Module Rules
+
+- Work features live in `modules/<slug>/` (vertical slice: server, ui, manifest). Register manifests in `modules/registry.js`.
+- Modules may import `lib/` (core/platform) only. Modules must NEVER import other modules — cross-module flows go through platform events. Enforced by `scripts/check-module-boundaries.mjs` in `npm run lint`.
+- Do not add module/work data to `/api/state`. It serves communication core data only; modules fetch through `/api/work/<module>/...`.
+- Manifest contract fields may only be added when two or more modules need them.
+- See `docs/platform-architecture.md` for the full design.
+
 ## Engineering Rules
 
 - Prefer existing project patterns and helper APIs.

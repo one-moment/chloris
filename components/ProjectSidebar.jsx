@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { CHANNEL_TYPES } from "../lib/constants";
+import { getWorkNavItems } from "../modules/registry";
 
 function activityTime(record) {
   const date = new Date(record?.createdAtIso ?? record?.createdAt ?? "");
@@ -32,6 +34,7 @@ export default function ProjectSidebar({
 }) {
   const project = projects.find((item) => item.id === selectedProjectId) ?? projects[0];
   const sidebarClassName = isOpen ? "sidebar mobile-open" : "sidebar";
+  const workNavItems = getWorkNavItems(currentUser);
 
   function handleSelectProject(projectId) {
     onSelectProject(projectId);
@@ -117,6 +120,21 @@ export default function ProjectSidebar({
           ))}
         </nav>
       </div>
+
+      {workNavItems.length > 0 && (
+        <div className="sidebar-section work-nav-section">
+          <div className="section-title">
+            <span>업무</span>
+          </div>
+          <nav className="work-nav">
+            {workNavItems.map((item) => (
+              <Link key={item.slug} className="work-nav-item" href={item.href}>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      )}
     </aside>
   );
 }

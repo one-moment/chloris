@@ -17,14 +17,39 @@ model Project {
   botInstallations BotInstallation[]
 }
 
+model Branch {
+  id          String   @id
+  name        String   @unique
+  slug        String   @unique
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  channels    Channel[]
+  assignments BranchAssignment[]
+}
+
+model BranchAssignment {
+  id        String   @id
+  userId    String
+  branchId  String
+  role      String   @default("staff")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, branchId], map: "uniq_branch_assignment")
+}
+
 model Channel {
   id        String    @id
   projectId String
+  branchId  String?
   name      String
   type      String
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch    Branch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
   messages  Message[]
   posts     Post[]
   files     File[]
@@ -52,6 +77,7 @@ model User {
   posts        Post[]
   comments     Comment[]
   readStates   ChannelReadState[]
+  branchAssignments BranchAssignment[]
 }
 
 model BotApp {

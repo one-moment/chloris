@@ -10,6 +10,7 @@ import ProjectSidebar from "../components/ProjectSidebar";
 import SearchDialog from "../components/SearchDialog";
 import Topbar from "../components/Topbar";
 import { getPostStatuses } from "../lib/constants";
+import { requestJson as apiRequestJson } from "../lib/core/apiClient";
 import { createInitialState } from "../lib/initialData";
 import { getMentionedUserIds } from "../lib/mentions";
 
@@ -45,27 +46,7 @@ export default function Home() {
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
   const [actionError, setActionError] = useState("");
 
-  const requestJson = useCallback(async function requestJson(url, options = {}) {
-    const response = await fetch(url, {
-      ...options,
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers ?? {})
-      }
-    });
-    const text = await response.text();
-    let data = null;
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch {
-      data = null;
-    }
-    if (!response.ok) {
-      throw new Error(data?.error ?? `API request failed (${response.status})`);
-    }
-    return data;
-  }, []);
+  const requestJson = useCallback((url, options = {}) => apiRequestJson(url, options), []);
 
   const withSelection = useCallback(function withSelection(serverState, preferredProjectId, preferredChannelId) {
     const selectedProject = serverState.projects.find((item) => item.id === preferredProjectId) ?? serverState.projects[0];
