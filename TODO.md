@@ -41,8 +41,9 @@ Decided: Phase 1 is the main thread; Coupang worker runs in parallel on failure 
 - [x] Branch migration applied to production with 3 seeded branches (강남1호점 `branch-gangnam-1`, 강남2호점 `branch-gangnam-2`, 잠실점 `branch-jamsil`); future branches are added then linked to channels per user decision.
 - [x] Phase 1 code deployed: `dpl_2ttnSDBiRsERD2vV7QDVPK8dXXwN`, health ok, `/work/purchase` 200. Deploy log: `post-deploy-log-20260611-phase1-module-registry-branches`.
 - [x] Channel-branch linking UI deployed (`dpl_2aFqqchMxHh9JMd3QkGh5Bs1CtxZ`): branch select on channel creation, Topbar branch badge, admin inline branch change (PATCH `/api/channels/:id`). Deploy log: `post-deploy-log-20260611-channel-branch-linking`.
-- [ ] Remaining Phase 1 item: `/chat/[channelId]` URL routing (page.jsx layout split) — next increment.
-- [ ] Phase 2 after that: purchase server code into `modules/purchase/server/`, card registry, agent interface extraction, `/work/inbox`.
+- [x] `/chat/[channelId]` URL routing complete: `WorkspaceShell` (layout-level provider, state persists across navigation) + `ChatView` + `app/(workspace)` route group; `/work/purchase` moved inside the shell. Deployed `dpl_w7vuu8Niz6RERfC3sacYTGBXXyTx`, all routes 200. Deploy log: `post-deploy-log-20260611-phase1-complete-chat-routing`.
+
+**Phase 1 COMPLETE.** Next: Phase 2 — purchase server code into `modules/purchase/server/`, `Message.cardType` card registry, standard agent interface extraction, platform eventBus + metricsRegistry, `/work/inbox` approval inbox.
 
 Notes:
 - Image thumbnails already work (`AttachmentList` renders image previews + modal) — only style polish needed.
