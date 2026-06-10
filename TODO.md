@@ -21,9 +21,13 @@ Batch 4 (priority 3):
 - [x] Unread counts per channel (`ChannelReadState` + client-side counting from `state.readStates`), sidebar badges (amber when mentioned), auto mark-read on channel view.
 - [x] In-app notifications: Topbar bell with mention/comment(on my post)/pinned-notice items, click navigates to source channel (architecture principle 9.5).
 
-Deployment for batches 3-4:
-- [ ] Apply migration `20260610150000_add_comment_threads_and_read_state` to production — REQUIRES explicit user approval.
-- [ ] Vercel deploy + health check + `#배포로그` post after migration approval.
+Deployment for batches 3-4 (completed 2026-06-10, user approved):
+- [x] Migration `20260610150000_add_comment_threads_and_read_state` applied to production.
+- [x] Deployed `dpl_9biuBJtMetSJoKqpyskYGgCLZPqB`, health ok/database ok.
+- [x] Deploy log: `post-deploy-log-20260610-uiux-batch3-4-threads-search-notifications`.
+- [x] Branch pushed to origin (`cfca075`).
+
+Employee UI/UX proposal: ALL priority 1-3 items are now live in production. Next: architecture phase ordering decision (Phase 1-2 vs Coupang worker).
 
 Notes:
 - Image thumbnails already work (`AttachmentList` renders image previews + modal) — only style polish needed.
