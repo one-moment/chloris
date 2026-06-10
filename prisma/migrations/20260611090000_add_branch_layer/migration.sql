@@ -30,3 +30,9 @@ ALTER TABLE "BranchAssignment" ADD CONSTRAINT "BranchAssignment_branchId_fkey" F
 
 ALTER TABLE "Channel" ADD COLUMN "branchId" TEXT;
 ALTER TABLE "Channel" ADD CONSTRAINT "Channel_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "Branch"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- 초기 지점 마스터 데이터 (2026-06-11 사용자 확정)
+INSERT INTO "Branch" ("id", "name", "slug", "status", "createdAt", "updatedAt") VALUES
+  ('branch-gangnam-1', '강남1호점', 'gangnam-1', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('branch-gangnam-2', '강남2호점', 'gangnam-2', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('branch-jamsil', '잠실점', 'jamsil', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);

@@ -38,7 +38,9 @@ Decided: Phase 1 is the main thread; Coupang worker runs in parallel on failure 
 - [x] `/work/purchase` dashboard v0 (`modules/purchase/ui/PurchaseDashboard.jsx`): metrics, vendor tasks, drafts, requests.
 - [x] Module boundary guardrail: `scripts/check-module-boundaries.mjs` wired into `npm run lint` (verified to catch violations); AGENTS.md module rules added.
 - [x] `Branch` + `BranchAssignment` schema in both Prisma schemas; `Channel.branchId` nullable; migration `20260611090000_add_branch_layer` created, NOT applied (needs user approval).
-- [ ] Apply branch migration to production (user approval) + deploy Phase 1 code.
+- [x] Branch migration applied to production with 3 seeded branches (강남1호점 `branch-gangnam-1`, 강남2호점 `branch-gangnam-2`, 잠실점 `branch-jamsil`); future branches are added then linked to channels per user decision.
+- [x] Phase 1 code deployed: `dpl_2ttnSDBiRsERD2vV7QDVPK8dXXwN`, health ok, `/work/purchase` 200. Deploy log: `post-deploy-log-20260611-phase1-module-registry-branches`.
+- [ ] Channel-branch linking UI (assign `Channel.branchId` from admin) — needed before branch-scoped work records.
 - [ ] Remaining Phase 1 item: `/chat/[channelId]` URL routing (page.jsx layout split) — next increment.
 - [ ] Phase 2 after that: purchase server code into `modules/purchase/server/`, card registry, agent interface extraction, `/work/inbox`.
 

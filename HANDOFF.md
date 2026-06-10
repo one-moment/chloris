@@ -90,6 +90,12 @@ The current priority is Purchase Agent stabilization:
   - verified: `npm run lint`, `npm run build`, `agent-gateway:test`, `purchase-bot:test` all passed; DB-writing tests not run (default `.env` may point at production)
 - Added `CLAUDE_HANDOFF.md` so Claude or another coding agent can continue from local path, GitHub branch, project structure, safety rules, and next-work context.
 
+- 2026-06-11 architecture Phase 1 first increment deployed:
+  - sidebar 업무 section from `modules/registry.js`; `/work/purchase` dashboard v0
+  - module boundary guardrail in `npm run lint`; AGENTS.md module rules
+  - migration `20260611090000_add_branch_layer` applied: Branch/BranchAssignment tables, `Channel.branchId`, seeded 강남1호점/강남2호점/잠실점
+  - deployment `dpl_2ttnSDBiRsERD2vV7QDVPK8dXXwN`, health ok, deploy log `post-deploy-log-20260611-phase1-module-registry-branches`
+
 ## Current State
 
 - Branch: `feature/purchase-bot-mvp`

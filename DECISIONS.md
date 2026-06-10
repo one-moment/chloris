@@ -51,7 +51,8 @@
 ## 2026-06-11: Phase 1 Start and Work Ordering
 
 - Architecture Phase 1 starts now as the main thread; Coupang worker stabilization runs in parallel, driven by real failure artifacts as they occur (worker work is artifact-gated per AGENTS.md, so waiting on it blocks nothing).
-- Branch default: schema supports multi-branch, but channel linkage (`Channel.branchId`) is nullable and unset initially. Branch records and channel mapping will be created when the user defines the branch structure; work records will then inherit branch from their channel.
+- Branch default: schema supports multi-branch, but channel linkage (`Channel.branchId`) is nullable and unset initially. Work records will inherit branch from their channel once linked.
+- 2026-06-11 user confirmed initial branches: 강남1호점, 강남2호점, 잠실점 (seeded in `20260611090000_add_branch_layer`). Future branches: create Branch record, then link channels to it.
 - Module boundary enforcement is a lint-stage script (`scripts/check-module-boundaries.mjs`), verified to fail on cross-module imports.
 
 ## 2026-06-10: Platform Architecture v2
