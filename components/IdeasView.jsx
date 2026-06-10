@@ -23,6 +23,7 @@ export default function IdeasView({
   onStatusChange,
   onEditPost,
   onEditComment,
+  onAddReply,
   onTogglePin,
   postStatuses
 }) {
@@ -142,6 +143,7 @@ export default function IdeasView({
               onAddComment={onAddComment}
               onEditPost={onEditPost}
               onEditComment={onEditComment}
+              onAddReply={onAddReply}
               onTogglePin={onTogglePin}
             />
           ))}
@@ -165,6 +167,7 @@ export default function IdeasView({
               onAddComment={onAddComment}
               onEditPost={onEditPost}
               onEditComment={onEditComment}
+              onAddReply={onAddReply}
               onTogglePin={onTogglePin}
             />
           ))

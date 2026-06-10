@@ -19,6 +19,7 @@ export default function ProjectSidebar({
   projects,
   selectedProjectId,
   selectedChannelId,
+  channelMeta = {},
   onSelectProject,
   onSelectChannel,
   onDeleteChannel,
@@ -92,7 +93,14 @@ export default function ProjectSidebar({
                 type="button"
                 onClick={() => handleSelectChannel(channel.id)}
               >
-                <span className="channel-name"># {channel.name}</span>
+                <span className="channel-name-row">
+                  <span className="channel-name"># {channel.name}</span>
+                  {(channelMeta[channel.id]?.unread ?? 0) > 0 && (
+                    <b className={channelMeta[channel.id]?.hasMention ? "unread-badge mention" : "unread-badge"}>
+                      {channelMeta[channel.id].unread}
+                    </b>
+                  )}
+                </span>
                 <small className="channel-preview">{channelPreview(channel) ?? CHANNEL_TYPES[channel.type]?.label}</small>
               </button>
               <button

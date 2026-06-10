@@ -71,6 +71,14 @@ The current priority is Purchase Agent stabilization:
   - confirmed Coupang line creates `PurchaseRequest` and `PurchaseWorkerTask` in queued state
   - found and fixed metadata-title parsing bug
 - Added `docs/agent-bot-framework.md` for team-built agent/bot framework direction.
+- 2026-06-10 employee UI/UX batches 1-2 deployed to production:
+  - migration `20260610100000_add_post_pinned` applied to production (user approved)
+  - deployment `dpl_7zyeR6fQmTMYUE9g1DRBTnPH2jym`, health ok/database ok/icn1
+  - deploy log Ideas post: `post-deploy-log-20260610-uiux-batch1-2-post-pin`
+- 2026-06-10 batches 3-4 implemented locally (NOT yet deployed):
+  - threaded replies (`Comment.parentId`, 1-level threads), search dialog + `/api/search`
+  - per-channel unread badges (`ChannelReadState` + `/api/channels/:id/read`), Topbar notification bell (mention/comment/notice)
+  - migration `20260610150000_add_comment_threads_and_read_state` created, NOT applied — needs user approval before deploy
 - 2026-06-10 employee UI/UX proposal batches 1-2 implemented locally:
   - post readability (typography hierarchy, 더보기 truncation, `**bold**` rendering via `components/RichText.jsx`)
   - mention autocomplete extended to post/message composers; mention filter token bug fixed

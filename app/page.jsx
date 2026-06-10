@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AuthScreen from "../components/AuthScreen";
 import AutomationPanel from "../components/AutomationPanel";
 import FilesView from "../components/FilesView";
 import IdeasView from "../components/IdeasView";
 import MessagesView from "../components/MessagesView";
 import ProjectSidebar from "../components/ProjectSidebar";
+import SearchDialog from "../components/SearchDialog";
 import Topbar from "../components/Topbar";
 import { getPostStatuses } from "../lib/constants";
 import { createInitialState } from "../lib/initialData";
@@ -35,6 +36,7 @@ export default function Home() {
   const [channelDraft, setChannelDraft] = useState({ name: "", type: "general" });
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [showChannelDialog, setShowChannelDialog] = useState(false);
+  const [showSearchDialog, setShowSearchDialog] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -321,6 +323,135 @@ export default function Home() {
     }),
     [channel.posts, postStatuses]
   );
+
+  const channelInsights = useMemo(() => {
+    const meta = {};
+    const notifications = [];
+    if (!currentUser) return { meta, notifications };
+    const myTokens = [currentUser.name, currentUser.handle].filter(Boolean).map((value) => `@${value}`);
+    const matchesMe = (text) => myTokens.some((token) => String(text ?? "").includes(token));
+    const readStates = state.readStates ?? {};
+
+    for (const projectItem of state.projects) {
+      for (const channelItem of projectItem.channels) {
+        const lastRead = Date.parse(readStates[channelItem.id] ?? "") || 0;
+        const isNew = (record) => (Date.parse(record.createdAtIso ?? "") || 0) > lastRead;
+        let unread = 0;
+        let hasMention = false;
+        const base = {
+          channelId: channelItem.id,
+          channelName: channelItem.name,
+          projectId: projectItem.id
+        };
+
+        for (const message of channelItem.messages ?? []) {
+          if (!isNew(message) || message.authorId === currentUser.id) continue;
+          unread += 1;
+          if (matchesMe(message.body)) {
+            hasMention = true;
+            notifications.push({
+              ...base,
+              key: `message-${message.id}`,
+              type: "mention",
+              tab: "messages",
+              author: message.author,
+              snippet: message.body.slice(0, 80),
+              createdAtIso: message.createdAtIso
+            });
+          }
+        }
+
+        for (const post of channelItem.posts ?? []) {
+          if (isNew(post) && post.authorId !== currentUser.id) {
+            unread += 1;
+            if (matchesMe(post.title) || matchesMe(post.body)) {
+              hasMention = true;
+              notifications.push({
+                ...base,
+                key: `post-${post.id}`,
+                type: "mention",
+                tab: "ideas",
+                author: post.author,
+                snippet: post.title || post.body.slice(0, 80),
+                createdAtIso: post.createdAtIso
+              });
+            } else if (post.pinned) {
+              notifications.push({
+                ...base,
+                key: `notice-${post.id}`,
+                type: "notice",
+                tab: "ideas",
+                author: post.author,
+                snippet: post.title || post.body.slice(0, 80),
+                createdAtIso: post.createdAtIso
+              });
+            }
+          }
+
+          for (const comment of post.comments ?? []) {
+            if (!isNew(comment) || comment.authorId === currentUser.id) continue;
+            const isMentioned = (comment.mentions ?? []).includes(currentUser.id) || matchesMe(comment.body);
+            const isMyPost = post.authorId === currentUser.id;
+            if (!isMentioned && !isMyPost) continue;
+            if (isMentioned) hasMention = true;
+            notifications.push({
+              ...base,
+              key: `comment-${comment.id}`,
+              type: isMentioned ? "mention" : "comment",
+              tab: "ideas",
+              author: comment.author,
+              snippet: comment.body.slice(0, 80),
+              createdAtIso: comment.createdAtIso
+            });
+          }
+        }
+
+        meta[channelItem.id] = { unread, hasMention };
+      }
+    }
+
+    notifications.sort((a, b) => new Date(b.createdAtIso ?? 0) - new Date(a.createdAtIso ?? 0));
+    return { meta, notifications: notifications.slice(0, 20) };
+  }, [state, currentUser]);
+
+  const markingReadRef = useRef(false);
+
+  useEffect(() => {
+    if (!currentUser || !channel?.id || markingReadRef.current) return;
+    const meta = channelInsights.meta[channel.id];
+    const hasReadState = Boolean((state.readStates ?? {})[channel.id]);
+    if (!meta || (meta.unread === 0 && hasReadState)) return;
+    const channelId = channel.id;
+    markingReadRef.current = true;
+    requestJson(`/api/channels/${channelId}/read`, { method: "POST" })
+      .then((result) => {
+        if (result?.ok === false) return;
+        setState((current) => ({
+          ...current,
+          readStates: { ...(current.readStates ?? {}), [channelId]: result?.lastReadAt ?? new Date().toISOString() }
+        }));
+      })
+      .catch((error) => console.error(error))
+      .finally(() => {
+        markingReadRef.current = false;
+      });
+  }, [channel?.id, channelInsights, currentUser, requestJson, state.readStates]);
+
+  function navigateTo({ projectId, channelId, tab }) {
+    setState((current) => {
+      const targetProject = current.projects.find((item) => item.id === projectId)
+        ?? current.projects.find((item) => item.channels.some((channelItem) => channelItem.id === channelId))
+        ?? current.projects[0];
+      const targetChannel = targetProject?.channels.find((item) => item.id === channelId) ?? targetProject?.channels[0];
+      return {
+        ...current,
+        selectedProjectId: targetProject?.id,
+        selectedChannelId: targetChannel?.id
+      };
+    });
+    if (tab) setActiveTab(tab);
+    setActiveFilter("all");
+  }
 
   function selectProject(projectId) {
     setState((current) => {
@@ -683,6 +814,24 @@ export default function Home() {
     }
   }
 
+  async function addReply(postId, parentId, body) {
+    try {
+      await mutateAndRefresh(`/api/posts/${postId}/comments`, {
+        body,
+        parentId,
+        mentions: getMentionedUserIds(body, users)
+      }, "POST", {
+        projectId: state.selectedProjectId,
+        channelId: channel.id
+      });
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+      return { ok: false };
+    }
+  }
+
   async function addFile() {
     const name = fileDraft.name.trim();
     if (!name) return;
@@ -828,6 +977,7 @@ export default function Home() {
         projects={state.projects}
         selectedProjectId={state.selectedProjectId}
         selectedChannelId={state.selectedChannelId}
+        channelMeta={channelInsights.meta}
         onSelectProject={selectProject}
         onSelectChannel={selectChannel}
         onDeleteChannel={deleteChannel}
@@ -847,6 +997,9 @@ export default function Home() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onToggleSidebar={() => setIsSidebarOpen(true)}
+          notifications={channelInsights.notifications}
+          onNotificationClick={navigateTo}
+          onOpenSearch={() => setShowSearchDialog(true)}
         />
 
         <div className="work-surface">
@@ -889,6 +1042,7 @@ export default function Home() {
               onStatusChange={changePostStatus}
               onEditPost={editPost}
               onEditComment={editComment}
+              onAddReply={addReply}
               onTogglePin={togglePostPin}
             />
           )}
@@ -920,6 +1074,14 @@ export default function Home() {
             </div>
           </form>
         </div>
+      )}
+
+      {showSearchDialog && (
+        <SearchDialog
+          requestJson={requestJson}
+          onNavigate={navigateTo}
+          onClose={() => setShowSearchDialog(false)}
+        />
       )}
 
       {showChannelDialog && (

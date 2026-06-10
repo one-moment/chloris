@@ -14,11 +14,16 @@ Batch 2 (priority 1, additive migration created but NOT applied to production):
 - [ ] Apply `20260610100000_add_post_pinned` to production — REQUIRES explicit user approval before `prisma migrate deploy`.
 
 Batch 3 (priority 2):
-- [ ] Threaded replies: `Comment.parentId` column + indented rendering + comment count on post header.
-- [ ] Search/filter API + UI: author, mention tag, date range.
+- [x] Threaded replies: `Comment.parentId` (1-level threads, reply composer, indented rendering) + comment count on post header.
+- [x] Search/filter: GET `/api/search` (q/author/from/to) + `SearchDialog` with result navigation.
 
-Batch 4 (priority 3, design with architecture notification principle 9.5):
-- [ ] Unread counts per channel (`ChannelReadState` table) + mention/comment/notice notifications.
+Batch 4 (priority 3):
+- [x] Unread counts per channel (`ChannelReadState` + client-side counting from `state.readStates`), sidebar badges (amber when mentioned), auto mark-read on channel view.
+- [x] In-app notifications: Topbar bell with mention/comment(on my post)/pinned-notice items, click navigates to source channel (architecture principle 9.5).
+
+Deployment for batches 3-4:
+- [ ] Apply migration `20260610150000_add_comment_threads_and_read_state` to production — REQUIRES explicit user approval.
+- [ ] Vercel deploy + health check + `#배포로그` post after migration approval.
 
 Notes:
 - Image thumbnails already work (`AttachmentList` renders image previews + modal) — only style polish needed.

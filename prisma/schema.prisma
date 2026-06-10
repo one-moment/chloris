@@ -35,6 +35,7 @@ model Channel {
   agentRuns AgentRun[]
   approvalRequests ApprovalRequest[]
   purchaseOrderDrafts PurchaseOrderDraft[]
+  readStates ChannelReadState[]
 }
 
 model User {
@@ -50,6 +51,7 @@ model User {
   messages     Message[]
   posts        Post[]
   comments     Comment[]
+  readStates   ChannelReadState[]
 }
 
 model BotApp {
@@ -454,6 +456,7 @@ model Comment {
   id        String   @id
   postId    String
   authorId  String?
+  parentId  String?
   author    String
   body      String
   mentionsJson String   @default("[]")
@@ -462,8 +465,23 @@ model Comment {
   editedAt  DateTime?
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   authorUser User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
 
   @@index([postId, createdAt(sort: Asc)], map: "idx_comments_post_created")
+  @@index([parentId], map: "idx_comments_parent")
+}
+
+model ChannelReadState {
+  id         String   @id
+  userId     String
+  channelId  String
+  lastReadAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel    Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId], map: "uniq_channel_read_state")
 }
 
 model File {

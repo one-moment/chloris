@@ -34,6 +34,7 @@ export default function PostCard({
   onAddComment,
   onEditPost,
   onEditComment,
+  onAddReply,
   onTogglePin
 }) {
   const statusOptions = postStatuses.includes(post.status) ? postStatuses : [post.status, ...postStatuses];
@@ -43,10 +44,20 @@ export default function PostCard({
   const [commentEditDraft, setCommentEditDraft] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [replyTargetId, setReplyTargetId] = useState(null);
+  const [replyDraft, setReplyDraft] = useState("");
   const isTruncatable = isLongBody(post.body);
   const visibleBody = !isTruncatable || isExpanded ? post.body : truncateBody(post.body);
   const canPin = currentUser?.role === "admin" && !post.pending && onTogglePin;
   const commentCount = (post.comments ?? []).length;
+  const topLevelComments = (post.comments ?? []).filter((comment) => !comment.parentId);
+  const repliesByParent = (post.comments ?? []).reduce((grouped, comment) => {
+    if (!comment.parentId) return grouped;
+    const replies = grouped.get(comment.parentId) ?? [];
+    replies.push(comment);
+    grouped.set(comment.parentId, replies);
+    return grouped;
+  }, new Map());
 
   function beginPostEdit() {
     setPostDraft({ title: post.title, body: post.body });
@@ -83,6 +94,75 @@ export default function PostCard({
     const result = await onEditComment(post.id, comment.id, body);
     setIsSaving(false);
     if (result?.ok !== false) setEditingCommentId(null);
+  }
+
+  function beginReply(comment) {
+    setReplyTargetId(comment.id);
+    setReplyDraft("");
+  }
+
+  async function submitReply(comment) {
+    const body = replyDraft.trim();
+    if (!body) return;
+    setIsSaving(true);
+    const result = await onAddReply?.(post.id, comment.id, body);
+    setIsSaving(false);
+    if (result?.ok !== false) {
+      setReplyTargetId(null);
+      setReplyDraft("");
+    }
+  }
+
+  function renderComment(comment, isReply = false) {
+    return (
+      <div key={comment.id} className={isReply ? "comment-row reply" : "comment-row"}>
+        <div className="comment-meta">
+          <strong>{comment.author}</strong>
+          <span><Timestamp createdAt={comment.createdAtIso ?? comment.createdAt} updatedAt={comment.updatedAtIso} isEdited={comment.isEdited} /></span>
+          {canEditRecord(comment, currentUser) && editingCommentId !== comment.id && (
+            <button className="text-button" type="button" onClick={() => beginCommentEdit(comment)}>수정</button>
+          )}
+          {!isReply && !post.pending && onAddReply && replyTargetId !== comment.id && (
+            <button className="text-button" type="button" onClick={() => beginReply(comment)}>답글</button>
+          )}
+        </div>
+        {editingCommentId === comment.id ? (
+          <div className="inline-editor">
+            <MentionInput
+              value={commentEditDraft}
+              onChange={setCommentEditDraft}
+              users={users}
+              placeholder="@멘션을 포함해 댓글 수정"
+            />
+            <div className="inline-editor-actions">
+              <button type="button" onClick={() => saveCommentEdit(comment)} disabled={isSaving || !commentEditDraft.trim()}>저장</button>
+              <button type="button" onClick={() => setEditingCommentId(null)} disabled={isSaving}>취소</button>
+            </div>
+          </div>
+        ) : (
+          <p><RichText text={comment.body} users={users} /></p>
+        )}
+        {!isReply && (repliesByParent.get(comment.id) ?? []).length > 0 && (
+          <div className="comment-replies">
+            {repliesByParent.get(comment.id).map((reply) => renderComment(reply, true))}
+          </div>
+        )}
+        {!isReply && replyTargetId === comment.id && (
+          <div className="reply-composer">
+            <MentionInput
+              value={replyDraft}
+              onChange={setReplyDraft}
+              users={users}
+              placeholder={`${comment.author}님에게 답글 (@멘션 가능)`}
+            />
+            <div className="inline-editor-actions">
+              <button type="button" onClick={() => submitReply(comment)} disabled={isSaving || !replyDraft.trim()}>등록</button>
+              <button type="button" onClick={() => setReplyTargetId(null)} disabled={isSaving}>취소</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -150,33 +230,7 @@ export default function PostCard({
       <AttachmentList attachments={post.attachments} />
 
       <div className="comment-list">
-        {(post.comments ?? []).map((comment) => (
-          <div key={comment.id} className="comment-row">
-            <div className="comment-meta">
-              <strong>{comment.author}</strong>
-              <span><Timestamp createdAt={comment.createdAtIso ?? comment.createdAt} updatedAt={comment.updatedAtIso} isEdited={comment.isEdited} /></span>
-              {canEditRecord(comment, currentUser) && editingCommentId !== comment.id && (
-                <button className="text-button" type="button" onClick={() => beginCommentEdit(comment)}>수정</button>
-              )}
-            </div>
-            {editingCommentId === comment.id ? (
-              <div className="inline-editor">
-                <MentionInput
-                  value={commentEditDraft}
-                  onChange={setCommentEditDraft}
-                  users={users}
-                  placeholder="@멘션을 포함해 댓글 수정"
-                />
-                <div className="inline-editor-actions">
-                  <button type="button" onClick={() => saveCommentEdit(comment)} disabled={isSaving || !commentEditDraft.trim()}>저장</button>
-                  <button type="button" onClick={() => setEditingCommentId(null)} disabled={isSaving}>취소</button>
-                </div>
-              </div>
-            ) : (
-              <p><RichText text={comment.body} users={users} /></p>
-            )}
-          </div>
-        ))}
+        {topLevelComments.map((comment) => renderComment(comment))}
       </div>
 
       <div className="comment-composer">
