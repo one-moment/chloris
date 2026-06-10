@@ -17,9 +17,14 @@ export default function Topbar({
   onToggleSidebar,
   notifications = [],
   onNotificationClick,
-  onOpenSearch
+  onOpenSearch,
+  branches = [],
+  currentUser,
+  onChangeBranch
 }) {
   const type = CHANNEL_TYPES[channel.type];
+  const channelBranch = branches.find((branch) => branch.id === channel.branchId);
+  const canEditBranch = currentUser?.role === "admin" && onChangeBranch && branches.length > 0;
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef(null);
 
@@ -100,6 +105,21 @@ export default function Topbar({
         <div className="channel-title">
           <h1>{channel.name}</h1>
           <Badge tone={type?.tone}>{type?.label}</Badge>
+          {canEditBranch ? (
+            <select
+              className="branch-select"
+              value={channel.branchId ?? ""}
+              onChange={(event) => onChangeBranch(channel.id, event.target.value || null)}
+              aria-label="채널 지점 설정"
+            >
+              <option value="">지점 없음</option>
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>{branch.name}</option>
+              ))}
+            </select>
+          ) : channelBranch ? (
+            <span className="branch-badge">{channelBranch.name}</span>
+          ) : null}
         </div>
         <p>{project.description}</p>
       </div>

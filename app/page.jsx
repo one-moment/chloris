@@ -34,7 +34,7 @@ export default function Home() {
   const [commentDrafts, setCommentDrafts] = useState({});
   const [fileDraft, setFileDraft] = useState({ name: "", source: "수동 추가" });
   const [projectDraft, setProjectDraft] = useState("");
-  const [channelDraft, setChannelDraft] = useState({ name: "", type: "general" });
+  const [channelDraft, setChannelDraft] = useState({ name: "", type: "general", branchId: "" });
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [showChannelDialog, setShowChannelDialog] = useState(false);
   const [showSearchDialog, setShowSearchDialog] = useState(false);
@@ -590,17 +590,19 @@ export default function Home() {
     event.preventDefault();
     const name = channelDraft.name.trim();
     if (!name) return;
+    const branchId = channelDraft.branchId || null;
     const temporaryChannel = {
       id: makeClientId("channel"),
       name,
       type: channelDraft.type,
+      branchId,
       messages: [],
       posts: [],
       files: [],
       botRuns: []
     };
     setActionError("");
-    setChannelDraft({ name: "", type: "general" });
+    setChannelDraft({ name: "", type: "general", branchId: "" });
     setShowChannelDialog(false);
     setActiveTab("ideas");
     setState((current) => ({
@@ -616,7 +618,7 @@ export default function Home() {
       const projectId = state.selectedProjectId;
       const created = await requestJson(`/api/projects/${projectId}/channels`, {
         method: "POST",
-        body: JSON.stringify({ name, type: temporaryChannel.type })
+        body: JSON.stringify({ name, type: temporaryChannel.type, branchId })
       });
       replaceChannelId(temporaryChannel.id, created);
       refreshStateInBackground({ projectId, channelId: created.id });
@@ -710,6 +712,21 @@ export default function Home() {
       });
     } catch (error) {
       console.error(error);
+    }
+  }
+
+  async function changeChannelBranch(channelId, branchId) {
+    setActionError("");
+    try {
+      const updated = await requestJson(`/api/channels/${channelId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ branchId: branchId || null })
+      });
+      updateChannel(channelId, (channelItem) => ({ ...channelItem, branchId: updated.branchId }));
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId });
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
     }
   }
 
@@ -981,6 +998,9 @@ export default function Home() {
           notifications={channelInsights.notifications}
           onNotificationClick={navigateTo}
           onOpenSearch={() => setShowSearchDialog(true)}
+          branches={state.branches ?? []}
+          currentUser={currentUser}
+          onChangeBranch={changeChannelBranch}
         />
 
         <div className="work-surface">
@@ -1077,6 +1097,12 @@ export default function Home() {
               <option value="outbound">출고</option>
               <option value="inventory">재고관리</option>
               <option value="improvement">개선 건의</option>
+            </select>
+            <select value={channelDraft.branchId} onChange={(event) => setChannelDraft({ ...channelDraft, branchId: event.target.value })} aria-label="지점 선택">
+              <option value="">지점 없음 (공통 채널)</option>
+              {(state.branches ?? []).map((branch) => (
+                <option key={branch.id} value={branch.id}>{branch.name}</option>
+              ))}
             </select>
             <div className="modal-actions">
               <button type="button" onClick={() => setShowChannelDialog(false)}>취소</button>
