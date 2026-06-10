@@ -95,6 +95,9 @@ The current priority is Purchase Agent stabilization:
   - module boundary guardrail in `npm run lint`; AGENTS.md module rules
   - migration `20260611090000_add_branch_layer` applied: Branch/BranchAssignment tables, `Channel.branchId`, seeded 강남1호점/강남2호점/잠실점
   - deployment `dpl_2ttnSDBiRsERD2vV7QDVPK8dXXwN`, health ok, deploy log `post-deploy-log-20260611-phase1-module-registry-branches`
+- 2026-06-11 channel-branch linking UI deployed:
+  - branch select on channel creation, Topbar branch badge, admin inline branch change
+  - deployment `dpl_2aFqqchMxHh9JMd3QkGh5Bs1CtxZ`, health ok, deploy log `post-deploy-log-20260611-channel-branch-linking`
 
 ## Current State
 

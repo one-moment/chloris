@@ -40,7 +40,7 @@ Decided: Phase 1 is the main thread; Coupang worker runs in parallel on failure 
 - [x] `Branch` + `BranchAssignment` schema in both Prisma schemas; `Channel.branchId` nullable; migration `20260611090000_add_branch_layer` created, NOT applied (needs user approval).
 - [x] Branch migration applied to production with 3 seeded branches (강남1호점 `branch-gangnam-1`, 강남2호점 `branch-gangnam-2`, 잠실점 `branch-jamsil`); future branches are added then linked to channels per user decision.
 - [x] Phase 1 code deployed: `dpl_2ttnSDBiRsERD2vV7QDVPK8dXXwN`, health ok, `/work/purchase` 200. Deploy log: `post-deploy-log-20260611-phase1-module-registry-branches`.
-- [ ] Channel-branch linking UI (assign `Channel.branchId` from admin) — needed before branch-scoped work records.
+- [x] Channel-branch linking UI deployed (`dpl_2aFqqchMxHh9JMd3QkGh5Bs1CtxZ`): branch select on channel creation, Topbar branch badge, admin inline branch change (PATCH `/api/channels/:id`). Deploy log: `post-deploy-log-20260611-channel-branch-linking`.
 - [ ] Remaining Phase 1 item: `/chat/[channelId]` URL routing (page.jsx layout split) — next increment.
 - [ ] Phase 2 after that: purchase server code into `modules/purchase/server/`, card registry, agent interface extraction, `/work/inbox`.
 
