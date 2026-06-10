@@ -48,6 +48,20 @@
 - Keep `AGENTS.md`, `HANDOFF.md`, `DECISIONS.md`, `TODO.md`, `ENV_CHECKLIST.md`, and `BUG_LOG.md` current.
 - Update `HANDOFF.md` and `TODO.md` before ending every future work session.
 
+## 2026-06-10: Platform Architecture v2
+
+- Sidebar splits into communication / work / admin sections; work features get dedicated routes under `/work/*`, not channel tabs.
+- Work features are vertical-slice modules under `modules/<slug>/`, registered through a code-level manifest registry.
+- Modules may import core and platform only. Module-to-module imports are forbidden (ESLint-enforced); cross-module flows go through a platform event bus.
+- Entities used by two or more modules move to core master data. `Branch` and `BranchAssignment` are added early (Phase 1).
+- A global approval inbox at `/work/inbox` aggregates all `ApprovalRequest` records across modules.
+- Field input happens in chat (agent mention + photo); managers process in dashboards/inbox. No per-module input forms.
+- Branch insights module aggregates KPIs through a platform metrics registry; modules declare metrics in their manifests.
+- Per-module "team lead" agents orchestrate unit-task bots; employee-built bots integrate only via app registry + scoped tokens/webhooks/local worker queues, never direct DB access.
+- Status vocabulary and chip colors are defined once in core; modules may not invent their own.
+- Module data must not be added to `/api/state`.
+- Full design: `docs/platform-architecture.md` (v2). Open items in its section 16.
+
 ## 2026-06-09: Team-Built Agent/Bot Framework
 
 - Chloris should support agents and bots created by team members, not only bots built directly inside the core app.

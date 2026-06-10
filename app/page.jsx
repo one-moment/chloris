@@ -300,17 +300,18 @@ export default function Home() {
 
   const filteredPosts = useMemo(() => {
     if (activeFilter === "mentions") {
-      const mention = currentUser?.handle;
-      if (!mention && !currentUser?.id) return [];
+      const mentionTokens = [currentUser?.name, currentUser?.handle].filter(Boolean).map((value) => `@${value}`);
+      if (mentionTokens.length === 0 && !currentUser?.id) return [];
+      const matchesMention = (text) => mentionTokens.some((token) => String(text ?? "").includes(token));
       return channel.posts.filter(
-        (post) => post.title.includes(mention) || post.body.includes(mention) || (post.comments ?? []).some((comment) => (
-          comment.body.includes(mention) || (comment.mentions ?? []).includes(currentUser?.id)
+        (post) => matchesMention(post.title) || matchesMention(post.body) || (post.comments ?? []).some((comment) => (
+          matchesMention(comment.body) || (comment.mentions ?? []).includes(currentUser?.id)
         ))
       );
     }
     if (activeFilter === "open") return channel.posts.filter((post) => post.status !== donePostStatus);
     return channel.posts;
-  }, [activeFilter, channel.posts, currentUser?.handle, currentUser?.id, donePostStatus]);
+  }, [activeFilter, channel.posts, currentUser?.handle, currentUser?.id, currentUser?.name, donePostStatus]);
 
   const counts = useMemo(
     () => ({
@@ -600,6 +601,20 @@ export default function Home() {
     }
   }
 
+  async function togglePostPin(postId, pinned) {
+    try {
+      const updated = await requestJson(`/api/posts/${postId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ pinned })
+      });
+      replacePostInState(postId, updated);
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id });
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+    }
+  }
+
   async function editMessage(messageId, body) {
     try {
       const updated = await requestJson(`/api/messages/${messageId}`, {
@@ -839,6 +854,7 @@ export default function Home() {
             <MessagesView
               channel={channel}
               currentUser={currentUser}
+              users={users}
               attachments={messageAttachments}
               error={actionError}
               onAttachmentsChange={addMessageAttachments}
@@ -873,6 +889,7 @@ export default function Home() {
               onStatusChange={changePostStatus}
               onEditPost={editPost}
               onEditComment={editComment}
+              onTogglePin={togglePostPin}
             />
           )}
           {activeTab === "files" && (

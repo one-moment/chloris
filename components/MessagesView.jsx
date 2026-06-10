@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "./common";
 import AttachmentList from "./AttachmentList";
 import ChatDateDivider from "./ChatDateDivider";
+import MentionInput from "./MentionInput";
+import RichText from "./RichText";
 import Timestamp from "./Timestamp";
 import { isSameKoreanDate } from "../lib/time";
 
@@ -90,6 +92,7 @@ function isLocalWorkerStartAvailable() {
 export default function MessagesView({
   channel,
   currentUser,
+  users = [],
   attachments,
   error,
   onAttachmentsChange,
@@ -124,8 +127,17 @@ export default function MessagesView({
     [purchaseOrderDrafts]
   );
   const listRef = useRef(null);
-  const textareaRef = useRef(null);
-  const [hasDraft, setHasDraft] = useState(false);
+  const [draftBody, setDraftBody] = useState("");
+  const mentionUsers = useMemo(() => {
+    const channelUserIds = new Set([
+      currentUser?.id,
+      ...(channel.messages ?? []).map((message) => message.authorId)
+    ].filter(Boolean));
+    return [
+      ...users.filter((user) => channelUserIds.has(user.id)),
+      ...users.filter((user) => !channelUserIds.has(user.id))
+    ];
+  }, [channel.messages, currentUser?.id, users]);
 
   useEffect(() => {
     const list = listRef.current;
@@ -134,10 +146,7 @@ export default function MessagesView({
   }, [channel.id, messages.length]);
 
   useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    textarea.value = "";
-    setHasDraft(false);
+    setDraftBody("");
     setPendingMessages([]);
   }, [channel.id]);
 
@@ -145,14 +154,8 @@ export default function MessagesView({
     setCanStartPurchaseWorker(isLocalWorkerStartAvailable());
   }, []);
 
-  function updateHasDraft(event) {
-    const nextHasDraft = Boolean(event.target.value.trim());
-    setHasDraft((current) => current === nextHasDraft ? current : nextHasDraft);
-  }
-
   async function submitMessage() {
-    const textarea = textareaRef.current;
-    const body = textarea?.value.trim() ?? "";
+    const body = draftBody.trim();
     if (!body && attachments.length === 0) return;
     const pendingMessage = {
       id: `pending-message-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -165,14 +168,12 @@ export default function MessagesView({
       bot: false,
       pending: true
     };
-    if (textarea) textarea.value = "";
-    setHasDraft(false);
+    setDraftBody("");
     setPendingMessages((current) => [pendingMessage, ...current]);
     const result = await onSend(body);
     setPendingMessages((current) => current.filter((message) => message.id !== pendingMessage.id));
-    if (result?.ok === false && textarea) {
-      textarea.value = body;
-      setHasDraft(Boolean(body));
+    if (result?.ok === false) {
+      setDraftBody(body);
     }
   }
 
@@ -281,7 +282,7 @@ export default function MessagesView({
                       </div>
                     ) : (
                       <>
-                        <p className="chat-text">{message.body}</p>
+                        <p className="chat-text"><RichText text={message.body} users={mentionUsers} /></p>
                         <AttachmentList attachments={message.attachments} />
                         {(() => {
                           const requestId = getPurchaseRequestId(message);
@@ -336,11 +337,13 @@ export default function MessagesView({
       )}
 
       <div className="composer compact chat-composer">
-        <textarea
-          ref={textareaRef}
-          onInput={updateHasDraft}
+        <MentionInput
+          multiline
+          value={draftBody}
+          onChange={setDraftBody}
+          users={mentionUsers}
           onKeyDown={handleKeyDown}
-          placeholder={`${channel.name}에 메시지 보내기`}
+          placeholder={`${channel.name}에 메시지 보내기 (@멘션, **굵게**)`}
         />
         <AttachmentList attachments={attachments} onRemove={onRemoveAttachment} />
         {error && <p className="action-error">{error}</p>}
@@ -349,7 +352,7 @@ export default function MessagesView({
             파일 첨부
             <input type="file" multiple onChange={(event) => onAttachmentsChange(event.target.files)} />
           </label>
-          <button className="primary-button" type="button" onClick={submitMessage} disabled={!hasDraft && attachments.length === 0}>Send</button>
+          <button className="primary-button" type="button" onClick={submitMessage} disabled={!draftBody.trim() && attachments.length === 0}>Send</button>
         </div>
       </div>
     </section>

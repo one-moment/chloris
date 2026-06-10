@@ -1,5 +1,37 @@
 # TODO.md
 
+## Today (2026-06-10): Employee UI/UX Proposal First
+
+Reviewed: no structural conflict with the platform architecture plan. All items touch core communication UI (`components/`), which stays core UI after Phase 1. Apply in this order, then proceed to architecture phase ordering decision.
+
+Batch 1 (priority 1, no migration):
+- [x] Post readability: spacing/typography hierarchy in post cards, long-post truncation with "더보기", bold text support (markdown-lite `**bold**` via new `components/RichText.jsx`).
+- [x] Extend mention autocomplete (`MentionInput`) from comments to post composer and message composer; mention highlighting in post/message bodies (text-based matching, no schema change). Also fixed the mention filter to match `@name` tokens (see BUG_LOG).
+- [x] Channel list: show latest post/message preview per channel (existing data, no read tracking).
+
+Batch 2 (priority 1, additive migration created but NOT applied to production):
+- [x] Pin posts implemented: `Post.pinnedAt` in both schemas, migration `20260610100000_add_post_pinned` (file only), PATCH `/api/posts/:id` accepts `pinned` (admin only), pinned section on top of Ideas view.
+- [ ] Apply `20260610100000_add_post_pinned` to production — REQUIRES explicit user approval before `prisma migrate deploy`.
+
+Batch 3 (priority 2):
+- [ ] Threaded replies: `Comment.parentId` column + indented rendering + comment count on post header.
+- [ ] Search/filter API + UI: author, mention tag, date range.
+
+Batch 4 (priority 3, design with architecture notification principle 9.5):
+- [ ] Unread counts per channel (`ChannelReadState` table) + mention/comment/notice notifications.
+
+Notes:
+- Image thumbnails already work (`AttachmentList` renders image previews + modal) — only style polish needed.
+- Mention matching/autocomplete/highlight already implemented for comments (`lib/mentions.js`, `MentionInput`, `MentionText`); this is an extension, not new build.
+
+## Platform Architecture (2026-06-10)
+
+- [x] Write platform architecture design for chat/work-module separation: `docs/platform-architecture.md`.
+- [x] User review and approval of the design direction; doc updated to v2 (UX standards, guardrails, branch insights, metrics registry, agent-bot system plan).
+- [x] Record the decision in `DECISIONS.md` (2026-06-10 entry).
+- [ ] Resolve remaining open items in `docs/platform-architecture.md` section 16 (phase ordering vs Coupang worker, SWR, sheet-sync target, branch/channel mapping).
+- [ ] Start Phase 1: routing skeleton, module registry, ESLint module-boundary rule, Branch/BranchAssignment schema.
+
 ## Next Session Priority
 
 - [x] Create Claude handoff document with local paths, GitHub links, project structure, commands, safety rules, and current branch status.

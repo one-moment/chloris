@@ -71,6 +71,12 @@ The current priority is Purchase Agent stabilization:
   - confirmed Coupang line creates `PurchaseRequest` and `PurchaseWorkerTask` in queued state
   - found and fixed metadata-title parsing bug
 - Added `docs/agent-bot-framework.md` for team-built agent/bot framework direction.
+- 2026-06-10 employee UI/UX proposal batches 1-2 implemented locally:
+  - post readability (typography hierarchy, 더보기 truncation, `**bold**` rendering via `components/RichText.jsx`)
+  - mention autocomplete extended to post/message composers; mention filter token bug fixed
+  - channel list shows latest activity preview
+  - post pin (`Post.pinnedAt`) implemented; migration `20260610100000_add_post_pinned` created but NOT applied to production (needs user approval)
+  - verified: `npm run lint`, `npm run build`, `agent-gateway:test`, `purchase-bot:test` all passed; DB-writing tests not run (default `.env` may point at production)
 - Added `CLAUDE_HANDOFF.md` so Claude or another coding agent can continue from local path, GitHub branch, project structure, safety rules, and next-work context.
 
 ## Current State
@@ -105,6 +111,8 @@ The current priority is Purchase Agent stabilization:
 
 ## Next Work
 
+0. Platform architecture design approved 2026-06-10: `docs/platform-architecture.md` v2 (chat core / work modules / automation platform separation, UX standards, branch insights + metrics registry, agent-bot open platform plan). Decision recorded in `DECISIONS.md`. Remaining open items in doc section 16.
+0-1. Before architecture Phase 1: apply employee UI/UX proposal (2026-06-10) per the "Today" section in `TODO.md` — readability, mention extension, pin, then search/threads/notifications. Reviewed as no structural conflict.
 1. Push local commits before continuing from GitHub-only environments if needed.
 2. Stabilize Coupang worker for:
    - existing cart items

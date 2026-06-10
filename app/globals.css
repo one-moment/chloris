@@ -1670,3 +1670,71 @@ button:disabled {
     width: 32px;
   }
 }
+
+.post-list {
+  gap: 16px;
+}
+
+.post-card .post-body {
+  margin: 12px 0 0;
+  line-height: 1.7;
+}
+
+.post-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.post-card-header .post-meta {
+  margin-top: 4px;
+}
+
+.post-author {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.post-meta-divider {
+  color: var(--line-strong);
+}
+
+.post-expand-button {
+  margin-top: 8px;
+}
+
+.pin-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--amber-weak);
+  color: var(--amber);
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.post-card.pinned {
+  border: 1px solid var(--amber);
+  background: #fffdf5;
+}
+
+.pinned-post-list {
+  margin-bottom: 4px;
+}
+
+.channel-preview {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-composer .mention-popover {
+  top: auto;
+  bottom: calc(100% + 6px);
+}

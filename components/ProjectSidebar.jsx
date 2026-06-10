@@ -1,5 +1,20 @@
 import { CHANNEL_TYPES } from "../lib/constants";
 
+function activityTime(record) {
+  const date = new Date(record?.createdAtIso ?? record?.createdAt ?? "");
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+}
+
+function channelPreview(channel) {
+  const message = channel.messages?.[0];
+  const post = channel.posts?.[0];
+  if (!message && !post) return null;
+  if (post && (!message || activityTime(post) >= activityTime(message))) {
+    return `글: ${post.title || post.body || "첨부 파일"}`;
+  }
+  return `${message.author}: ${message.body || "첨부 파일"}`;
+}
+
 export default function ProjectSidebar({
   projects,
   selectedProjectId,
@@ -78,7 +93,7 @@ export default function ProjectSidebar({
                 onClick={() => handleSelectChannel(channel.id)}
               >
                 <span className="channel-name"># {channel.name}</span>
-                <small>{CHANNEL_TYPES[channel.type]?.label}</small>
+                <small className="channel-preview">{channelPreview(channel) ?? CHANNEL_TYPES[channel.type]?.label}</small>
               </button>
               <button
                 className="channel-delete-button"

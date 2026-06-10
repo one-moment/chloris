@@ -26,6 +26,13 @@
 
 ## Fixed Bugs
 
+### Mention filter did not match composer-inserted mentions (2026-06-10)
+
+- Status: fixed
+- Context: The Ideas "멘션" filter matched posts against the raw `currentUser.handle` text, but `MentionInput` inserts mentions as `@{user.name}`. Mentions inserted via autocomplete never matched the filter.
+- Fix: `app/page.jsx` filter now matches both `@{name}` and `@{handle}` tokens.
+- Found while extending mentions to post/message composers (employee UI/UX proposal batch 1).
+
 ### Bulk purchase parser treated metadata as an unknown item
 
 - Status: fixed, deployed, and verified

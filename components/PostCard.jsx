@@ -1,14 +1,26 @@
 import { useState } from "react";
 import AttachmentList from "./AttachmentList";
 import MentionInput from "./MentionInput";
-import MentionText from "./MentionText";
+import RichText from "./RichText";
 import Timestamp from "./Timestamp";
+
+const LONG_BODY_CHARS = 320;
+const LONG_BODY_LINES = 6;
 
 function canEditRecord(record, currentUser) {
   if (!currentUser || record.pending) return false;
   if (currentUser.role === "admin") return true;
   if (record.authorId) return record.authorId === currentUser.id;
   return record.author === currentUser.name;
+}
+
+function isLongBody(body) {
+  return body.length > LONG_BODY_CHARS || body.split("\n").length > LONG_BODY_LINES;
+}
+
+function truncateBody(body) {
+  const lines = body.split("\n").slice(0, LONG_BODY_LINES).join("\n");
+  return `${lines.slice(0, LONG_BODY_CHARS).trimEnd()}…`;
 }
 
 export default function PostCard({
@@ -21,7 +33,8 @@ export default function PostCard({
   onCommentDraftChange,
   onAddComment,
   onEditPost,
-  onEditComment
+  onEditComment,
+  onTogglePin
 }) {
   const statusOptions = postStatuses.includes(post.status) ? postStatuses : [post.status, ...postStatuses];
   const [isEditingPost, setIsEditingPost] = useState(false);
@@ -29,6 +42,11 @@ export default function PostCard({
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [commentEditDraft, setCommentEditDraft] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const isTruncatable = isLongBody(post.body);
+  const visibleBody = !isTruncatable || isExpanded ? post.body : truncateBody(post.body);
+  const canPin = currentUser?.role === "admin" && !post.pending && onTogglePin;
+  const commentCount = (post.comments ?? []).length;
 
   function beginPostEdit() {
     setPostDraft({ title: post.title, body: post.body });
@@ -68,7 +86,7 @@ export default function PostCard({
   }
 
   return (
-    <article className={post.pending ? "post-card pending" : "post-card"}>
+    <article className={`post-card${post.pending ? " pending" : ""}${post.pinned ? " pinned" : ""}`}>
       <div className="post-card-header">
         <div>
           {isEditingPost ? (
@@ -79,11 +97,29 @@ export default function PostCard({
               placeholder="게시글 제목"
             />
           ) : (
-            <strong>{post.title}</strong>
+            <strong className="post-title">
+              {post.pinned && <span className="pin-badge">고정</span>}
+              {post.title}
+            </strong>
           )}
-          <span className="post-meta">{post.author} · <Timestamp createdAt={post.createdAtIso ?? post.createdAt} updatedAt={post.updatedAtIso} isEdited={post.isEdited} /></span>
+          <span className="post-meta">
+            <span className="post-author">{post.author}</span>
+            <span className="post-meta-divider" aria-hidden="true">·</span>
+            <Timestamp createdAt={post.createdAtIso ?? post.createdAt} updatedAt={post.updatedAtIso} isEdited={post.isEdited} />
+            {commentCount > 0 && (
+              <>
+                <span className="post-meta-divider" aria-hidden="true">·</span>
+                <span>댓글 {commentCount}</span>
+              </>
+            )}
+          </span>
         </div>
         <div className="post-header-actions">
+          {canPin && !isEditingPost && (
+            <button className="text-button" type="button" onClick={() => onTogglePin(post.id, !post.pinned)}>
+              {post.pinned ? "고정 해제" : "고정"}
+            </button>
+          )}
           {canEditRecord(post, currentUser) && !isEditingPost && (
             <button className="text-button" type="button" onClick={beginPostEdit}>수정</button>
           )}
@@ -102,7 +138,14 @@ export default function PostCard({
           </div>
         </div>
       ) : (
-        <p className="post-body">{post.body}</p>
+        <>
+          <p className="post-body"><RichText text={visibleBody} users={users} /></p>
+          {isTruncatable && (
+            <button className="text-button post-expand-button" type="button" onClick={() => setIsExpanded((current) => !current)}>
+              {isExpanded ? "접기" : "더보기"}
+            </button>
+          )}
+        </>
       )}
       <AttachmentList attachments={post.attachments} />
 
@@ -130,7 +173,7 @@ export default function PostCard({
                 </div>
               </div>
             ) : (
-              <p><MentionText text={comment.body} users={users} /></p>
+              <p><RichText text={comment.body} users={users} /></p>
             )}
           </div>
         ))}
