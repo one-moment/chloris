@@ -45,6 +45,20 @@ Decided: Phase 1 is the main thread; Coupang worker runs in parallel on failure 
 
 **Phase 1 COMPLETE.** Next: Phase 2 — purchase server code into `modules/purchase/server/`, `Message.cardType` card registry, standard agent interface extraction, platform eventBus + metricsRegistry, `/work/inbox` approval inbox.
 
+## Usage Model Rethink (2026-06-11 user feedback, discuss next session)
+
+User feedback after experiencing Phase 1 in production:
+1. Channel explosion risk: channels are currently per-task (구매요청, 입고...), so tasks × branches multiplies channel count.
+2. `/work/*` screens are status-only; for real ERP use they must be operating consoles.
+3. Overall usage must be simpler and more intuitive; concept definitions feel unclear.
+
+Proposed direction (pending user decision):
+- [ ] Invert the channel axis: channel = branch room (지점방, 1 per branch like a KakaoTalk room), task = agent mention (@구매/@입고/@폐기 in the same room). Channel count grows +1 per branch, not ×tasks. Enablers already shipped: channel-branch link, ChannelAgentInstallation; Phase 2 registry dispatch makes multi-agent-per-channel real. Existing per-task channels would be consolidated after Phase 2.
+- [ ] Revise principle 9.3: field staff input via chat; managers may BOTH input and process in dashboards (add create-forms to work screens).
+- [ ] Redefine work-screen standard as action-first: metrics → action queue (approve/process buttons) → list with row actions → create new. `/work/inbox` is the centerpiece.
+- [ ] Intuitiveness quick wins: pinned usage-guide post per channel (pin shipped), agent 도움말 command, quick agent-mention chips in message composer.
+- [ ] After decision: update `docs/platform-architecture.md` + `DECISIONS.md`, plan channel consolidation migration.
+
 Notes:
 - Image thumbnails already work (`AttachmentList` renders image previews + modal) — only style polish needed.
 - Mention matching/autocomplete/highlight already implemented for comments (`lib/mentions.js`, `MentionInput`, `MentionText`); this is an extension, not new build.

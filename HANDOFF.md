@@ -135,6 +135,8 @@ The current priority is Purchase Agent stabilization:
 
 ## Next Work
 
+0-0. FIRST: discuss the usage-model rethink recorded in `TODO.md` ("Usage Model Rethink 2026-06-11") — channel = branch room + task = agent mention (fixes channel explosion), action-first work screens, intuitiveness quick wins. User wants the product to feel simple and intuitive as an ERP; get decisions, then fold into `docs/platform-architecture.md` and Phase 2 scope.
+
 0. Platform architecture design approved 2026-06-10: `docs/platform-architecture.md` v2 (chat core / work modules / automation platform separation, UX standards, branch insights + metrics registry, agent-bot open platform plan). Decision recorded in `DECISIONS.md`. Remaining open items in doc section 16.
 0-1. Before architecture Phase 1: apply employee UI/UX proposal (2026-06-10) per the "Today" section in `TODO.md` — readability, mention extension, pin, then search/threads/notifications. Reviewed as no structural conflict.
 1. Push local commits before continuing from GitHub-only environments if needed.
