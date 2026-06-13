@@ -1,5 +1,16 @@
 # DECISIONS.md
 
+## 2026-06-11 (evening): Templates, CRM & Reservations
+
+- Brand is 보로플라워 (multi-branch flower shop). Branches confirmed: 강남1호점, 강남2호점, 잠실점 (already seeded; no rename). Future branches added as Branch records (e.g. 성수역점) with no screen/code change.
+- Customer is CHAIN-WIDE: one Customer per phone number across all branches. Cross-branch visits share order context so any branch can serve a 보로플라워 customer with full history (brand value). This overrides the earlier branch-scoped customer visibility idea.
+- PII balance: customer + order history visible chain-wide to authenticated staff; phone masked in bulk lists/exports, full when actively serving; HQ unrestricted; never log/commit customer data.
+- Template system (feature 1): user/admin-authored reusable templates (`PostTemplate`, scope personal|shared), insert-time tokens `{{지점}}/{{오늘}}/{{작성자}}`. Lives in CORE (composer), not a module.
+- CRM + Reservations (feature 2): internal module `modules/crm`; `Customer` (phone key) + `Reservation` (= spreadsheet row); routes `/work/customers`, `/work/reservations` (list + pickup calendar + per-branch + HQ rollup). The existing Google Sheet is the model; columns map 1:1 (see doc). Order/reservation history is created from 주문서 post submissions (the template↔CRM loop) and feeds 지점 인사이트 metrics.
+- External shopping-mall sync is optional/later via integration bot, not required.
+- Build order: ① template system → ② CRM core → ③ connect (submit→record, composer lookup) → ④ metrics → ⑤ optional mall sync.
+- Full spec: `docs/templates-and-crm.md`.
+
 ## 2026-06-01: MVP Deployment Stack
 
 - Use Vercel for app hosting.

@@ -5,11 +5,22 @@
 Employee feature request + one UX fix:
 
 - [x] Mention keyboard navigation: arrow keys (↑↓) move the highlight, Enter/Tab selects, Esc closes; IME-safe (no intercept mid-composition) and does not trigger message send while the popover is open. `components/MentionInput.jsx`. Verified lint+build. NOT yet deployed.
-- [ ] (1) Channel post templates: selecting a 예약/결제요청-type channel auto-fills a structured post skeleton (성함/연락처/픽업일시/상품/금액/유입경로). Branch token (e.g. "/3호점") should auto-fill from the channel's linked Branch. DESIGN DECISION pending — where templates are defined:
-  - Recommended: per-channel `Channel.postTemplate` (nullable text), admin-editable, composer pre-fills it. One column + small admin textarea + composer prefill. Leverages the branch link already shipped.
-  - Alt A: hardcoded by channel type (fast, inflexible). Alt B: separate Template table with multiple templates + picker (most flexible, more work).
-  - Relation to rethink: this is the board/post-side equivalent of agent-generated structured cards. Templates = deterministic form-fill (ship now); agents = NL→card (Phase 2+). Not mutually exclusive; template definition can later be reused by an agent.
-- [ ] (2) Customer/order auto-link on post creation (order no., customer, contact, items, amount, pickup/delivery date). BLOCKED on data source — needs an order/customer system of record. KEY QUESTION for user: which system holds orders? (a) internal Chloris Orders module (build it — real ERP), or (b) external shopping-mall platform (Cafe24/imweb/자체몰 등) integrated via API token/webhook (their "쇼핑몰 1:1 문의/환불 자동연동" reference implies an e-commerce platform). Determines whether this is a new module vs. an integration bot. Likely Phase 3+.
+CLARIFIED 2026-06-11: (1) and (2) form one loop — template = input form, CRM = the store the form reads (lookup) and writes (on submit).
+
+- [ ] (1) Template SYSTEM (user clarified: users AND admins author reusable templates, load to reduce repetitive entry — max freedom). Core communication feature (lives in core, not a work module).
+  - Data: `PostTemplate { id, name, body, scope (personal|shared), ownerId, createdById, timestamps }`. Personal = visible to owner; shared = admin-managed, visible to all.
+  - Tokens resolved at insert: `{{지점}}` (from channel's linked Branch), `{{오늘}}`, `{{작성자}}`.
+  - UX: composer "템플릿" picker (shared first, then mine) fills title(line 1)+body; "템플릿 관리" modal to author/edit. Permissions: anyone creates personal; admin creates/edits shared.
+  - API: GET/POST/PATCH/DELETE `/api/post-templates`. Additive table → migration created locally, prod apply needs approval.
+- [ ] (2) CRM module (user clarified: online customer management — look up returning customers by name/phone, pull past order history). Internal module `modules/crm`, route `/work/customers`.
+  - Data: `Customer { id, name, phone(idx), branchId?, memo, timestamps }`, `Order { id, customerId, branchId?, channelId?, postId?, orderNo, items, amount, pickupAt, source, status, timestamps }`. Customer 1—N Order.
+  - Lookup: GET `/api/work/crm/customers?q=` (name or phone) → matches + recent orders. Composer calls this API (no core→module import; boundary kept).
+  - The loop: 주문서 template submit → upsert Customer by phone + create Order linked to the post → next visit, name/phone lookup autofills → history accrues → feeds 지점 인사이트 metrics later.
+  - PII: phone is sensitive — branch-scoped visibility (staff=own branch, manager/HQ=all); never log/commit customer data (AGENTS.md).
+  - External shopping-mall sync (Cafe24/imweb 등) = optional later step via integration bot, NOT required for this ask.
+- Proposed build order: ① template system (independent, ships now) → ② CRM core (tables + /work/customers search/profile/manual entry) → ③ connect (composer lookup autofill + create-order-on-submit) → ④ optional mall sync.
+- RESOLVED 2026-06-11 (evening): decisions locked, spec written → `docs/templates-and-crm.md` + DECISIONS entry. Brand 보로플라워; branches 강남1호점/강남2호점/잠실점 (no rename, future e.g. 성수역점); customer chain-wide by phone (cross-branch context); template scope personal|shared with tokens; CRM internal module with Reservation = sheet row. Existing 20-month sheet → one-time import (branchId for those rows still TBD). Ready to build on next session; start with ① template system.
+- Mention keyboard nav: committed (`ddf4696`), NOT deployed — decide deploy timing (standalone or with first template/CRM batch).
 
 ## Today (2026-06-10): Employee UI/UX Proposal First
 
