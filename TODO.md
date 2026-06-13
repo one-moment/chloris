@@ -1,5 +1,16 @@
 # TODO.md
 
+## New Requests (2026-06-11, evening)
+
+Employee feature request + one UX fix:
+
+- [x] Mention keyboard navigation: arrow keys (↑↓) move the highlight, Enter/Tab selects, Esc closes; IME-safe (no intercept mid-composition) and does not trigger message send while the popover is open. `components/MentionInput.jsx`. Verified lint+build. NOT yet deployed.
+- [ ] (1) Channel post templates: selecting a 예약/결제요청-type channel auto-fills a structured post skeleton (성함/연락처/픽업일시/상품/금액/유입경로). Branch token (e.g. "/3호점") should auto-fill from the channel's linked Branch. DESIGN DECISION pending — where templates are defined:
+  - Recommended: per-channel `Channel.postTemplate` (nullable text), admin-editable, composer pre-fills it. One column + small admin textarea + composer prefill. Leverages the branch link already shipped.
+  - Alt A: hardcoded by channel type (fast, inflexible). Alt B: separate Template table with multiple templates + picker (most flexible, more work).
+  - Relation to rethink: this is the board/post-side equivalent of agent-generated structured cards. Templates = deterministic form-fill (ship now); agents = NL→card (Phase 2+). Not mutually exclusive; template definition can later be reused by an agent.
+- [ ] (2) Customer/order auto-link on post creation (order no., customer, contact, items, amount, pickup/delivery date). BLOCKED on data source — needs an order/customer system of record. KEY QUESTION for user: which system holds orders? (a) internal Chloris Orders module (build it — real ERP), or (b) external shopping-mall platform (Cafe24/imweb/자체몰 등) integrated via API token/webhook (their "쇼핑몰 1:1 문의/환불 자동연동" reference implies an e-commerce platform). Determines whether this is a new module vs. an integration bot. Likely Phase 3+.
+
 ## Today (2026-06-10): Employee UI/UX Proposal First
 
 Reviewed: no structural conflict with the platform architecture plan. All items touch core communication UI (`components/`), which stays core UI after Phase 1. Apply in this order, then proceed to architecture phase ordering decision.

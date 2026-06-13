@@ -1131,8 +1131,13 @@
   text-align: left;
 }
 
-.mention-popover button:hover {
+.mention-popover button:hover,
+.mention-popover button.active {
   background: var(--surface-subtle);
+}
+
+.mention-popover button.active {
+  box-shadow: inset 2px 0 0 var(--blue);
 }
 
 .mention-popover span {
