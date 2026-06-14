@@ -1,0 +1,105 @@
+/* Borough Flower Market — Color Tokens
+   Palette drawn directly from the brand mark: deep forest green (#185640)
+   and sage gold (#D5CD8C), extended into a warm, paper-based natural system
+   with a single botanical clay accent for seasonal moments. */
+
+:root {
+  /* ---- Forest green (primary brand) ---- */
+  --green-950: #0B2A1F;
+  --green-900: #0E3527;
+  --green-800: #123F2E;
+  --green-700: #185640; /* ★ brand primary — from the logo ground */
+  --green-600: #1F664D;
+  --green-500: #2C7B60;
+  --green-400: #4E9379;
+  --green-300: #86B4A1;
+  --green-100: #D6E2D9;
+  --green-50:  #EDF2EE;
+
+  /* ---- Sage gold (secondary brand) ---- */
+  --gold-700: #A79C5B;
+  --gold-600: #B9AF6A;
+  --gold-500: #C9C07E;
+  --gold-400: #D5CD8C; /* ★ brand secondary — from the logo letterform */
+  --gold-300: #E2DCA9;
+  --gold-200: #EDE9CB;
+  --gold-100: #F5F2E1;
+
+  /* ---- Warm paper neutrals ---- */
+  --paper-0: #FCFBF5;
+  --paper-1: #F7F4EA;
+  --paper-2: #F0ECDD;
+  --linen:   #E7E1CF;
+  --ash:     #D8D3C2;
+
+  /* ---- Ink (warm near-black greens) ---- */
+  --ink-900: #171C18;
+  --ink-700: #27302A;
+  --ink-500: #4A554C;
+  --ink-400: #6B7568;
+  --ink-300: #8C9488;
+  --stone-300: #B7BBAE;
+
+  /* ---- Botanical accent (seasonal clay / blossom) ---- */
+  --clay-600: #A85B43;
+  --clay-500: #BE6E54;
+  --clay-400: #CE8470;
+  --clay-200: #ECC8BB;
+
+  /* ---- Functional status ---- */
+  --success: #2C7B60;
+  --success-soft: #DDEBE2;
+  --warning: #C79A3A;
+  --warning-soft: #F4EBCF;
+  --danger:  #B0503B;
+  --danger-soft: #F1DBD2;
+  --info:    #3E6E8E;
+  --info-soft: #DCE7EE;
+
+  /* =====================================================
+     SEMANTIC ALIASES — reach for these in product code
+     ===================================================== */
+
+  /* Brand */
+  --brand:          var(--green-700);
+  --brand-strong:   var(--green-800);
+  --brand-deep:     var(--green-900);
+  --brand-soft:     var(--green-100);
+  --brand-tint:     var(--green-50);
+  --accent:         var(--gold-400);
+  --accent-strong:  var(--gold-600);
+  --accent-ink:     var(--green-900); /* text/icon sitting on gold */
+  --seasonal:       var(--clay-500);
+  --seasonal-soft:  var(--clay-200);
+
+  /* Surfaces */
+  --surface-page:    var(--paper-1);
+  --surface-card:    var(--paper-0);
+  --surface-raised:  #FFFFFF;
+  --surface-sunken:  var(--paper-2);
+  --surface-inset:   var(--linen);
+  --surface-dark:    var(--green-700); /* sidebars, hero grounds */
+  --surface-darker:  var(--green-900);
+  --surface-overlay: rgba(11, 42, 31, 0.55);
+
+  /* Text */
+  --text-strong:        var(--ink-900);
+  --text-body:          var(--ink-700);
+  --text-muted:         var(--ink-400);
+  --text-faint:         var(--ink-300);
+  --text-link:          var(--green-600);
+  --text-on-dark:       var(--paper-0);
+  --text-on-dark-muted: rgba(245, 242, 225, 0.68);
+  --text-on-dark-faint: rgba(245, 242, 225, 0.42);
+  --text-on-accent:     var(--green-900);
+
+  /* Borders */
+  --border-subtle:  rgba(23, 28, 24, 0.07);
+  --border:         rgba(23, 28, 24, 0.13);
+  --border-strong:  rgba(23, 28, 24, 0.24);
+  --border-on-dark: rgba(245, 242, 225, 0.16);
+  --border-accent:  var(--gold-500);
+
+  /* Focus ring */
+  --focus-ring: 0 0 0 3px rgba(213, 205, 140, 0.55);
+}

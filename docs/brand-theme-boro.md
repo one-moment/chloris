@@ -44,3 +44,10 @@
   - 타이포 헬퍼 클래스(`.t-display/.t-lede/.t-overline`) 도입 및 에디토리얼 표면 적용.
 
 > 2차 반영은 "스타일만, 동작 변경 없음" 범위. 구조성 항목(레일/아이콘)은 별도 승인.
+
+## 2026-06-14: Claude Design 정식 번들 수령
+
+- 정본 파일이 레포에 기록됨: `docs/design/borough/`(borough.css + ds 토큰 + Design Guide.html), 원본 링크는 `docs/design/README.md`.
+- 위 토큰 값들은 번들의 `ds/colors.css`와 동일(이미 1차 적용된 값과 일치). 추가로 상태색 soft 변형(success/warning/danger/info + `*-soft`)과 정식 시맨틱 별칭 세트 포함.
+- `borough.css`는 **우리 클래스명 그대로** 작성된 제품 스타일시트(모바일 우선). 2차 반영의 정본은 이제 이 파일이다.
+- 구조 요건(완성 디자인): `.workspace-root` 래퍼 + 데스크톱 `레일(64)+사이드바(268)+메인` 3열 + 모바일 오프캔버스 드로어 + Lucide 아이콘. → "스타일만" 범위를 넘으므로 적용 범위는 리더 승인 후 확정.
