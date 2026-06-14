@@ -22,7 +22,8 @@ Product serves 3 companies (internal tools): 원모먼트(online delivery), 보�
 
 ## Deferred / next
 
-- [x] Image upload compression implemented (zero-dep canvas, `lib/imageCompress.js`): images only, max 2000px/JPEG 0.82, EXIF-rotation-safe, HEIC/decode fallback to original, works in inline + S3. Lint+build pass. Runbook: `docs/storage-s3-and-image-compression.md`. NOT deployed yet.
+- [x] Image upload compression implemented + DEPLOYED (`dpl_2VWU3YBPBchdKTNu1uKbcPL1CcxJ`, health ok). Zero-dep canvas (`lib/imageCompress.js`): images only, 2000px/JPEG 0.82, EXIF-safe, HEIC fallback, inline + S3. Deploy log `post-deploy-log-20260614-image-compression-recovery`.
+  - NOTE: Vercel team account hit "fair use" (commercial-use) block → prod briefly down ("Payment required"); resolved by account fix, redeployed. Paid Vercel plan needed (esp. for the 3-company split).
 - [ ] Borough S3 transition — CONSOLE task (leader/ops): create Supabase Storage bucket + set Vercel env (`STORAGE_PROVIDER=s3` + S3_* + keys) per `docs/storage-s3-and-image-compression.md`. Code already supports S3; new uploads go to S3, existing inline still works.
 - [ ] Structural design batch: green rail + mobile off-canvas drawer + Lucide icons (from `docs/design/borough/borough.css`).
 - [x] Planning overview `chloris-기획정리.md` received from 기획(Claude) and added at repo root (index validated — all referenced canonical docs exist; section 5 progress refreshed to the 2026-06-14 deploy).
