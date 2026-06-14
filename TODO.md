@@ -1,0 +1,192 @@
+# TODO.md
+
+## Multi-company split & branding (2026-06-11, night)
+
+Product serves 3 companies (internal tools): 원모먼트(online delivery), 보로플라워마켓(offline franchise), 오늘꽃(wholesale + venue supply). Shared base = chat + board; custom modules per company.
+
+- [x] Naming confirmed: "Chloris(사내 Work OS) → 회사별 브랜딩 워크스페이스."
+- [x] Separation strategy confirmed: ONE repo → 3 Vercel projects (onemoment/borough/todaykkot) by `NEXT_PUBLIC_BRAND`, SEPARATE Supabase per company. Runbook: `docs/multi-company-split.md`.
+- [x] Code groundwork done: `lib/brand.js` (brand config + module gating), `modules/registry.js` brand-filtered, `app/layout.jsx` data-brand + workspace name, `.env.example` NEXT_PUBLIC_BRAND. CRM/reservations marked Borough-only; purchase shared. Lint+build pass.
+- [ ] INFRA (user/ops): Borough = reuse current deploy+DB (relabel). 원모먼트/오늘꽃 = new Supabase + new Vercel project (same repo) + env (`NEXT_PUBLIC_BRAND`, `DATABASE_URL`, `DIRECT_URL`) + `prisma migrate deploy` on each fresh DB + domains. Can assist running migrations once DB URLs are provided.
+- [~] Borough feature build started (track A first; infra split deferred by user):
+  - [x] TEMPLATE system (core, all brands): `PostTemplate` schema + migration `20260614120000_add_post_templates` (NOT applied to prod — needs approval), API `/api/post-templates` (+ `[templateId]`), token helper `lib/postTemplates.js` ({{지점}}/{{오늘}}/{{작성자}}), `TemplatePicker` in post composer, `TemplateManagerDialog` (create/edit/delete; personal=anyone, shared=admin). GET degrades to [] if table missing, so code is deploy-safe pre-migration. Lint+build+tests pass.
+  - [ ] Apply `20260614120000_add_post_templates` to prod + deploy (needs user approval).
+  - [ ] CRM + reservations (Borough-only modules) per `docs/templates-and-crm.md` — next.
+- [ ] Later: 원모먼트/오늘꽃 themes (data-brand scoped) + their custom modules when requirements are defined.
+- [x] Applied Borough Flower Market design system to the current tool (= 보로플라워마켓 instance) and DEPLOYED `dpl_PeJfjSLHucdqEEJhAr1ubKaJtd1T` (health ok, logo 200, deploy log `post-deploy-log-20260614-borough-design-system`). Token remap in `styles.css` (green/gold/paper/serif), brand chrome in `app/globals.css`, logos in `public/brand/`.
+- [x] Naming confirmed: "Chloris(사내 Work OS) → 회사별 브랜딩 워크스페이스" (companies: 원모먼트/보로플라워마켓/오늘꽃).
+- [ ] Stage 2 polish (optional): full green rail, per-component fine-tuning to Borough component specs, serif on editorial surfaces, dark-mode parity if needed.
+- [ ] When splitting: extract Borough tokens into a theme file (e.g. `themes/borough.css`) and add 원모먼트/오늘꽃 themes; gate modules per company.
+
+## New Requests (2026-06-11, evening)
+
+Employee feature request + one UX fix:
+
+- [x] Mention keyboard navigation: arrow keys (↑↓) move the highlight, Enter/Tab selects, Esc closes; IME-safe (no intercept mid-composition) and does not trigger message send while the popover is open. `components/MentionInput.jsx`. Verified lint+build. NOT yet deployed.
+CLARIFIED 2026-06-11: (1) and (2) form one loop — template = input form, CRM = the store the form reads (lookup) and writes (on submit).
+
+- [ ] (1) Template SYSTEM (user clarified: users AND admins author reusable templates, load to reduce repetitive entry — max freedom). Core communication feature (lives in core, not a work module).
+  - Data: `PostTemplate { id, name, body, scope (personal|shared), ownerId, createdById, timestamps }`. Personal = visible to owner; shared = admin-managed, visible to all.
+  - Tokens resolved at insert: `{{지점}}` (from channel's linked Branch), `{{오늘}}`, `{{작성자}}`.
+  - UX: composer "템플릿" picker (shared first, then mine) fills title(line 1)+body; "템플릿 관리" modal to author/edit. Permissions: anyone creates personal; admin creates/edits shared.
+  - API: GET/POST/PATCH/DELETE `/api/post-templates`. Additive table → migration created locally, prod apply needs approval.
+- [ ] (2) CRM module (user clarified: online customer management — look up returning customers by name/phone, pull past order history). Internal module `modules/crm`, route `/work/customers`.
+  - Data: `Customer { id, name, phone(idx), branchId?, memo, timestamps }`, `Order { id, customerId, branchId?, channelId?, postId?, orderNo, items, amount, pickupAt, source, status, timestamps }`. Customer 1—N Order.
+  - Lookup: GET `/api/work/crm/customers?q=` (name or phone) → matches + recent orders. Composer calls this API (no core→module import; boundary kept).
+  - The loop: 주문서 template submit → upsert Customer by phone + create Order linked to the post → next visit, name/phone lookup autofills → history accrues → feeds 지점 인사이트 metrics later.
+  - PII: phone is sensitive — branch-scoped visibility (staff=own branch, manager/HQ=all); never log/commit customer data (AGENTS.md).
+  - External shopping-mall sync (Cafe24/imweb 등) = optional later step via integration bot, NOT required for this ask.
+- Proposed build order: ① template system (independent, ships now) → ② CRM core (tables + /work/customers search/profile/manual entry) → ③ connect (composer lookup autofill + create-order-on-submit) → ④ optional mall sync.
+- RESOLVED 2026-06-11 (evening): decisions locked, spec written → `docs/templates-and-crm.md` + DECISIONS entry. Brand 보로플라워; branches 강남1호점/강남2호점/잠실점 (no rename, future e.g. 성수역점); customer chain-wide by phone (cross-branch context). Existing 20-month sheet → one-time import (branchId for those rows still TBD).
+- REFINED 2026-06-11: templates ≠ forms, built as two independent tracks.
+  - Track A — TEMPLATE system (core, general): free-text post helpers for 구매요청/인계사항/공지 etc. Output = plain post. `PostTemplate` scope personal|shared + tokens. Ships standalone, first.
+  - Track B — CRM + RESERVATION (module): reservation input is a DEDICATED FORM (typed fields, validation, customer lookup) writing Customer+Reservation — NOT a template. Form reachable from /work/reservations "새 예약" and #지점방 @예약.
+- Mention keyboard nav: committed (`ddf4696`), NOT deployed — decide deploy timing (standalone or with first template/CRM batch).
+
+## Today (2026-06-10): Employee UI/UX Proposal First
+
+Reviewed: no structural conflict with the platform architecture plan. All items touch core communication UI (`components/`), which stays core UI after Phase 1. Apply in this order, then proceed to architecture phase ordering decision.
+
+Batch 1 (priority 1, no migration):
+- [x] Post readability: spacing/typography hierarchy in post cards, long-post truncation with "더보기", bold text support (markdown-lite `**bold**` via new `components/RichText.jsx`).
+- [x] Extend mention autocomplete (`MentionInput`) from comments to post composer and message composer; mention highlighting in post/message bodies (text-based matching, no schema change). Also fixed the mention filter to match `@name` tokens (see BUG_LOG).
+- [x] Channel list: show latest post/message preview per channel (existing data, no read tracking).
+
+Batch 2 (priority 1, additive migration created but NOT applied to production):
+- [x] Pin posts implemented: `Post.pinnedAt` in both schemas, migration `20260610100000_add_post_pinned` (file only), PATCH `/api/posts/:id` accepts `pinned` (admin only), pinned section on top of Ideas view.
+- [ ] Apply `20260610100000_add_post_pinned` to production — REQUIRES explicit user approval before `prisma migrate deploy`.
+
+Batch 3 (priority 2):
+- [x] Threaded replies: `Comment.parentId` (1-level threads, reply composer, indented rendering) + comment count on post header.
+- [x] Search/filter: GET `/api/search` (q/author/from/to) + `SearchDialog` with result navigation.
+
+Batch 4 (priority 3):
+- [x] Unread counts per channel (`ChannelReadState` + client-side counting from `state.readStates`), sidebar badges (amber when mentioned), auto mark-read on channel view.
+- [x] In-app notifications: Topbar bell with mention/comment(on my post)/pinned-notice items, click navigates to source channel (architecture principle 9.5).
+
+Deployment for batches 3-4 (completed 2026-06-10, user approved):
+- [x] Migration `20260610150000_add_comment_threads_and_read_state` applied to production.
+- [x] Deployed `dpl_9biuBJtMetSJoKqpyskYGgCLZPqB`, health ok/database ok.
+- [x] Deploy log: `post-deploy-log-20260610-uiux-batch3-4-threads-search-notifications`.
+- [x] Branch pushed to origin (`cfca075`).
+
+Employee UI/UX proposal: ALL priority 1-3 items are now live in production.
+
+## Architecture Phase 1 (2026-06-11, in progress)
+
+Decided: Phase 1 is the main thread; Coupang worker runs in parallel on failure artifacts (see DECISIONS 2026-06-11).
+
+- [x] `lib/core/apiClient.js` extraction (page.jsx fetch util moved).
+- [x] `modules/registry.js` + `modules/purchase/index.js` manifest; sidebar 업무 section renders from registry.
+- [x] `/work/purchase` dashboard v0 (`modules/purchase/ui/PurchaseDashboard.jsx`): metrics, vendor tasks, drafts, requests.
+- [x] Module boundary guardrail: `scripts/check-module-boundaries.mjs` wired into `npm run lint` (verified to catch violations); AGENTS.md module rules added.
+- [x] `Branch` + `BranchAssignment` schema in both Prisma schemas; `Channel.branchId` nullable; migration `20260611090000_add_branch_layer` created, NOT applied (needs user approval).
+- [x] Branch migration applied to production with 3 seeded branches (강남1호점 `branch-gangnam-1`, 강남2호점 `branch-gangnam-2`, 잠실점 `branch-jamsil`); future branches are added then linked to channels per user decision.
+- [x] Phase 1 code deployed: `dpl_2ttnSDBiRsERD2vV7QDVPK8dXXwN`, health ok, `/work/purchase` 200. Deploy log: `post-deploy-log-20260611-phase1-module-registry-branches`.
+- [x] Channel-branch linking UI deployed (`dpl_2aFqqchMxHh9JMd3QkGh5Bs1CtxZ`): branch select on channel creation, Topbar branch badge, admin inline branch change (PATCH `/api/channels/:id`). Deploy log: `post-deploy-log-20260611-channel-branch-linking`.
+- [x] `/chat/[channelId]` URL routing complete: `WorkspaceShell` (layout-level provider, state persists across navigation) + `ChatView` + `app/(workspace)` route group; `/work/purchase` moved inside the shell. Deployed `dpl_w7vuu8Niz6RERfC3sacYTGBXXyTx`, all routes 200. Deploy log: `post-deploy-log-20260611-phase1-complete-chat-routing`.
+
+**Phase 1 COMPLETE.** Next: Phase 2 — purchase server code into `modules/purchase/server/`, `Message.cardType` card registry, standard agent interface extraction, platform eventBus + metricsRegistry, `/work/inbox` approval inbox.
+
+## Usage Model Rethink (2026-06-11 user feedback, discuss next session)
+
+User feedback after experiencing Phase 1 in production:
+1. Channel explosion risk: channels are currently per-task (구매요청, 입고...), so tasks × branches multiplies channel count.
+2. `/work/*` screens are status-only; for real ERP use they must be operating consoles.
+3. Overall usage must be simpler and more intuitive; concept definitions feel unclear.
+
+Proposed direction (pending user decision):
+- [ ] Invert the channel axis: channel = branch room (지점방, 1 per branch like a KakaoTalk room), task = agent mention (@구매/@입고/@폐기 in the same room). Channel count grows +1 per branch, not ×tasks. Enablers already shipped: channel-branch link, ChannelAgentInstallation; Phase 2 registry dispatch makes multi-agent-per-channel real. Existing per-task channels would be consolidated after Phase 2.
+- [ ] Revise principle 9.3: field staff input via chat; managers may BOTH input and process in dashboards (add create-forms to work screens).
+- [ ] Redefine work-screen standard as action-first: metrics → action queue (approve/process buttons) → list with row actions → create new. `/work/inbox` is the centerpiece.
+- [ ] Intuitiveness quick wins: pinned usage-guide post per channel (pin shipped), agent 도움말 command, quick agent-mention chips in message composer.
+- [ ] After decision: update `docs/platform-architecture.md` + `DECISIONS.md`, plan channel consolidation migration.
+
+Notes:
+- Image thumbnails already work (`AttachmentList` renders image previews + modal) — only style polish needed.
+- Mention matching/autocomplete/highlight already implemented for comments (`lib/mentions.js`, `MentionInput`, `MentionText`); this is an extension, not new build.
+
+## Platform Architecture (2026-06-10)
+
+- [x] Write platform architecture design for chat/work-module separation: `docs/platform-architecture.md`.
+- [x] User review and approval of the design direction; doc updated to v2 (UX standards, guardrails, branch insights, metrics registry, agent-bot system plan).
+- [x] Record the decision in `DECISIONS.md` (2026-06-10 entry).
+- [ ] Resolve remaining open items in `docs/platform-architecture.md` section 16 (phase ordering vs Coupang worker, SWR, sheet-sync target, branch/channel mapping).
+- [ ] Start Phase 1: routing skeleton, module registry, ESLint module-boundary rule, Branch/BranchAssignment schema.
+
+## Next Session Priority
+
+- [x] Create Claude handoff document with local paths, GitHub links, project structure, commands, safety rules, and current branch status.
+- [ ] Push local commits if the next agent will continue from GitHub instead of this local folder.
+- [x] Confirm team-built Agent/Bot framework plan before deeper implementation:
+  - [x] app registry lifecycle: draft/review/active/disabled/revoked
+  - [x] capability declaration for agents, tools, bots, events, and permissions
+  - [x] external webhook/API-token skeleton with hashed secret storage
+  - [x] local worker job adapter pattern
+  - [x] audit logs for every agent/tool/bot execution
+  - [x] admin UX that installs agents first, then shows child bots/tools under each agent
+- [x] Production test in `#구매요청`:
+  - [x] submit a real bulk purchase request to Purchase Agent
+  - [x] confirm `PurchaseOrderDraft` is created
+  - [x] edit draft line values
+  - [x] approve draft
+  - [x] confirm `PurchaseOrderVendorTask` records
+  - [x] confirm Coupang URL lines create worker queue tasks
+- [ ] Run local purchase worker against production task queue only after confirming worker token and target server.
+- [ ] Collect artifacts for any Coupang cart issue before code edits.
+- [x] Update `#배포로그` Ideas board after test results.
+- [x] Commit today's framework docs, parser fix, and deployment log note if not already committed.
+
+## Purchase Agent
+
+- [x] Fix bulk parser so metadata/title lines before vendor sections are not parsed as unknown items.
+- [ ] Add clearer UI for approved draft to vendor task transition.
+- [ ] Add vendor task detail view.
+- [ ] Add manual handoff state for non-Coupang vendors.
+- [ ] Add admin controls for supported vendors per channel.
+- [ ] Add structured validation for missing quantity, URL, option, and vendor.
+- [ ] Keep vendor bots as Purchase Agent tools, not always-visible channel apps.
+
+## Coupang Worker
+
+- [ ] Stabilize cart row matching.
+- [ ] Stabilize quantity correction.
+- [ ] Handle existing cart items.
+- [ ] Handle duplicate product URLs.
+- [ ] Save row-level screenshot and HTML on every quantity failure.
+- [ ] Do not continue after quantity mismatch.
+
+## Vendor Bots
+
+- [ ] Define vendor bot adapter interface:
+  - [ ] vendor slug
+  - [ ] supported automation levels
+  - [ ] required credentials
+  - [ ] supported input schema
+  - [ ] output/result schema
+  - [ ] handoff mode
+- [ ] Sungwon Adpia bot skeleton.
+- [ ] Gmarket handoff skeleton.
+- [ ] Hyundai Deco handoff skeleton.
+- [ ] Vendor-specific order form model if needed.
+
+## Admin UX
+
+- [ ] Improve Agent/Bot settings panel.
+- [ ] Show channel-installed agents compactly.
+- [ ] Show connected bots/tools under each agent.
+- [ ] Show vendor task status summary.
+- [ ] Add team-built app registry view later:
+  - [ ] submitted apps
+  - [ ] review status
+  - [ ] declared permissions
+  - [ ] install/disable/revoke controls
+
+## Required Before Ending Any Future Session
+
+- [x] Update `HANDOFF.md`.
+- [x] Update `TODO.md`.
+- [ ] Update `DECISIONS.md` if a decision changed.
+- [ ] Update `BUG_LOG.md` if a bug was found or fixed.
+- [x] Run relevant tests or explicitly record why tests were not run.
+- [ ] Do not leave sensitive values in docs, logs, or committed files.

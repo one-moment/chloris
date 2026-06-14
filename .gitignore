@@ -3,10 +3,14 @@ node_modules/
 .data/
 prisma/dev.db
 prisma/dev.db-journal
+prisma/local-test.db
+prisma/local-test.db-journal
 out/
 dist/
 build/
 backups/
+.purchase-bot/
+purchase-bot-screenshots/
 
 .env
 .env.production
@@ -18,4 +22,5 @@ yarn-error.log*
 pnpm-debug.log*
 
 .DS_Store
+*.swp
 .vercel

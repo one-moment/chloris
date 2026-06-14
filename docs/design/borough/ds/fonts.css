@@ -1,0 +1,8 @@
+/* Borough Flower Market — Webfonts
+   Editorial Latin serif (Cormorant) + refined Korean serif (Gowun Batang)
+   + clean Korean/Latin sans (Gothic A1) for UI.
+   Loaded from Google Fonts CDN so specimens render with the real faces.
+   NOTE: if you need offline/self-hosted binaries, download these families
+   into assets/fonts/ and replace the @import with @font-face rules. */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Gowun+Batang:wght@400;700&family=Gothic+A1:wght@300;400;500;600;700;800&display=swap');

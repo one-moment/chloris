@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chloris 디자인 가이드 — Borough Flower Market</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="borough.css">
+<style>
+  html, body { margin: 0; background: var(--surface-page); color: var(--text-body); font-family: var(--font-sans); }
+  .doc { max-width: 980px; margin: 0 auto; padding: var(--space-12) var(--space-6) var(--space-24); }
+
+  /* Topbar */
+  .doc-top {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: var(--space-4);
+    padding: var(--space-3) var(--space-6);
+    background: var(--green-900); color: var(--text-on-dark);
+    border-bottom: 1px solid var(--border-on-dark);
+  }
+  .doc-top img { width: 28px; height: 28px; border-radius: var(--radius-sm); }
+  .doc-top .wm { font-family: var(--font-display); font-size: 20px; font-weight: 600; line-height: 1; margin-right: auto; }
+  .doc-top a { display: inline-flex; align-items: center; gap: 6px; color: var(--text-on-dark-muted); font-size: var(--fs-caption); font-weight: 600; padding: 7px 12px; border: 1px solid var(--border-on-dark); border-radius: var(--radius-md); }
+  .doc-top a:hover { color: var(--accent); text-decoration: none; }
+  .doc-top a i { width: 15px; height: 15px; }
+
+  /* Editorial header */
+  .hero { margin-bottom: var(--space-16); }
+  .hero .eyebrow { font-size: var(--fs-overline); letter-spacing: var(--tracking-overline); text-transform: uppercase; font-weight: 600; color: var(--accent-strong); }
+  .hero h1 { font-family: var(--font-serif); font-size: var(--fs-h1); font-weight: 700; line-height: var(--lh-heading); margin: var(--space-3) 0 var(--space-4); letter-spacing: var(--tracking-tight); }
+  .hero p { font-family: var(--font-serif); font-size: var(--fs-body-lg); line-height: var(--lh-relaxed); color: var(--text-muted); max-width: 60ch; }
+
+  section { margin-bottom: var(--space-16); }
+  .sec-head { display: flex; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-6); padding-bottom: var(--space-3); border-bottom: 2px solid var(--brand); }
+  .sec-head .num { font-family: var(--font-display); font-size: var(--fs-h3); color: var(--accent-strong); font-weight: 600; white-space: nowrap; }
+  .sec-head h2 { font-family: var(--font-serif); font-size: var(--fs-h3); font-weight: 700; white-space: nowrap; }
+  .sec-head p { margin-left: auto; color: var(--text-muted); font-size: var(--fs-body-sm); }
+  .lede { color: var(--text-body); line-height: var(--lh-relaxed); max-width: 70ch; margin-bottom: var(--space-6); }
+
+  .gcard { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6); box-shadow: var(--shadow-xs); }
+  .grid2 { display: grid; gap: var(--space-4); grid-template-columns: 1fr; }
+  @media (min-width: 720px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+
+  /* Principles */
+  .principles { display: grid; gap: var(--space-4); grid-template-columns: 1fr; }
+  @media (min-width: 720px) { .principles { grid-template-columns: repeat(2, 1fr); } }
+  .principle { display: grid; gap: var(--space-2); }
+  .principle .pi { width: 40px; height: 40px; display: grid; place-items: center; border-radius: var(--radius-md); background: var(--brand-tint); color: var(--brand); margin-bottom: var(--space-1); }
+  .principle .pi i { width: 20px; height: 20px; }
+  .principle strong { font-size: var(--fs-title); font-weight: 700; color: var(--text-strong); }
+  .principle span { color: var(--text-muted); font-size: var(--fs-body-sm); line-height: var(--lh-normal); }
+
+  /* Spacing scale */
+  .scale { display: grid; gap: var(--space-3); }
+  .scale-row { display: grid; grid-template-columns: 110px 60px 1fr; align-items: center; gap: var(--space-4); }
+  .scale-row code { font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--text-strong); }
+  .scale-row .px { font-size: var(--fs-caption); color: var(--text-muted); text-align: right; }
+  .scale-bar { height: 16px; background: var(--brand); border-radius: var(--radius-xs); }
+
+  /* Do / Dont */
+  .compare { display: grid; gap: var(--space-4); grid-template-columns: 1fr; }
+  @media (min-width: 720px) { .compare { grid-template-columns: 1fr 1fr; } }
+  .specimen { border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); }
+  .specimen .label { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); font-size: var(--fs-caption); font-weight: 700; }
+  .specimen .label i { width: 16px; height: 16px; }
+  .specimen.bad .label { background: var(--danger-soft); color: var(--danger); }
+  .specimen.good .label { background: var(--success-soft); color: var(--success); }
+  .specimen .stage { padding: var(--space-5); background: var(--surface-sunken); }
+  /* the bad example deliberately cramped */
+  .ex-bad { border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--surface-card); }
+  .ex-bad strong { display: block; font-weight: 700; }
+  .ex-bad p { font-size: var(--fs-body-sm); color: var(--text-muted); }
+  .ex-good { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-card); padding: var(--space-5); display: grid; gap: var(--space-2); }
+  .ex-good strong { font-family: var(--font-serif); font-size: var(--fs-title); font-weight: 700; color: var(--text-strong); }
+  .ex-good p { font-size: var(--fs-body-sm); color: var(--text-muted); line-height: var(--lh-normal); }
+  .note { display: flex; gap: var(--space-2); margin-top: var(--space-3); font-size: var(--fs-caption); color: var(--text-muted); }
+  .note code { font-family: var(--font-mono); background: var(--surface-sunken); padding: 1px 5px; border-radius: var(--radius-xs); color: var(--text-body); }
+
+  /* Type specimens */
+  .type-row { display: grid; grid-template-columns: 1fr; gap: 2px; padding: var(--space-4) 0; border-bottom: 1px solid var(--border-subtle); }
+  @media (min-width: 720px) { .type-row { grid-template-columns: 160px 1fr; align-items: baseline; gap: var(--space-6); } }
+  .type-row .meta { font-size: var(--fs-caption); color: var(--text-muted); }
+  .type-row .meta code { font-family: var(--font-mono); display: block; color: var(--text-faint); font-size: var(--fs-micro); margin-top: 2px; }
+
+  /* Colors */
+  .swatches { display: grid; gap: var(--space-3); grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 600px) { .swatches { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 860px) { .swatches { grid-template-columns: repeat(4, 1fr); } }
+  .sw { border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+  .sw .chip-c { height: 56px; }
+  .sw .info { padding: var(--space-2) var(--space-3); display: grid; gap: 1px; }
+  .sw .info strong { font-size: var(--fs-caption); font-weight: 700; color: var(--text-strong); }
+  .sw .info code { font-family: var(--font-mono); font-size: var(--fs-micro); color: var(--text-muted); }
+
+  /* Component row */
+  .comp-grid { display: grid; gap: var(--space-4); grid-template-columns: 1fr; }
+  @media (min-width: 720px) { .comp-grid { grid-template-columns: 1fr 1fr; } }
+  .comp { display: grid; gap: var(--space-3); }
+  .comp .comp-title { font-size: var(--fs-overline); letter-spacing: var(--tracking-wide); text-transform: uppercase; font-weight: 600; color: var(--text-muted); }
+  .demo { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  .chips-demo { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+  .field-demo { display: grid; gap: var(--space-2); max-width: 320px; }
+  .field-demo label { font-size: var(--fs-overline); letter-spacing: var(--tracking-wide); text-transform: uppercase; font-weight: 600; color: var(--text-muted); }
+  .field-demo input { min-height: 42px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-page); padding: 0 var(--space-3); }
+
+  .layout-fig { display: grid; grid-template-columns: 54px 150px 1fr; gap: 6px; height: 200px; }
+  .layout-fig > div { border-radius: var(--radius-sm); display: grid; place-items: center; text-align: center; font-size: var(--fs-micro); font-weight: 600; padding: var(--space-2); }
+  .lf-rail { background: var(--green-900); color: var(--accent); }
+  .lf-side { background: var(--brand); color: var(--text-on-dark); }
+  .lf-main { background: var(--surface-sunken); color: var(--text-muted); border: 1px dashed var(--border-strong); }
+  .bp-list { display: grid; gap: var(--space-2); }
+  .bp { display: grid; grid-template-columns: 130px 1fr; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--border-subtle); font-size: var(--fs-body-sm); }
+  .bp strong { color: var(--text-strong); }
+  .bp code { font-family: var(--font-mono); font-size: var(--fs-micro); color: var(--accent-strong); }
+</style>
+</head>
+<body>
+
+  <div class="doc-top">
+    <img src="assets/logo-mark-square.png" alt="Borough">
+    <span class="wm">Chloris</span>
+    <a href="Chloris Workspace.html"><i data-lucide="layout-dashboard"></i>워크스페이스 보기</a>
+  </div>
+
+  <div class="doc">
+    <header class="hero">
+      <div class="eyebrow">IN SEASON · DESIGN GUIDE</div>
+      <h1>완성도는 간격에서 나옵니다</h1>
+      <p>이 가이드는 Chloris Work OS의 모든 화면이 같은 호흡으로 정렬되도록 돕습니다. 색·서체·컴포넌트는 Borough Flower Market 디자인 시스템을 따르고, 무엇보다 <em>일관된 간격</em>으로 화면의 완성도를 끌어올립니다. 새 페이지를 만들 때 이 규칙만 지켜도 흐트러지지 않습니다.</p>
+    </header>
+
+    <!-- 1 · Principles -->
+    <section>
+      <div class="sec-head"><span class="num">01</span><h2>원칙</h2><p>모든 화면에 공통 적용</p></div>
+      <div class="principles">
+        <div class="principle gcard">
+          <span class="pi"><i data-lucide="ruler"></i></span>
+          <strong>4px 그리드</strong>
+          <span>모든 여백·간격은 4px 배수(<code>--space-*</code>)에서만 고릅니다. 13px·17px 같은 임의값은 쓰지 않습니다.</span>
+        </div>
+        <div class="principle gcard">
+          <span class="pi"><i data-lucide="square-dashed"></i></span>
+          <strong>텍스트는 보더에 붙지 않는다</strong>
+          <span>카드·입력·게시글 컨테이너는 항상 안쪽 패딩(<code>--card-pad</code> = 20px)을 둡니다. 외곽선과 글이 맞닿으면 미완성처럼 보입니다.</span>
+        </div>
+        <div class="principle gcard">
+          <span class="pi"><i data-lucide="smartphone"></i></span>
+          <strong>모바일 우선</strong>
+          <span>매장은 휴대폰과 작은 POS 화면으로 일합니다. 좁은 화면을 기본으로 설계하고, 넓어질 때 단을 늘립니다.</span>
+        </div>
+        <div class="principle gcard">
+          <span class="pi"><i data-lucide="git-commit-horizontal"></i></span>
+          <strong>gap으로 정렬</strong>
+          <span>나란한 요소는 <code>flex/grid + gap</code>으로 띄웁니다. 요소마다 margin을 더하면 간격이 어긋납니다.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 · Spacing scale -->
+    <section>
+      <div class="sec-head"><span class="num">02</span><h2>스페이싱 스케일</h2><p>4px base</p></div>
+      <p class="lede">간격은 이 사다리에서만 선택합니다. 카드 사이는 <strong>12px</strong>, 카드 안쪽은 <strong>20px</strong>, 섹션 사이는 <strong>24–32px</strong>가 기본값입니다.</p>
+      <div class="gcard">
+        <div class="scale" id="scale"></div>
+      </div>
+    </section>
+
+    <!-- 3 · Padding fix -->
+    <section>
+      <div class="sec-head"><span class="num">03</span><h2>여백 규칙 · Before / After</h2><p>가장 자주 어긋나는 부분</p></div>
+      <p class="lede">기존 화면에서 가장 눈에 띈 문제는 <strong>게시글 외곽선과 본문이 붙어 있는 것</strong>이었습니다. 안쪽 패딩과 요소 간 간격만 정리해도 완성도가 크게 올라갑니다.</p>
+      <div class="compare">
+        <div class="specimen bad">
+          <div class="label"><i data-lucide="x"></i>이렇게 쓰지 마세요</div>
+          <div class="stage">
+            <div class="ex-bad">
+              <strong>주간 매장 운영 체크</strong>
+              <p>오픈 준비, 위생 점검, 인력 공백 현황을 댓글로 남겨주세요.</p>
+              <span class="chip review" style="margin-top:4px;display:inline-flex"><span class="chip-dot"></span>검토중</span>
+            </div>
+            <p class="note"><i data-lucide="alert-triangle" style="width:14px;height:14px;color:var(--danger)"></i> 패딩 0 · 제목과 본문·칩이 외곽선과 서로 붙어 답답합니다.</p>
+          </div>
+        </div>
+        <div class="specimen good">
+          <div class="label"><i data-lucide="check"></i>이렇게 쓰세요</div>
+          <div class="stage">
+            <div class="ex-good">
+              <strong>주간 매장 운영 체크</strong>
+              <p>오픈 준비, 위생 점검, 인력 공백 현황을 댓글로 남겨주세요.</p>
+              <span class="chip review" style="margin-top:4px;display:inline-flex;width:fit-content"><span class="chip-dot"></span>검토중</span>
+            </div>
+            <p class="note"><code>padding: 20px</code> · <code>gap: 8px</code> — 글이 숨 쉴 공간이 생깁니다.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 · Type -->
+    <section>
+      <div class="sec-head"><span class="num">04</span><h2>타이포그래피</h2><p>세리프 헤드라인 · Gothic A1 UI</p></div>
+      <p class="lede">제목과 시적 카피는 한국어 세리프 <strong>Gowun Batang</strong>, 라틴 디스플레이는 <strong>Cormorant</strong>. 버튼·라벨·표 등 조밀한 UI는 모두 <strong>Gothic A1</strong>로 통일합니다.</p>
+      <div class="gcard">
+        <div class="type-row">
+          <div class="meta">Display · Cormorant<code>--fs-display-3</code></div>
+          <div style="font-family:var(--font-display);font-size:var(--fs-display-3);font-weight:600;line-height:1.05">In season, in bloom</div>
+        </div>
+        <div class="type-row">
+          <div class="meta">제목 · Gowun Batang<code>--fs-h2 / 31px</code></div>
+          <div style="font-family:var(--font-serif);font-size:var(--fs-h2);font-weight:700;line-height:1.28"># 매니저 소통</div>
+        </div>
+        <div class="type-row">
+          <div class="meta">시적 리드 · 세리프<code>--fs-body-lg</code></div>
+          <div style="font-family:var(--font-serif);font-size:var(--fs-body-lg);line-height:1.7;color:var(--text-muted)">제철, 가장 아름다운 시기의 꽃을 당신께.</div>
+        </div>
+        <div class="type-row">
+          <div class="meta">본문 · Gothic A1<code>--fs-body / 15px</code></div>
+          <div style="font-family:var(--font-sans);font-size:var(--fs-body);line-height:1.5">라벨 프린터 1대와 라벨지 3롤을 찾아주세요. 예산은 25만원 이하입니다.</div>
+        </div>
+        <div class="type-row">
+          <div class="meta">오버라인 · Gothic A1<code>--fs-overline</code></div>
+          <div class="t-overline" style="font-size:var(--fs-overline)">CHANNELS · WORKSPACE</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 · Colors -->
+    <section>
+      <div class="sec-head"><span class="num">05</span><h2>컬러</h2><p>포레스트 그린 · 세이지 골드 · 클레이</p></div>
+      <p class="lede">중심은 포레스트 그린과 세이지 골드. 따뜻한 페이퍼 중립 위에 얹고, 제철 강조는 클레이 하나만 절제해서 씁니다. 상태색은 채도를 낮춰 차분하게.</p>
+      <div class="swatches" id="swatches"></div>
+    </section>
+
+    <!-- 6 · Components -->
+    <section>
+      <div class="sec-head"><span class="num">06</span><h2>컴포넌트</h2><p>버튼 · 칩 · 입력 · 뱃지</p></div>
+      <div class="comp-grid">
+        <div class="comp gcard">
+          <span class="comp-title">버튼</span>
+          <div class="demo">
+            <button class="primary-button"><i data-lucide="check"></i>승인</button>
+            <button class="secondary-button">반려</button>
+            <button class="text-button">수정</button>
+          </div>
+        </div>
+        <div class="comp gcard">
+          <span class="comp-title">상태 칩</span>
+          <div class="chips-demo">
+            <span class="chip review"><span class="chip-dot"></span>검토중</span>
+            <span class="chip progress"><span class="chip-dot"></span>진행중</span>
+            <span class="chip done"><span class="chip-dot"></span>완료</span>
+          </div>
+        </div>
+        <div class="comp gcard">
+          <span class="comp-title">채널 뱃지</span>
+          <div class="chips-demo">
+            <span class="badge badge-neutral"><i data-lucide="message-circle"></i>일반 소통</span>
+            <span class="badge badge-purchase"><i data-lucide="shopping-cart"></i>구매요청</span>
+            <span class="badge badge-sheet"><i data-lucide="package"></i>입고</span>
+          </div>
+        </div>
+        <div class="comp gcard">
+          <span class="comp-title">입력</span>
+          <div class="field-demo">
+            <label>게시글 제목</label>
+            <input type="text" value="라벨 프린터 추가 구매" readonly>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 · Layout -->
+    <section>
+      <div class="sec-head"><span class="num">07</span><h2>레이아웃 & 반응형</h2><p>레일 · 사이드바 · 메인</p></div>
+      <div class="grid2">
+        <div class="gcard">
+          <span class="comp-title" style="display:block;margin-bottom:var(--space-3)">데스크톱 골격</span>
+          <div class="layout-fig">
+            <div class="lf-rail">레일 64</div>
+            <div class="lf-side">사이드바 268</div>
+            <div class="lf-main">메인 (콘텐츠 + 자동화 패널)</div>
+          </div>
+        </div>
+        <div class="gcard">
+          <span class="comp-title" style="display:block;margin-bottom:var(--space-3)">반응형 분기 (컨테이너 기준)</span>
+          <div class="bp-list">
+            <div class="bp"><div><strong>모바일</strong><br><code>&lt; 720</code></div><div>단일 단 · 사이드바는 드로어(햄버거) · 자동화는 콘텐츠 아래로</div></div>
+            <div class="bp"><div><strong>POS / 태블릿</strong><br><code>≥ 720</code></div><div>레일 + 사이드바 고정 · 메인 1단 · 자동화는 아래로</div></div>
+            <div class="bp"><div><strong>데스크톱</strong><br><code>≥ 1080</code></div><div>메인 2단 · 자동화 패널이 우측에 sticky 고정</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <template id="__bundler_thumbnail">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" fill="#185640"/>
+      <text x="50" y="70" font-family="Georgia, serif" font-size="54" fill="#D5CD8C" text-anchor="middle">G</text>
+    </svg>
+  </template>
+
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    const SCALE = [["--space-1","4px",4],["--space-2","8px",8],["--space-3","12px",12],["--space-4","16px",16],["--space-5","20px",20],["--space-6","24px",24],["--space-8","32px",32],["--space-10","40px",40],["--space-12","48px",48],["--space-16","64px",64]];
+    document.getElementById("scale").innerHTML = SCALE.map(([t,px,w])=>`<div class="scale-row"><code>${t}</code><span class="px">${px}</span><div class="scale-bar" style="width:${w}px"></div></div>`).join("");
+
+    const SW = [
+      ["브랜드 그린","var(--brand)","#185640"],["그린 strong","var(--brand-strong)","#123F2E"],["세이지 골드","var(--accent)","#D5CD8C"],["골드 strong","var(--accent-strong)","#B9AF6A"],
+      ["클레이 (제철)","var(--seasonal)","#BE6E54"],["페이퍼 1","var(--paper-1)","#F7F4EA"],["페이퍼 0 (카드)","var(--paper-0)","#FCFBF5"],["잉크","var(--ink-900)","#171C18"],
+      ["성공","var(--success)","#2C7B60"],["주의","var(--warning)","#C79A3A"],["위험","var(--danger)","#B0503B"],["정보","var(--info)","#3E6E8E"]
+    ];
+    document.getElementById("swatches").innerHTML = SW.map(([n,v,hex])=>`<div class="sw"><div class="chip-c" style="background:${v}"></div><div class="info"><strong>${n}</strong><code>${hex}</code></div></div>`).join("");
+
+    if (window.lucide) window.lucide.createIcons();
+  </script>
+</body>
+</html>

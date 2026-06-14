@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { filterMentionUsers } from "../lib/mentions";
 
 function activeMentionQuery(value) {
@@ -11,6 +11,10 @@ function activeMentionQuery(value) {
     query: match[1],
     start: beforeCursor.lastIndexOf(`@${match[1]}`)
   };
+}
+
+function isComposingEvent(event) {
+  return event.isComposing || event.nativeEvent?.isComposing || event.keyCode === 229;
 }
 
 export default function MentionInput({
@@ -28,7 +32,16 @@ export default function MentionInput({
     () => query !== null ? filterMentionUsers(query, users) : [],
     [query, users]
   );
+  const [highlightIndex, setHighlightIndex] = useState(0);
+  const [dismissed, setDismissed] = useState(false);
   const Field = multiline ? "textarea" : "input";
+  const isOpen = suggestions.length > 0 && !dismissed;
+  const activeIndex = Math.min(highlightIndex, suggestions.length - 1);
+
+  useEffect(() => {
+    setHighlightIndex(0);
+    setDismissed(false);
+  }, [query]);
 
   function insertMention(user) {
     const text = String(value ?? "");
@@ -39,19 +52,56 @@ export default function MentionInput({
     onChange(`${before}@${user.name} ${after}`.replace(/\s+$/, " "));
   }
 
+  function handleKeyDown(event) {
+    if (isOpen && !isComposingEvent(event)) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setHighlightIndex((index) => (index + 1) % suggestions.length);
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setHighlightIndex((index) => (index - 1 + suggestions.length) % suggestions.length);
+        return;
+      }
+      if (event.key === "Enter" || event.key === "Tab") {
+        const choice = suggestions[activeIndex];
+        if (choice) {
+          event.preventDefault();
+          insertMention(choice);
+          return;
+        }
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setDismissed(true);
+        return;
+      }
+    }
+    onKeyDown?.(event);
+  }
+
   return (
     <div className="mention-input">
       <Field
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        onKeyDown={onKeyDown}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
       />
-      {suggestions.length > 0 && (
+      {isOpen && (
         <div className="mention-popover" role="listbox">
-          {suggestions.map((user) => (
-            <button type="button" key={user.id} onClick={() => insertMention(user)}>
+          {suggestions.map((user, index) => (
+            <button
+              type="button"
+              key={user.id}
+              role="option"
+              aria-selected={index === activeIndex}
+              className={index === activeIndex ? "active" : ""}
+              onMouseEnter={() => setHighlightIndex(index)}
+              onClick={() => insertMention(user)}
+            >
               <strong>{user.name}</strong>
               <span>{user.email}</span>
             </button>

@@ -19,7 +19,7 @@ export async function POST(request, { params }) {
   }
 
   const { postId } = await params;
-  const { body, mentions = [] } = await request.json();
+  const { body, mentions = [], parentId } = await request.json();
   const trimmedBody = body?.trim();
   if (!trimmedBody) {
     perf.done({ status: 400 });
@@ -34,6 +34,19 @@ export async function POST(request, { params }) {
     return Response.json({ error: "Post not found." }, { status: 404, headers });
   }
 
+  let resolvedParentId = null;
+  if (parentId) {
+    const parent = await prisma.comment.findUnique({
+      where: { id: parentId },
+      select: { id: true, postId: true, parentId: true }
+    });
+    if (!parent || parent.postId !== postId) {
+      perf.done({ status: 400 });
+      return Response.json({ error: "Reply target comment not found." }, { status: 400, headers });
+    }
+    resolvedParentId = parent.parentId ?? parent.id;
+  }
+
   const users = await prisma.user.findMany({ select: { id: true } });
   const mentionIds = normalizeMentionIds(mentions, users);
   const comment = createCommentRecord({ body: trimmedBody, author: user.name, authorId: user.id });
@@ -42,6 +55,7 @@ export async function POST(request, { params }) {
       id: comment.id,
       postId,
       authorId: user.id,
+      parentId: resolvedParentId,
       author: comment.author,
       body: comment.body,
       mentionsJson: JSON.stringify(mentionIds)
@@ -49,6 +63,7 @@ export async function POST(request, { params }) {
     select: {
       id: true,
       authorId: true,
+      parentId: true,
       author: true,
       body: true,
       mentionsJson: true,
@@ -64,6 +79,7 @@ export async function POST(request, { params }) {
   return Response.json({
     id: created.id,
     authorId: created.authorId,
+    parentId: created.parentId,
     author: created.author,
     body: created.body,
     mentions: mentionIds,

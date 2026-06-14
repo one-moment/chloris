@@ -1,5 +1,8 @@
 import { requireCurrentUser } from "../../../../../lib/auth";
+import { handleMessageWithAgentGateway } from "../../../../../lib/agentGateway/service";
 import { createApiPerfLogger } from "../../../../../lib/apiPerf";
+import { dispatchBotEvent } from "../../../../../lib/botIntegrations/service";
+import { handlePurchaseBotCommand } from "../../../../../lib/purchaseBot/service";
 import { createMessageRecord, serializeMessage } from "../../../../../lib/serverState";
 import { prisma } from "../../../../../lib/prisma";
 
@@ -56,6 +59,38 @@ export async function POST(request, { params }) {
       bot: true
     }
   }));
+
+  if (!created.bot) {
+    const agentResult = await handleMessageWithAgentGateway({
+      body: created.body,
+      channelId,
+      messageId: created.id,
+      requester: user
+    }).catch((error) => {
+      console.error("agent_gateway_message_failed", error);
+      return { handled: false };
+    });
+
+    if (!agentResult?.handled) await handlePurchaseBotCommand({
+      body: created.body,
+      channelId,
+      messageId: created.id,
+      requester: user
+    }).catch((error) => {
+      console.error("purchase_bot_command_failed", error);
+    });
+
+    dispatchBotEvent({
+      channelId,
+      eventType: "message.created",
+      payload: {
+        message: serializeMessage(created),
+        actor: user
+      }
+    }).catch((error) => {
+      console.error("bot_event_dispatch_failed", error);
+    });
+  }
 
   perf.log("optional select/join start", { skipped: true });
   perf.log("optional select/join end", { skipped: true, optionalSelectMs: 0, reason: "insert returns selected row" });

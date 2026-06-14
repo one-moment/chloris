@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import AttachmentList from "./AttachmentList";
 import { EmptyState } from "./common";
+import MentionInput from "./MentionInput";
 import PostCard from "./PostCard";
+import TemplatePicker from "./TemplatePicker";
+import { applyTemplate } from "../lib/postTemplates";
 
 export default function IdeasView({
   channel,
@@ -22,11 +25,17 @@ export default function IdeasView({
   onStatusChange,
   onEditPost,
   onEditComment,
+  onAddReply,
+  onTogglePin,
+  templates = [],
+  templateContext,
+  onOpenTemplateManager,
   postStatuses
 }) {
   const [draft, setDraft] = useState({ title: "", body: "", status: postStatuses[0] });
   const [pendingPosts, setPendingPosts] = useState([]);
-  const visiblePosts = [...pendingPosts, ...posts];
+  const pinnedPosts = posts.filter((post) => post.pinned);
+  const visiblePosts = [...pendingPosts, ...posts.filter((post) => !post.pinned)];
   const channelUserIds = new Set([
     currentUser?.id,
     ...(channel.messages ?? []).map((message) => message.authorId),
@@ -42,6 +51,15 @@ export default function IdeasView({
     setDraft({ title: "", body: "", status: postStatuses[0] });
     setPendingPosts([]);
   }, [channel.id, postStatuses]);
+
+  function pickTemplate(template) {
+    const applied = applyTemplate(template, templateContext);
+    setDraft((current) => ({
+      ...current,
+      title: applied.title || current.title,
+      body: applied.body
+    }));
+  }
 
   async function submitPost() {
     const title = draft.title.trim()
@@ -93,10 +111,12 @@ export default function IdeasView({
             </select>
           </label>
         </div>
-        <textarea
+        <MentionInput
+          multiline
           value={draft.body}
-          onChange={(event) => setDraft({ ...draft, body: event.target.value })}
-          placeholder="업무 요청, 공유사항, 자동화봇에 전달할 내용을 작성하세요. @멘션을 사용할 수 있습니다."
+          onChange={(value) => setDraft({ ...draft, body: value })}
+          users={mentionUsers}
+          placeholder="업무 요청, 공유사항, 자동화봇에 전달할 내용을 작성하세요. @멘션과 **굵게**를 사용할 수 있습니다."
         />
         <AttachmentList attachments={attachments} onRemove={onRemoveAttachment} />
         <div className="composer-actions">
@@ -106,6 +126,7 @@ export default function IdeasView({
             <button type="button" className={activeFilter === "mentions" ? "active" : ""} onClick={() => onFilterChange("mentions")}>멘션</button>
           </div>
           <div className="composer-submit">
+            <TemplatePicker templates={templates} channelId={channel.id} onApply={pickTemplate} onManage={onOpenTemplateManager} />
             <label className="attachment-button">
               파일 첨부
               <input type="file" multiple onChange={(event) => onAttachmentsChange(event.target.files)} />
@@ -122,8 +143,30 @@ export default function IdeasView({
         <span>{postStatuses[2]} {counts.done}</span>
       </div>
 
+      {pinnedPosts.length > 0 && (
+        <div className="post-list pinned-post-list" aria-label="고정된 공지">
+          {pinnedPosts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              postStatuses={postStatuses}
+              currentUser={currentUser}
+              users={mentionUsers}
+              commentDraft={commentDrafts[post.id]}
+              onStatusChange={onStatusChange}
+              onCommentDraftChange={onCommentDraftChange}
+              onAddComment={onAddComment}
+              onEditPost={onEditPost}
+              onEditComment={onEditComment}
+              onAddReply={onAddReply}
+              onTogglePin={onTogglePin}
+            />
+          ))}
+        </div>
+      )}
+
       <div className="post-list">
-        {visiblePosts.length === 0 ? (
+        {visiblePosts.length === 0 && pinnedPosts.length === 0 ? (
           <EmptyState title="게시글이 없습니다" body="이 채널의 Ideas에 첫 업무 글을 작성해보세요." />
         ) : (
           visiblePosts.map((post) => (
@@ -139,6 +182,8 @@ export default function IdeasView({
               onAddComment={onAddComment}
               onEditPost={onEditPost}
               onEditComment={onEditComment}
+              onAddReply={onAddReply}
+              onTogglePin={onTogglePin}
             />
           ))
         )}
