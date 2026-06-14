@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import AuthScreen from "../AuthScreen";
 import ProjectSidebar from "../ProjectSidebar";
 import SearchDialog from "../SearchDialog";
+import TemplateManagerDialog from "../TemplateManagerDialog";
 import { getPostStatuses } from "../../lib/constants";
 import { requestJson as apiRequestJson } from "../../lib/core/apiClient";
 import { createInitialState } from "../../lib/initialData";
@@ -43,6 +44,8 @@ export default function WorkspaceShell({ children }) {
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [showChannelDialog, setShowChannelDialog] = useState(false);
   const [showSearchDialog, setShowSearchDialog] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [showTemplateManager, setShowTemplateManager] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -981,6 +984,54 @@ export default function WorkspaceShell({ children }) {
     }
   }
 
+  const reloadTemplates = useCallback(async () => {
+    try {
+      const data = await requestJson("/api/post-templates");
+      setTemplates(data?.templates ?? []);
+    } catch (error) {
+      console.error(error);
+    }
+  }, [requestJson]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setTemplates([]);
+      return;
+    }
+    reloadTemplates();
+  }, [currentUser, reloadTemplates]);
+
+  async function createTemplate(form) {
+    try {
+      await requestJson("/api/post-templates", { method: "POST", body: JSON.stringify(form) });
+      await reloadTemplates();
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }
+
+  async function updateTemplate(templateId, form) {
+    try {
+      await requestJson(`/api/post-templates/${templateId}`, { method: "PATCH", body: JSON.stringify(form) });
+      await reloadTemplates();
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }
+
+  async function deleteTemplate(templateId) {
+    try {
+      await requestJson(`/api/post-templates/${templateId}`, { method: "DELETE" });
+      await reloadTemplates();
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      return { ok: false, error: error.message };
+    }
+  }
+
   const workspaceValue = {
     state,
     stateLoaded,
@@ -1002,6 +1053,11 @@ export default function WorkspaceShell({ children }) {
     applyChannelFromUrl,
     navigateTo,
     openSearch: () => setShowSearchDialog(true),
+    templates,
+    openTemplateManager: () => setShowTemplateManager(true),
+    createTemplate,
+    updateTemplate,
+    deleteTemplate,
     openSidebar: () => setIsSidebarOpen(true),
     messageAttachments,
     postAttachments,
@@ -1085,6 +1141,17 @@ export default function WorkspaceShell({ children }) {
               requestJson={requestJson}
               onNavigate={navigateTo}
               onClose={() => setShowSearchDialog(false)}
+            />
+          )}
+
+          {showTemplateManager && (
+            <TemplateManagerDialog
+              templates={templates}
+              currentUser={currentUser}
+              onCreate={createTemplate}
+              onUpdate={updateTemplate}
+              onDelete={deleteTemplate}
+              onClose={() => setShowTemplateManager(false)}
             />
           )}
 

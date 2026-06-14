@@ -3,6 +3,8 @@ import AttachmentList from "./AttachmentList";
 import { EmptyState } from "./common";
 import MentionInput from "./MentionInput";
 import PostCard from "./PostCard";
+import TemplatePicker from "./TemplatePicker";
+import { applyTemplate } from "../lib/postTemplates";
 
 export default function IdeasView({
   channel,
@@ -25,6 +27,9 @@ export default function IdeasView({
   onEditComment,
   onAddReply,
   onTogglePin,
+  templates = [],
+  templateContext,
+  onOpenTemplateManager,
   postStatuses
 }) {
   const [draft, setDraft] = useState({ title: "", body: "", status: postStatuses[0] });
@@ -46,6 +51,15 @@ export default function IdeasView({
     setDraft({ title: "", body: "", status: postStatuses[0] });
     setPendingPosts([]);
   }, [channel.id, postStatuses]);
+
+  function pickTemplate(template) {
+    const applied = applyTemplate(template, templateContext);
+    setDraft((current) => ({
+      ...current,
+      title: applied.title || current.title,
+      body: applied.body
+    }));
+  }
 
   async function submitPost() {
     const title = draft.title.trim()
@@ -112,6 +126,7 @@ export default function IdeasView({
             <button type="button" className={activeFilter === "mentions" ? "active" : ""} onClick={() => onFilterChange("mentions")}>멘션</button>
           </div>
           <div className="composer-submit">
+            <TemplatePicker templates={templates} onApply={pickTemplate} onManage={onOpenTemplateManager} />
             <label className="attachment-button">
               파일 첨부
               <input type="file" multiple onChange={(event) => onAttachmentsChange(event.target.files)} />

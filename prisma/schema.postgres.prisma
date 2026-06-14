@@ -479,6 +479,20 @@ model Post {
   @@index([channelId, createdAt(sort: Desc)], map: "idx_posts_channel_created")
 }
 
+model PostTemplate {
+  id          String   @id
+  name        String
+  body        String
+  scope       String   @default("personal")
+  ownerId     String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([scope], map: "idx_post_templates_scope")
+  @@index([ownerId], map: "idx_post_templates_owner")
+}
+
 model Comment {
   id         String   @id
   postId     String

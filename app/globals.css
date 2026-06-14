@@ -2271,3 +2271,210 @@ select:focus-visible {
   background-origin: border-box;
   background-clip: padding-box, border-box;
 }
+
+/* ===== Post templates ===== */
+.template-picker {
+  position: relative;
+}
+
+.template-picker-button {
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0 12px;
+  font-weight: 800;
+}
+
+.template-picker-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.template-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 6;
+  width: min(280px, 80vw);
+  max-height: 320px;
+  overflow: auto;
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 6px;
+}
+
+.template-menu-empty {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 10px;
+  text-align: center;
+}
+
+.template-menu-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 8px 8px 4px;
+}
+
+.template-menu-item {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 700;
+}
+
+.template-menu-item:hover {
+  background: var(--surface-subtle);
+}
+
+.template-menu-foot {
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+.template-menu-foot button {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 800;
+}
+
+.template-menu-foot button:hover {
+  background: var(--accent-weak);
+}
+
+.template-manager {
+  width: min(560px, 94vw);
+  max-height: 84vh;
+  overflow: auto;
+  display: grid;
+  gap: 12px;
+}
+
+.template-manager-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.template-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.template-form {
+  display: grid;
+  gap: 12px;
+}
+
+.template-form .settings-field {
+  display: grid;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.template-form input,
+.template-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  padding: 9px 11px;
+  font-weight: 400;
+}
+
+.template-form textarea {
+  resize: vertical;
+  line-height: 1.6;
+  font-family: var(--font-sans);
+}
+
+.template-scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.template-list {
+  display: grid;
+  gap: 8px;
+}
+
+.template-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.template-row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.template-tag {
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.template-tag.shared {
+  background: var(--accent-weak);
+  color: var(--accent);
+}
+
+.template-tag.personal {
+  background: var(--surface-subtle);
+  color: var(--muted);
+}
+
+.template-row-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.template-row-actions button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.template-row-actions button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}

@@ -55,8 +55,13 @@ export default function ChatView() {
     actOnPurchaseRequest,
     updatePurchaseOrderDraft,
     approvePurchaseOrderDraft,
-    changeChannelBranch
+    changeChannelBranch,
+    templates,
+    openTemplateManager
   } = useWorkspace();
+
+  const branchName = (state.branches ?? []).find((item) => item.id === channel.branchId)?.name ?? "";
+  const templateContext = { branchName, userName: currentUser?.name };
 
   return (
     <>
@@ -116,6 +121,9 @@ export default function ChatView() {
             onEditComment={editComment}
             onAddReply={addReply}
             onTogglePin={togglePostPin}
+            templates={templates}
+            templateContext={templateContext}
+            onOpenTemplateManager={openTemplateManager}
           />
         )}
         {activeTab === "files" && (
