@@ -4,8 +4,12 @@
 
 Product serves 3 companies (internal tools): 원모먼트(online delivery), 보로플라워마켓(offline franchise), 오늘꽃(wholesale + venue supply). Shared base = chat + board; custom modules per company.
 
-- [ ] DECIDE tool category/product name (for shared communication). Proposal: keep engine codename "Chloris"; per-company branded instances (e.g. Borough Workspace). Category term TBD (사내 업무 OS / 워크스페이스 / 협업·자동화 플랫폼). User to choose.
-- [ ] DECIDE separation strategy: (a) multi-tenant single deploy with theme+modules per company, (b) per-company deploy from one shared core, or (c) forks. Recommended: shared core + per-company theme(token set)+enabled modules; pick deploy model. This builds directly on the module registry + theme tokens already in place.
+- [x] Naming confirmed: "Chloris(사내 Work OS) → 회사별 브랜딩 워크스페이스."
+- [x] Separation strategy confirmed: ONE repo → 3 Vercel projects (onemoment/borough/todaykkot) by `NEXT_PUBLIC_BRAND`, SEPARATE Supabase per company. Runbook: `docs/multi-company-split.md`.
+- [x] Code groundwork done: `lib/brand.js` (brand config + module gating), `modules/registry.js` brand-filtered, `app/layout.jsx` data-brand + workspace name, `.env.example` NEXT_PUBLIC_BRAND. CRM/reservations marked Borough-only; purchase shared. Lint+build pass.
+- [ ] INFRA (user/ops): Borough = reuse current deploy+DB (relabel). 원모먼트/오늘꽃 = new Supabase + new Vercel project (same repo) + env (`NEXT_PUBLIC_BRAND`, `DATABASE_URL`, `DIRECT_URL`) + `prisma migrate deploy` on each fresh DB + domains. Can assist running migrations once DB URLs are provided.
+- [ ] AFTER split: implement Borough features in the Borough project — template system (core, all brands), CRM + reservations (Borough-only modules per `docs/templates-and-crm.md`).
+- [ ] Later: 원모먼트/오늘꽃 themes (data-brand scoped) + their custom modules when requirements are defined.
 - [x] Applied Borough Flower Market design system to the current tool (= 보로플라워마켓 instance) and DEPLOYED `dpl_PeJfjSLHucdqEEJhAr1ubKaJtd1T` (health ok, logo 200, deploy log `post-deploy-log-20260614-borough-design-system`). Token remap in `styles.css` (green/gold/paper/serif), brand chrome in `app/globals.css`, logos in `public/brand/`.
 - [x] Naming confirmed: "Chloris(사내 Work OS) → 회사별 브랜딩 워크스페이스" (companies: 원모먼트/보로플라워마켓/오늘꽃).
 - [ ] Stage 2 polish (optional): full green rail, per-component fine-tuning to Borough component specs, serif on editorial surfaces, dark-mode parity if needed.
