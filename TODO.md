@@ -22,7 +22,8 @@ Product serves 3 companies (internal tools): 원모먼트(online delivery), 보�
 
 ## Deferred / next
 
-- [ ] Image upload compression (client-side resize+recompress before S3 PUT) — discussed; cost/mobile-speed win. Params to confirm: lib vs zero-dep, max px/quality (proposed 2000px/0.82), keep-original?. Separate batch.
+- [x] Image upload compression implemented (zero-dep canvas, `lib/imageCompress.js`): images only, max 2000px/JPEG 0.82, EXIF-rotation-safe, HEIC/decode fallback to original, works in inline + S3. Lint+build pass. Runbook: `docs/storage-s3-and-image-compression.md`. NOT deployed yet.
+- [ ] Borough S3 transition — CONSOLE task (leader/ops): create Supabase Storage bucket + set Vercel env (`STORAGE_PROVIDER=s3` + S3_* + keys) per `docs/storage-s3-and-image-compression.md`. Code already supports S3; new uploads go to S3, existing inline still works.
 - [ ] Structural design batch: green rail + mobile off-canvas drawer + Lucide icons (from `docs/design/borough/borough.css`).
 - [x] Planning overview `chloris-기획정리.md` received from 기획(Claude) and added at repo root (index validated — all referenced canonical docs exist; section 5 progress refreshed to the 2026-06-14 deploy).
 - [ ] Later: 원모먼트/오늘꽃 themes (data-brand scoped) + their custom modules when requirements are defined.

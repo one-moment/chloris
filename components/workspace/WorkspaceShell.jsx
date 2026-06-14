@@ -8,6 +8,7 @@ import SearchDialog from "../SearchDialog";
 import TemplateManagerDialog from "../TemplateManagerDialog";
 import { getPostStatuses } from "../../lib/constants";
 import { requestJson as apiRequestJson } from "../../lib/core/apiClient";
+import { maybeCompressImage } from "../../lib/imageCompress";
 import { createInitialState } from "../../lib/initialData";
 import { getMentionedUserIds } from "../../lib/mentions";
 
@@ -146,7 +147,8 @@ export default function WorkspaceShell({ children }) {
     const files = Array.from(fileList ?? []);
     const uploaded = [];
 
-    for (const file of files) {
+    for (const rawFile of files) {
+      const file = await maybeCompressImage(rawFile);
       const target = await requestJson("/api/uploads/presign", {
         method: "POST",
         body: JSON.stringify({
@@ -177,7 +179,7 @@ export default function WorkspaceShell({ children }) {
       }
 
       if (file.size > MAX_INLINE_ATTACHMENT_SIZE) {
-        window.alert("로컬 inline 저장은 1.5MB 이하 파일만 첨부할 수 있습니다. 운영에서는 S3 설정을 사용하세요.");
+        window.alert("이 파일은 1.5MB가 넘어 첨부할 수 없습니다. 사진은 자동 압축되며, 큰 파일은 운영(S3) 설정에서 업로드하세요.");
         continue;
       }
 
