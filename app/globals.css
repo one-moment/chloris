@@ -2490,3 +2490,78 @@ select:focus-visible {
   font-weight: 800;
   color: var(--muted);
 }
+
+/* =========================================================
+   Borough 2차 — 스타일만 (Claude Design 번들 반영, 동작 변경 없음)
+   토큰·간격·카드 패딩·상태 칩만 정리. 구조(레일/드로어/Lucide) 제외.
+   정본: docs/design/borough/borough.css
+   ========================================================= */
+
+/* 카드 여백 — 텍스트가 보더에 붙지 않게 (원래 불만 지점) */
+.post-card {
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.post-card .post-body {
+  margin: 0;
+}
+
+.post-card-header {
+  align-items: flex-start;
+}
+
+.comment-list {
+  margin-top: 4px;
+  gap: 10px;
+}
+
+.comment-row {
+  padding: 12px;
+}
+
+/* 상태 칩 — 브랜드 상태색(soft)로 통일 */
+.purchase-status {
+  background: var(--surface-subtle);
+  color: var(--muted);
+}
+
+.purchase-status.status-queued,
+.purchase-status.status-running,
+.purchase-status.status-draft {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.purchase-status.status-cart_ready,
+.purchase-status.status-checkout_ready,
+.purchase-status.status-approved,
+.purchase-status.status-converted {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.purchase-status.status-pending_approval {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.purchase-status.status-rejected,
+.purchase-status.status-failed,
+.purchase-status.status-needs_human {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.purchase-draft-task-summary span {
+  border-color: transparent;
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+/* 게시판 상태 요약 가독성 */
+.status-summary {
+  gap: 12px;
+  padding: 0 2px;
+}

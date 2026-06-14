@@ -28,12 +28,26 @@
   /* Borough extras */
   --brand: #185640;
   --brand-strong: #123f2e;
+  --brand-tint: #edf2ee;
+  --brand-soft: #d6e2d9;
   --gold: #d5cd8c;
   --gold-strong: #b9af6a;
+  --gold-100: #f5f2e1;
   --on-dark: #f5f2e1;
   --on-dark-muted: rgba(245, 242, 225, 0.68);
   --seasonal: #be6e54;
+  --seasonal-soft: #ecc8bb;
+  --seasonal-ink: #a85b43;
   --focus-ring: 0 0 0 3px rgba(213, 205, 140, 0.55);
+
+  /* Status tokens (Borough DS) — soft bg + readable ink */
+  --success: #2c7b60;
+  --success-soft: #ddebe2;
+  --warning: #946a1a;
+  --warning-soft: #f4ebcf;
+  --danger-soft: #f1dbd2;
+  --info: #3e6e8e;
+  --info-soft: #dce7ee;
 }
 
 * {
