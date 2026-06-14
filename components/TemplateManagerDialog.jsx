@@ -2,10 +2,19 @@ import { useState } from "react";
 
 const BODY_PLACEHOLDER = "[주문서 / {{지점}}]\n• 성함 :\n• 연락처 :\n• 픽업 일시 :\n• 상품 :";
 
-export default function TemplateManagerDialog({ templates = [], currentUser, onCreate, onUpdate, onDelete, onClose }) {
+export default function TemplateManagerDialog({
+  templates = [],
+  channels = [],
+  currentChannelId,
+  currentUser,
+  onCreate,
+  onUpdate,
+  onDelete,
+  onClose
+}) {
   const isAdmin = currentUser?.role === "admin";
   const [editing, setEditing] = useState(null); // null | "new" | templateId
-  const [form, setForm] = useState({ name: "", body: "", scope: "personal" });
+  const [form, setForm] = useState({ name: "", body: "", scope: "personal", channelId: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -15,15 +24,21 @@ export default function TemplateManagerDialog({ templates = [], currentUser, onC
     return template.ownerId === currentUser?.id;
   }
 
+  function channelLabel(channelId) {
+    if (!channelId) return "전체 공통";
+    const channel = channels.find((item) => item.id === channelId);
+    return channel ? `# ${channel.name}` : "# 삭제된 채널";
+  }
+
   function startNew() {
     setEditing("new");
-    setForm({ name: "", body: "", scope: "personal" });
+    setForm({ name: "", body: "", scope: "personal", channelId: currentChannelId ?? "" });
     setError("");
   }
 
   function startEdit(template) {
     setEditing(template.id);
-    setForm({ name: template.name, body: template.body, scope: template.scope });
+    setForm({ name: template.name, body: template.body, scope: template.scope, channelId: template.channelId ?? "" });
     setError("");
   }
 
@@ -84,6 +99,15 @@ export default function TemplateManagerDialog({ templates = [], currentUser, onC
                 placeholder={BODY_PLACEHOLDER}
               />
             </label>
+            <label className="settings-field">
+              적용 채널
+              <select value={form.channelId} onChange={(event) => setForm({ ...form, channelId: event.target.value })}>
+                <option value="">전체 공통 (모든 채널)</option>
+                {channels.map((channel) => (
+                  <option key={channel.id} value={channel.id}># {channel.name}</option>
+                ))}
+              </select>
+            </label>
             {isAdmin && (
               <label className="template-scope">
                 <input
@@ -112,6 +136,7 @@ export default function TemplateManagerDialog({ templates = [], currentUser, onC
                   <span className={template.scope === "shared" ? "template-tag shared" : "template-tag personal"}>
                     {template.scope === "shared" ? "공유" : "개인"}
                   </span>
+                  <span className="template-tag channel">{channelLabel(template.channelId)}</span>
                 </div>
                 <div className="template-row-actions">
                   {canManage(template) && <button type="button" onClick={() => startEdit(template)}>수정</button>}

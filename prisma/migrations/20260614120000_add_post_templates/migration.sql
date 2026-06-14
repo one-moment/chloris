@@ -4,6 +4,7 @@ CREATE TABLE "PostTemplate" (
     "name" TEXT NOT NULL,
     "body" TEXT NOT NULL,
     "scope" TEXT NOT NULL DEFAULT 'personal',
+    "channelId" TEXT,
     "ownerId" TEXT,
     "createdById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -14,3 +15,4 @@ CREATE TABLE "PostTemplate" (
 
 CREATE INDEX "idx_post_templates_scope" ON "PostTemplate"("scope");
 CREATE INDEX "idx_post_templates_owner" ON "PostTemplate"("ownerId");
+CREATE INDEX "idx_post_templates_channel" ON "PostTemplate"("channelId");

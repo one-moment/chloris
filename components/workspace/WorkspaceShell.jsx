@@ -1147,6 +1147,8 @@ export default function WorkspaceShell({ children }) {
           {showTemplateManager && (
             <TemplateManagerDialog
               templates={templates}
+              channels={state.projects.flatMap((projectItem) => projectItem.channels.map((channelItem) => ({ id: channelItem.id, name: channelItem.name })))}
+              currentChannelId={channel?.id}
               currentUser={currentUser}
               onCreate={createTemplate}
               onUpdate={updateTemplate}

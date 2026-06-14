@@ -126,7 +126,7 @@ export default function IdeasView({
             <button type="button" className={activeFilter === "mentions" ? "active" : ""} onClick={() => onFilterChange("mentions")}>멘션</button>
           </div>
           <div className="composer-submit">
-            <TemplatePicker templates={templates} onApply={pickTemplate} onManage={onOpenTemplateManager} />
+            <TemplatePicker templates={templates} channelId={channel.id} onApply={pickTemplate} onManage={onOpenTemplateManager} />
             <label className="attachment-button">
               파일 첨부
               <input type="file" multiple onChange={(event) => onAttachmentsChange(event.target.files)} />

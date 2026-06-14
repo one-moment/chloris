@@ -484,6 +484,7 @@ model PostTemplate {
   name        String
   body        String
   scope       String   @default("personal")
+  channelId   String?
   ownerId     String?
   createdById String?
   createdAt   DateTime @default(now())
@@ -491,6 +492,7 @@ model PostTemplate {
 
   @@index([scope], map: "idx_post_templates_scope")
   @@index([ownerId], map: "idx_post_templates_owner")
+  @@index([channelId], map: "idx_post_templates_channel")
 }
 
 model Comment {

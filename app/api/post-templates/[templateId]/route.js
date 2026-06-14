@@ -11,6 +11,7 @@ function serialize(template) {
     name: template.name,
     body: template.body,
     scope: template.scope,
+    channelId: template.channelId ?? null,
     ownerId: template.ownerId,
     createdById: template.createdById
   };
@@ -31,7 +32,7 @@ export async function PATCH(request, { params }) {
   if (!existing) return notFound("Template not found.");
   if (!canManage(user, existing)) return Response.json({ error: "You cannot edit this template." }, { status: 403 });
 
-  const { name, body, scope } = await request.json();
+  const { name, body, scope, channelId } = await request.json();
   const data = {};
   if (name !== undefined) {
     const trimmed = name.trim();
@@ -42,6 +43,15 @@ export async function PATCH(request, { params }) {
     const trimmed = body.trim();
     if (!trimmed) return badRequest("Template body is required.");
     data.body = trimmed;
+  }
+  if (channelId !== undefined) {
+    if (channelId) {
+      const channel = await prisma.channel.findUnique({ where: { id: channelId }, select: { id: true } });
+      if (!channel) return badRequest("Channel not found.");
+      data.channelId = channel.id;
+    } else {
+      data.channelId = null;
+    }
   }
   if (scope !== undefined) {
     if (scope !== "personal" && scope !== "shared") return badRequest("Invalid template scope.");

@@ -2478,3 +2478,15 @@ select:focus-visible {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+.template-tag.channel {
+  background: var(--surface-subtle);
+  color: var(--muted);
+}
+
+.template-menu-mine {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--muted);
+}
