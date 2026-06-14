@@ -49,9 +49,13 @@ export default function ProjectSidebar({
   return (
     <aside className={sidebarClassName}>
       <div className="workspace-header">
-        <div>
-          <strong>{project.name}</strong>
-          <span>{currentUser?.email}</span>
+        <div className="workspace-brand">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="logo-mark" src="/brand/logo-mark-gold.png" alt="보로플라워마켓" />
+          <div>
+            <strong>{project.name}</strong>
+            <span>{currentUser?.email}</span>
+          </div>
         </div>
         <div className="sidebar-header-actions">
           <button className="icon-button" onClick={onNewProject} aria-label="프로젝트 생성">+</button>

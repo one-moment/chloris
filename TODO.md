@@ -1,5 +1,15 @@
 # TODO.md
 
+## Multi-company split & branding (2026-06-11, night)
+
+Product serves 3 companies (internal tools): 원모먼트(online delivery), 보로플라워마켓(offline franchise), 오늘꽃(wholesale + venue supply). Shared base = chat + board; custom modules per company.
+
+- [ ] DECIDE tool category/product name (for shared communication). Proposal: keep engine codename "Chloris"; per-company branded instances (e.g. Borough Workspace). Category term TBD (사내 업무 OS / 워크스페이스 / 협업·자동화 플랫폼). User to choose.
+- [ ] DECIDE separation strategy: (a) multi-tenant single deploy with theme+modules per company, (b) per-company deploy from one shared core, or (c) forks. Recommended: shared core + per-company theme(token set)+enabled modules; pick deploy model. This builds directly on the module registry + theme tokens already in place.
+- [x] Applied Borough Flower Market design system to the current tool (= 보로플라워마켓 instance): token remap in `styles.css` (green/gold/paper/serif), brand chrome in `app/globals.css` (green sidebar, serif titles, gold focus, composer accent strip), logos in `public/brand/`, sidebar logo. Lint+build pass. NOT deployed — visual change, review first.
+- [ ] Stage 2 polish (optional): full green rail, per-component fine-tuning to Borough component specs, serif on editorial surfaces, dark-mode parity if needed.
+- [ ] When splitting: extract Borough tokens into a theme file (e.g. `themes/borough.css`) and add 원모먼트/오늘꽃 themes; gate modules per company.
+
 ## New Requests (2026-06-11, evening)
 
 Employee feature request + one UX fix:

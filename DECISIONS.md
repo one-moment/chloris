@@ -1,5 +1,12 @@
 # DECISIONS.md
 
+## 2026-06-11 (night): Multi-company split & Borough theme
+
+- The product serves three companies as internal tools: 원모먼트(online flower delivery), 보로플라워마켓(offline franchise flower shop), 오늘꽃(online flower wholesale + large-venue supply). Shared base = chat + board (게시판); each company gets custom modules per its work.
+- Tool category name: PENDING user decision. Proposal recorded in TODO (platform codename Chloris as the engine; per-company branded instances, e.g. "Borough Workspace"). Category descriptor candidates: 사내 업무 OS / 워크스페이스 / 협업·자동화 플랫폼.
+- Separation approach (recommended): ONE shared core codebase; per-company differs by (a) brand theme (CSS token set) and (b) enabled modules. This avoids triple-maintaining the chat/board base. Concrete forking/repo strategy still to be decided (multi-tenant single deploy vs. per-company deploy from shared core vs. forks).
+- Design: applied the Borough Flower Market design system to the current tool (= the 보로플라워마켓 instance; its branches 강남1/강남2/잠실 match the design system's store list). Implemented as token remap in `styles.css` (forest green #185640 + sage gold #D5CD8C + warm paper #F7F4EA + serif fonts) + brand chrome in `app/globals.css` (green sidebar, serif titles, gold focus, card accent strip) + logo assets in `public/brand/`. Tokens kept under existing semantic variable names so the whole app re-skins and so other companies' themes can swap the same names later.
+
 ## 2026-06-11 (evening): Templates, CRM & Reservations
 
 - Brand is 보로플라워 (multi-branch flower shop). Branches confirmed: 강남1호점, 강남2호점, 잠실점 (already seeded; no rename). Future branches added as Branch records (e.g. 성수역점) with no screen/code change.

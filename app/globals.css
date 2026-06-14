@@ -2139,3 +2139,135 @@ button:disabled {
   background: var(--accent-weak);
   color: var(--accent);
 }
+
+/* =========================================================
+   Borough Flower Market — brand chrome (2026-06-11)
+   Green sidebar + paper main + editorial serif + gold focus.
+   ========================================================= */
+
+.workspace-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.logo-mark {
+  height: 24px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+/* Editorial serif for brand/title surfaces */
+.main-header h1,
+.channel-title h1,
+.work-page-header h1,
+.auth-heading h1 {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Gold focus ring (accessibility + brand) */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--gold-strong);
+}
+
+/* ---- Green sidebar chrome ---- */
+.sidebar {
+  background: var(--brand);
+  color: var(--on-dark);
+  border-right: 1px solid rgba(245, 242, 225, 0.14);
+}
+
+.sidebar .workspace-header,
+.sidebar .project-switcher,
+.sidebar .work-nav-section {
+  border-color: rgba(245, 242, 225, 0.14);
+}
+
+.sidebar .workspace-header strong,
+.sidebar .user-card strong,
+.sidebar .channel-item,
+.sidebar .channel-name,
+.sidebar .work-nav-item {
+  color: var(--on-dark);
+}
+
+.sidebar .workspace-header span,
+.sidebar .user-card span,
+.sidebar .section-title,
+.sidebar .channel-preview,
+.sidebar .channel-item small {
+  color: var(--on-dark-muted);
+}
+
+.sidebar .icon-button,
+.sidebar .ghost-button {
+  background: rgba(245, 242, 225, 0.08);
+  color: var(--on-dark);
+  border-color: rgba(245, 242, 225, 0.18);
+}
+
+.sidebar .icon-button:hover,
+.sidebar .ghost-button:hover {
+  background: rgba(245, 242, 225, 0.16);
+}
+
+.sidebar .project-pill {
+  color: var(--on-dark);
+}
+
+.sidebar .project-pill:hover {
+  background: rgba(245, 242, 225, 0.10);
+}
+
+.sidebar .project-pill.active {
+  background: var(--gold);
+  color: var(--brand-strong);
+}
+
+.sidebar .channel-row:hover {
+  background: rgba(245, 242, 225, 0.10);
+}
+
+.sidebar .channel-row.active,
+.sidebar .channel-row.active:hover {
+  background: rgba(245, 242, 225, 0.18);
+  color: var(--on-dark);
+}
+
+.sidebar .work-nav-item:hover {
+  background: rgba(245, 242, 225, 0.10);
+}
+
+.sidebar .channel-delete-button {
+  color: var(--on-dark-muted);
+}
+
+.sidebar .channel-delete-button:hover:not(:disabled) {
+  border-color: transparent;
+  background: rgba(176, 80, 59, 0.28);
+  color: #f1dbd2;
+}
+
+.sidebar .unread-badge {
+  background: var(--seasonal);
+}
+
+.sidebar .unread-badge.mention {
+  background: var(--gold);
+  color: var(--brand-strong);
+}
+
+/* Card top accent strip — the one allowed gradient (green→gold) */
+.composer {
+  border-top: 3px solid transparent;
+  background-image: linear-gradient(var(--surface), var(--surface)), linear-gradient(90deg, var(--brand), var(--gold));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
