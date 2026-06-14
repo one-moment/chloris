@@ -103,6 +103,13 @@ The current priority is Purchase Agent stabilization:
   - branch select on channel creation, Topbar branch badge, admin inline branch change
   - deployment `dpl_2aFqqchMxHh9JMd3QkGh5Bs1CtxZ`, health ok, deploy log `post-deploy-log-20260611-channel-branch-linking`
 
+- 2026-06-14 combined deploy `dpl_7kUQ3YMhfM8yxtsqtZ64cvUA4WyJ` (health ok):
+  - Borough design 2nd pass (style-only: status tokens/chips, card spacing; rail/drawer/Lucide deferred per leader)
+  - channel-scoped post templates + migration `20260614120000_add_post_templates` applied to Boro prod DB
+  - mention keyboard nav (`ddf4696`)
+  - design source vendored at `docs/design/borough/`; deploy log `post-deploy-log-20260614-borough-design-templates-mention`
+  - deferred: image-upload compression, structural design (rail/drawer/Lucide), CRM+reservations modules
+
 ## Current State
 
 - Branch: `feature/purchase-bot-mvp`
