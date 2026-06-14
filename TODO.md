@@ -24,7 +24,7 @@ Product serves 3 companies (internal tools): 원모먼트(online delivery), 보�
 
 - [ ] Image upload compression (client-side resize+recompress before S3 PUT) — discussed; cost/mobile-speed win. Params to confirm: lib vs zero-dep, max px/quality (proposed 2000px/0.82), keep-original?. Separate batch.
 - [ ] Structural design batch: green rail + mobile off-canvas drawer + Lucide icons (from `docs/design/borough/borough.css`).
-- [ ] Missing planning doc `chloris-기획정리.md` — request from 기획(Claude).
+- [x] Planning overview `chloris-기획정리.md` received from 기획(Claude) and added at repo root (index validated — all referenced canonical docs exist; section 5 progress refreshed to the 2026-06-14 deploy).
 - [ ] Later: 원모먼트/오늘꽃 themes (data-brand scoped) + their custom modules when requirements are defined.
 - [x] Applied Borough Flower Market design system to the current tool (= 보로플라워마켓 instance) and DEPLOYED `dpl_PeJfjSLHucdqEEJhAr1ubKaJtd1T` (health ok, logo 200, deploy log `post-deploy-log-20260614-borough-design-system`). Token remap in `styles.css` (green/gold/paper/serif), brand chrome in `app/globals.css`, logos in `public/brand/`.
 - [x] Naming confirmed: "Chloris(사내 Work OS) → 회사별 브랜딩 워크스페이스" (companies: 원모먼트/보로플라워마켓/오늘꽃).
