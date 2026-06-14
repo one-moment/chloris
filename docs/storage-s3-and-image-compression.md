@@ -10,7 +10,10 @@
 - 효과: inline·S3 양쪽에서 동작 → 모바일 업로드 속도↑, egress/저장↓, **inline 1.5MB 캡도 사진은 대부분 통과**.
 - 동작/모듈 경계 변경 없음. 문서·계약 등 비이미지 파일은 그대로.
 
-## 2. 보로 S3 전환 (콘솔 작업 — 리더/운영)
+## 2. 보로 S3 전환 (콘솔 작업) — 완료 2026-06-15
+
+> 상태: **적용·검증 완료.** 버킷 `boro-uploads`(public), Production env 8종 설정, 업로드 정상(공개 URL `…/object/public/boro-uploads/…`). 주의했던 점: `S3_ENDPOINT`를 Production 환경에도 켜야 함(처음 Preview만 설정됨). 엔드포인트 호스트는 `…storage.supabase.co`, 공개 URL은 `…supabase.co`로 도메인이 다른 게 정상.
+
 
 코드는 이미 S3 지원. 아래 env만 보로 Vercel 프로젝트에 설정하면 **새 업로드부터 S3**로 가고, 기존 inline 첨부는 그대로 동작합니다.
 
