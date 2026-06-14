@@ -19,7 +19,10 @@ CLARIFIED 2026-06-11: (1) and (2) form one loop — template = input form, CRM =
   - PII: phone is sensitive — branch-scoped visibility (staff=own branch, manager/HQ=all); never log/commit customer data (AGENTS.md).
   - External shopping-mall sync (Cafe24/imweb 등) = optional later step via integration bot, NOT required for this ask.
 - Proposed build order: ① template system (independent, ships now) → ② CRM core (tables + /work/customers search/profile/manual entry) → ③ connect (composer lookup autofill + create-order-on-submit) → ④ optional mall sync.
-- RESOLVED 2026-06-11 (evening): decisions locked, spec written → `docs/templates-and-crm.md` + DECISIONS entry. Brand 보로플라워; branches 강남1호점/강남2호점/잠실점 (no rename, future e.g. 성수역점); customer chain-wide by phone (cross-branch context); template scope personal|shared with tokens; CRM internal module with Reservation = sheet row. Existing 20-month sheet → one-time import (branchId for those rows still TBD). Ready to build on next session; start with ① template system.
+- RESOLVED 2026-06-11 (evening): decisions locked, spec written → `docs/templates-and-crm.md` + DECISIONS entry. Brand 보로플라워; branches 강남1호점/강남2호점/잠실점 (no rename, future e.g. 성수역점); customer chain-wide by phone (cross-branch context). Existing 20-month sheet → one-time import (branchId for those rows still TBD).
+- REFINED 2026-06-11: templates ≠ forms, built as two independent tracks.
+  - Track A — TEMPLATE system (core, general): free-text post helpers for 구매요청/인계사항/공지 etc. Output = plain post. `PostTemplate` scope personal|shared + tokens. Ships standalone, first.
+  - Track B — CRM + RESERVATION (module): reservation input is a DEDICATED FORM (typed fields, validation, customer lookup) writing Customer+Reservation — NOT a template. Form reachable from /work/reservations "새 예약" and #지점방 @예약.
 - Mention keyboard nav: committed (`ddf4696`), NOT deployed — decide deploy timing (standalone or with first template/CRM batch).
 
 ## Today (2026-06-10): Employee UI/UX Proposal First
