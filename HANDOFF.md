@@ -111,7 +111,19 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
 
 **INVENTORY MODULE OBJECTIVE COMPLETE** (2026-06-15, Ralph). Phases 1–4 + 6 implemented; Phase 5
 (sheet sync + import) code exists, human-gated. Every iteration committed on `feature/purchase-bot-mvp`,
-`npm run lint` + `next build` green throughout. Nothing applied to prod / no live external connection.
+`npm run lint` + `next build` green throughout.
+
+**DEPLOYED to Boro prod (2026-06-15, user-approved):**
+- Migration `20260615140000_add_inventory_module` applied via `prisma migrate deploy` (verified target =
+  Boro prod `aws-1-ap-northeast-2.pooler.supabase.com`; it was the only pending migration; additive).
+- Deploy `dpl_7TLchkAbb1jrUsPUcPoMAsnoi5y6` (READY, target production), alias
+  `https://mattermost-project-mvp.vercel.app`. Health ok / database ok. Smoke: `/api/work/inventory/
+  reasons` 401 (auth-gated, deployed), `/work/disposal` 200, `/work/inventory/insights` 200.
+- STILL PENDING (blocked on human): (a) #배포로그 + #기능개선건의 posts — no prod-app credentials in this
+  env, needs a logged-in session; (b) Google Sheets sync — new sheet + Service Account + env
+  (`INVENTORY_SHEET_SYNC_ENABLED=1`, `INVENTORY_SHEET_ID`, `GOOGLE_SA_CLIENT_EMAIL/PRIVATE_KEY`);
+  (c) historical import — decide `branchId` for the ~20-month sheet + provide 입고/폐기 CSV exports, then
+  `scripts/import-inventory-sheet.mjs` dry-run → `--commit`.
 - ⚠️ HUMAN ACTION REQUIRED before sheet sync / import go live (do NOT do unattended):
   1. Create a NEW Google Sheet (separate from the existing one) + a Service Account; set the env vars above.
   2. Decide `branchId` attribution for the existing sheet's ~20 months of rows (which branch).
