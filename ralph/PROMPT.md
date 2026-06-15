@@ -8,40 +8,31 @@ you to continue.
 
 ## OBJECTIVE (edit this section to point the loop at a task)
 
-Build the **꽃 입고·폐기 관리 (inventory) module** for 보로플라워마켓, per
-`docs/inventory-stockin-disposal.md` (spec confirmed 2026-06-15). New module `modules/inventory`
-(Borough-only), screens `/work/disposal` + `/work/stock-in` + admin master management. Build the
-six phases below in order, **one bounded step per iteration**:
+Build **CRM Phase 3** on the merged deploy line (inventory + CRM are both live). Two parts,
+one bounded step per iteration. No new migration expected (uses existing tables).
 
-1. **Data model** — add models (`FlowerItem`, `DisposalCause`, `StockInDelivery`/`StockInLine`
-   with `lotId`, `DisposalBatch`/`DisposalLine`, `NewItemRequest`) to BOTH `prisma/schema.prisma`
-   (sqlite) and `prisma/schema.postgres.prisma`; hand-write the migration (CRM convention:
-   scalar cross-module ids, intra-module FK only). Money=Int(원), quantity=Float(소수). Migration
-   created locally only — NOT applied to prod.
-2. **Master + lookup/validation APIs** — module skeleton + manifests in `modules/registry.js`,
-   brand gating in `lib/brand.js`, route pages + dashboard stubs; `GET /api/work/inventory/items`
-   (autocomplete + exact-match validation), `/reasons`, `/lots` (4-day lot suggestion). Admin
-   master screens + `NewItemRequest` approval. All degrade-to-empty when tables absent.
-3. **Disposal form** — table grid, Enter/Tab keyboard nav (IME-safe), item combobox, category +
-   cause dropdowns, lot picker, save-time validation gate (block on any error), 임시저장/최종제출.
-   Submit API → DisposalBatch/Line.
-4. **Stock-in + 거래명세서 OCR** — inbound table, 발주/영수증/실입고 3-way reconciliation, lotId
-   auto-numbering, Vision extraction via `lib/agents/openaiClient.js` (degrade if no key).
-5. **Sheet sync + historical import** — create a NEW Google Sheet (do not touch the existing one),
-   one-way append on 최종제출; import past lots + disposals from the existing sheet into the new
-   sheet + DB so past disposals link to past lots. Google Sheets API + import = run only after
-   explicit approval (Service Account keys live in env, never in repo).
-6. **Metrics → 지점 인사이트** — 폐기율·폐기가액·사유 비중·입고 불일치율, byBranch (metrics registry).
+### Part A — `@예약` v2 (action-mention)
+Per `docs/crm-reservation-mention.md` (해법 A). Core `components/MentionInput.jsx` today only
+suggests USER mentions (`filterMentionUsers`). Extend it to ALSO offer module-declared ACTION
+mentions (e.g. `@예약`) that, on select, do NOT insert text but trigger an action — open the
+reservation form for the channel's branch (navigate to
+`/work/reservations?new=1&channel=<id>&branch=<branchId>`).
+- **Boundary is critical**: core must NOT import `modules/`. Modules declare actions via a
+  manifest contract (e.g. `module.mentionActions = [{ token, label, minRole?, hrefFor(channel) }]`)
+  surfaced through `modules/registry.js`; the core composer reads the contract (data only).
+- **Never regress normal @user mentions**: keep IME-safety + arrow/Enter/Tab nav + send behavior.
+  Add tests/manual reasoning. Keep the v1 "예약" button until v2 is verified.
 
-DO NOT do without explicit human approval (if you reach these, STOP and write the request in
-HANDOFF.md instead of guessing):
-- Apply any migration to prod / `db push` to prod / `vercel deploy`.
-- Connect/write to the live Google Sheet, or run the historical import against prod.
-- Resolve `branchId` attribution for imported past rows (unresolved — needs a human decision).
+### Part B — reservation → Google Sheet sync (code only; DISABLED until ops)
+On final reservation submit (`POST /api/work/crm/reservations`), append a row to a NEW Google Sheet
+(separate from the import-source sheet). Implement a small shared Sheets helper (service-account JWT
++ Sheets API v4 append). **Gated behind env** (e.g. `CRM_RESERVATION_SHEET_ID` +
+`GOOGLE_APPLICATION_CREDENTIALS`); if unset → **no-op (degrade)**. Best-effort: a sheet failure must
+NOT fail the reservation create. Do NOT connect to a live sheet, do NOT set prod env, do NOT commit
+any key (that GCP/Vercel ops is the user's). 
 
-This objective is complete when phases 1–4 + 6 are implemented (phase 5's sheet/import code exists
-but stays human-gated for the live connection), `npm run lint` + `next build` pass, and the tracking
-docs are updated. Create migrations locally only; never apply to prod without explicit approval.
+Complete when both parts exist, `npm run lint` + `next build` pass, and the tracking docs are updated.
+The live Sheets connection stays human-gated (env not set here).
 
 ## Every iteration, in order
 
