@@ -19,7 +19,8 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
       (GET/POST) + `[causeId]` (PATCH). Admin-gated, name dup-check, degrade. lint+build pass.
     - [x] (2c-2, iter 6) `NewItemRequest` API: `item-requests` (member POST create+dedup / admin GET list)
       + `[requestId]` PATCH (approve→find-or-create FlowerItem / reject). degrade. lint+build pass.
-    - [ ] (2c-3) admin master UI screen (items + causes + pending requests).
+    - [x] (2c-3, iter 7) admin master UI `/work/inventory/masters` (inventory-master nav, admin only):
+      신규 품목 요청 승인/반려, 품목·폐기원인 추가/활성토글. lint+build pass. **Phase 2 완료.**
 - [ ] **Phase 3 — disposal form**: table, Enter/Tab nav (IME-safe), item combobox, category+cause dropdowns,
   lot picker, save-time validation gate, 임시저장/최종제출 + submit API.
 - [ ] **Phase 4 — stock-in + 거래명세서 OCR**: inbound table, 발주/영수증/실입고 3-way, lotId auto-numbering,

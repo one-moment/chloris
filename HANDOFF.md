@@ -49,8 +49,14 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
 - Iteration 6 (done, Phase 2c-2): `NewItemRequest` API. `POST /api/work/inventory/item-requests`
   (member; dedups vs existing item + pending request), `GET` (admin, status filter),
   `PATCH .../[requestId]` (admin: approve→find-or-create FlowerItem + link / reject). Degrade. lint+build pass.
-- Next: Phase 2c-3 — admin master UI screen (items + causes + pending requests, consuming the
-  admin APIs). Then Phase 3 (disposal form).
+- Iteration 7 (done, Phase 2c-3): admin master UI. `inventoryMasterModule` (slug inventory-master,
+  nav minRole admin → /work/inventory/masters) + route page + `modules/inventory/ui/
+  InventoryMastersDashboard.jsx` (client): pending 신규 품목 요청 승인/반려, 품목 마스터 추가/활성토글,
+  폐기원인 마스터 추가/활성토글. Consumes admin + item-requests APIs. lint+build pass.
+  **Phase 2 COMPLETE** (skeleton + lookup/validation + master management).
+- Next: Phase 3 — disposal form (`/work/disposal` table: Enter/Tab nav IME-safe, item combobox using
+  `/items`, category+cause dropdowns using `/reasons`, lot picker using `/lots`, save-time validation
+  gate, 임시저장/최종제출) + submit API `POST /api/work/inventory/disposals`.
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 

@@ -21,3 +21,14 @@ export const stockInModule = {
     minRole: "member"
   }
 };
+
+// 품목·폐기원인 마스터 + 신규 품목 요청 승인 화면 (관리자 전용 nav).
+export const inventoryMasterModule = {
+  slug: "inventory-master",
+  name: "재고 마스터",
+  nav: {
+    label: "재고 마스터",
+    href: "/work/inventory/masters",
+    minRole: "admin"
+  }
+};
