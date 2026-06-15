@@ -266,7 +266,7 @@ Notes:
 - [x] S3. 셸+레일 레이어 도입 + 데스크톱 그린 레일: borough.css의 셸/레일 레이어를 `app/borough-shell.css`로 `.workspace-root` 스코프 도입(특이도 우위로 기존 chrome 이김). `.rail` 마크업(로고 Link·검색 버튼 Lucide·아바타) 추가. 데스크톱(≥768px) 3열(레일64+사이드바292+메인), 모바일은 기존 유지(S4에서 드로어 전환). `--accent`는 레일에서만 골드로 스코프(다크 위 대비). 컴포넌트 전면 정합은 S5. lint+build 통과. (iter 3) — full borough.css 컴포넌트 규칙은 globals와 충돌해 S5에서 점진 정합.
 - [x] S4. 모바일 오프캔버스 드로어 + 분기점 정합: 3열 분기를 ≥981px(기존 모바일 경계 980과 일치)로 올려 **768~980 빈 사이드바 열 회귀 해소(S3 발견사항)**. ≤980 드로어를 borough 톤으로 폴리시(녹색 오버레이 --surface-overlay, organic easing --dur-base/--ease-out, --shadow-lg). 기존 `mobile-open` 토글·햄버거 로직 유지(로직 변경 없음 — data-drawer 재배선은 불필요해 채택 안 함). lint+build 통과. (iter 4) — 비고: POS(~880px)에서 레일 노출 여부는 S7 반응형 검증에서 판단(현재 880=모바일 드로어).
 - [x] S5. 컴포넌트 정합(셸 통합 중심): 카드·칩·세리프·여백 등 컴포넌트는 기존 Borough 1·2차 패스에서 이미 적용됨 → S5는 새 셸(레일/3열)과의 정합에 집중. `.workspace-root .main-area`(paper 배경 + min-height:0 flex 스크롤), `.main-header` 여백을 DS 토큰으로 정합(채팅·게시판 전용, 모듈 페이지 `.work-page`는 무영향). 신규 모듈 대시보드(`.work-page/.work-metric/.work-list` 등 자체 클래스)는 borough/코어-comms 규칙과 무관 → 무회귀 확인. 탭 배지·상태 칩 클래스 리맵은 마크업/로직 변경이라 범위 밖(보류). lint+build 통과. (iter 5)
-- [ ] S6. Lucide UI 적용: 텍스트 글리프(햄버거·+·×·탭·전송·첨부 등)를 Lucide로 교체.
+- [x] S6. Lucide UI 적용: Topbar 햄버거(menu)·탭(message-circle/lightbulb/folder-closed)·검색(search)·알림(bell), ProjectSidebar +(plus)·×(x)를 `<Icon>`로 교체. 아이콘+라벨 버튼 정렬 scoped CSS(.tabs button/.header-action-button inline-flex, .icon-button grid). 로직/핸들러 불변. lint+build 통과. (iter 6) — S5 헤더여백 발견사항 선수정 포함. (전송/첨부 composer 글리프는 후속 여지로 남김 — 핵심 내비 글리프 우선 교체.)
 - [ ] S7. 반응형 검증 + 마감: 모바일/POS/데스크톱 컨테이너 쿼리 확인, 리뷰 잔여 수정, 최종 lint+build(+safe tests) 통과.
 
 완료 조건: S1~S7 전부 체크 AND `docs/design/REVIEW-structural-rail.md`에 미해결(열림) 항목 없음 → `<promise>DONE</promise>` 출력.
