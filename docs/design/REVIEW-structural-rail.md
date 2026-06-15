@@ -29,3 +29,8 @@
 ### iter 5 — S5 (컴포넌트 정합/셸 통합) 리뷰
 - [해결] (S5) `.workspace-root .main-header { padding:12px 20px }`가 무조건부라 globals `@media(max-width:980) .main-header{padding:12px 14px}`(모바일 좌우 14px 의도)를 특이도로 덮음 → 모바일 헤더 좌우 20px. 수정: 이 패딩을 `@media(min-width:981px)`로 스코프해 모바일 14px 보존.
 - (확인됨) main-area min-height:0 스크롤 컨테인 정상(붕괴 위험 없음), --surface-page 정의·의도 톤, 모듈 대시보드는 .work-* 자체 클래스라 무회귀.
+
+### iter 6 — S6 (Lucide UI) 리뷰
+- (발견사항 없음) — 아이콘 이름 전부 레지스트리 존재, 핸들러/aria-label 불변, 햄버거 자체 크기+center로 정렬, Icon 기본 aria-hidden(중복 안내 없음). S5 헤더여백 수정 정확(데스크톱 ≥981 한정, 모바일 14px 보존).
+- (참고, 비차단) `.icon-button` scoped 규칙은 styles.css와 동일값 중복 — 무해.
+- S5 발견사항(모바일 헤더 여백): [해결] (iter 6).
