@@ -45,17 +45,23 @@ Sheet "[보로] 지점별 예약현황" (id 1Fdgg0…Qz-r7A) shared with service
 tab name `(YY년 M월)N호점`; 1/2/3호점 → 강남1/강남2/잠실. Columns A–I = 성함·연락처·예약날짜·픽업일시·
 상품·결제금액·예약경로·수령방법·비고. Dates `YY/MM/DD`, amount `55,000`(comma).
 
-Dry-run result: 90 tabs (78 month-tabs parsed, **12 no-year `(M월)N호점` tabs skipped**),
-**3,522 valid rows**, **2,653 distinct customers**; byBranch 강남1=1357/강남2=712/잠실=1453.
+DECISIONS (2026-06-16, user): tab name = authoritative branch (in-cell title is a stale template
+copy); exclude `…의 사본` copy tabs; include no-year `(M월)N호점` tabs as 2023; receiveMethod default
+= 방문수령; status default = 픽업완료 (past).
 
-BLOCKERS before `--apply` (need user decisions — do NOT import until resolved):
-1. **8 branch mismatches** (tab-name 호점 ≠ in-cell title 호점), incl. a **`…의 사본`(copy) tab** that
-   would double-count. Which is authoritative per tab? Exclude the copy tab?
-2. **12 no-year tabs** `(M월)N호점` (likely 2023 H2, the earliest data) currently excluded — include as 2023?
-3. Data quality: **764 unparseable dates, 615 unparseable amounts, 674 blank 수령방법, 9 missing phone**.
-   Need: receiveMethod default (proposed 방문수령), status default (proposed 픽업완료 for past), and a
-   parser pass to characterize the bad dates/amounts (empty vs format variance). dateRange max 2026-12-31 looks off.
-4. `--apply` path + prod prisma client (postgres) + staging validation, then run only after approval.
+CLEAN dry-run (phone-gated; bottom summary/stat rows excluded via valid-phone filter):
+**3,122 reservations**, **2,810 distinct customers** (by phone); byBranch 강남1=1342 / 강남2=730 /
+잠실=1050. 89 month-tabs (1 copy tab skipped). Issues now tiny: badDate **0**, emptyAmount 0,
+badAmount **2** ("-"), missing 수령방법 **106** (→ default 방문수령). Note: dateRange max 2026-12-31
+= 1–2 real rows with a far-future/typo pickup date (verify). 7 tab/title mismatches → tab name wins (resolved).
+
+REMAINING to import (prod write — gated, needs final approval):
+- Build `--apply`: resolve branch name→id (prisma), upsert Customer by phone, create Reservation with
+  defaults (amount 0 for the 2 "-", source "미상" if blank, receiveMethod 방문수령, status 픽업완료,
+  pickupAt← reservedAt fallback). Deterministic reservation id (hash of branch+phone+dates+product+amount)
+  for idempotent re-runs.
+- Prod prisma client is postgres (`schema.postgres.prisma`); run `--apply` against STAGING (local) first,
+  validate, then PROD only after explicit approval.
 
 ## Done — CRM Phase 2 follow-ups (isolated worktree `feature/crm-followups`, 2026-06-15)
 

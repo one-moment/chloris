@@ -35,11 +35,15 @@ async function getToken() {
 
 const api = (token, path) => fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}${path}`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json());
 
-// "(26년 6월)3호점" → { year:2026, month:6, ho:3 }
+// "(26년 6월)3호점" → { year:2026, month:6, ho:3 }. 무년도 "(7월)1호점" → 2023(가장 오래된 데이터).
+// "…의 사본" 복사본 탭은 제외(중복 방지).
 function parseTabName(title) {
-  const m = title.match(/\((\d{2})년\s*(\d{1,2})월\)\s*(\d)호점/);
-  if (!m) return null;
-  return { year: 2000 + Number(m[1]), month: Number(m[2]), ho: Number(m[3]) };
+  if (title.includes("사본")) return null;
+  let m = title.match(/\((\d{2})년\s*(\d{1,2})월\)\s*(\d)호점/);
+  if (m) return { year: 2000 + Number(m[1]), month: Number(m[2]), ho: Number(m[3]) };
+  m = title.match(/^\((\d{1,2})월\)\s*(\d)호점/);
+  if (m) return { year: 2023, month: Number(m[1]), ho: Number(m[2]) };
+  return null;
 }
 // 제목 셀 "2026년 6월 1호점 예약현황" → ho 숫자(불일치 점검용)
 function hoFromTitleCell(text) {
@@ -79,8 +83,11 @@ const report = {
   perBranch: { 강남1호점: { rows: 0 }, 강남2호점: { rows: 0 }, 잠실점: { rows: 0 } },
   totalRows: 0,
   validRows: 0,
+  skippedNonReservation: 0,
   distinctCustomers: 0,
-  issues: { badDate: 0, badAmount: 0, missingPhone: 0, missingReceiveMethod: 0, branchTitleMismatch: 0 },
+  issues: { badDate: 0, emptyDate: 0, badAmount: 0, emptyAmount: 0, missingPhone: 0, missingReceiveMethod: 0, branchTitleMismatch: 0 },
+  badDateSamples: [],
+  badAmountSamples: [],
   mismatchTabs: [],
   dateRange: { min: null, max: null },
   samples: []
@@ -103,18 +110,30 @@ monthTabs.forEach((tab, i) => {
   for (const r of dataRows) {
     const name = String(r?.[0] ?? "").trim();
     const phone = String(r?.[1] ?? "").trim();
-    if (!name && !phone) continue; // 빈 행
+    const phoneDigits = phone.replace(/[^0-9]/g, "");
+    // 진짜 예약 행은 B열에 유효 전화번호(식별키)가 있다. 하단 요약·통계 행(#REF!/비중%/카운트)은 제외.
+    if (!/^0\d{8,10}$/.test(phoneDigits)) {
+      if (name || phone) report.skippedNonReservation += 1;
+      continue;
+    }
     report.totalRows += 1;
-    if (!phone) { report.issues.missingPhone += 1; continue; }
-    const reservedAt = parseDate(r?.[2]);
-    const pickupAt = parseDate(r?.[3]);
-    const amount = parseAmount(r?.[5]);
-    if (!reservedAt && !pickupAt) report.issues.badDate += 1;
-    if (amount === null) report.issues.badAmount += 1;
-    if (!String(r?.[7] ?? "").trim()) report.issues.missingReceiveMethod += 1;
     report.validRows += 1;
     report.perBranch[branchName].rows += 1;
     phones.add(phone);
+    const reservedAt = parseDate(r?.[2]);
+    const pickupAt = parseDate(r?.[3]);
+    const amount = parseAmount(r?.[5]);
+    if (!reservedAt && !pickupAt) {
+      report.issues.badDate += 1;
+      if (!String(r?.[2] ?? "").trim() && !String(r?.[3] ?? "").trim()) report.issues.emptyDate += 1;
+      else if (report.badDateSamples.length < 12) report.badDateSamples.push({ tab, c: r?.[2] ?? "", d: r?.[3] ?? "" });
+    }
+    if (amount === null) {
+      report.issues.badAmount += 1;
+      if (!String(r?.[5] ?? "").trim()) report.issues.emptyAmount += 1;
+      else if (report.badAmountSamples.length < 12) report.badAmountSamples.push({ tab, f: r?.[5] ?? "" });
+    }
+    if (!String(r?.[7] ?? "").trim()) report.issues.missingReceiveMethod += 1;
     const d = reservedAt || pickupAt;
     if (d) {
       if (!report.dateRange.min || d < report.dateRange.min) report.dateRange.min = d;
