@@ -20,9 +20,12 @@ loop driven by `ralph/PROMPT.md`. One bounded step per iteration on `feature/pur
   migration `20260615103000_add_crm_module`. **Migration NOT applied to prod** (`.env` points
   at Boro prod; applying needs explicit approval). No FK (PostTemplate convention).
   `prisma validate` + `generate` + `npm run lint` pass.
-- Next: module skeleton (`modules/crm/` manifest + register in `modules/registry.js`),
-  then lookup API `/api/work/crm/customers`, then `/work/customers` + `/work/reservations`
-  screens, then the reservation form, then metrics.
+- Iteration 2 (done): module skeleton. `modules/crm/` with two manifests (crm→/work/customers,
+  reservations→/work/reservations), stub dashboards, registered in `modules/registry.js`;
+  route pages with `isModuleEnabled` brand guard. `npm run lint` + `next build` pass.
+- Next: lookup API `/api/work/crm/customers` (name/phone → customer + recent reservations),
+  then real `/work/customers` + `/work/reservations` screens, then the reservation form,
+  then metrics.
 - Pending human action: apply `20260615103000_add_crm_module` to Boro prod when the CRM
   feature is ready to ship (and decide branchId attribution for the 20-month sheet import).
 
