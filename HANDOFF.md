@@ -11,7 +11,20 @@ The current priority is Purchase Agent stabilization:
 - Coupang tasks can be queued for the local purchase worker
 - final payment remains human-reviewed
 
-## In progress — CRM module (Ralph loop, started 2026-06-15)
+## In progress — CRM Phase 2 follow-ups (isolated worktree `feature/crm-followups`, 2026-06-15)
+
+CRM core is shipped + deployed (see below). This branch is an **isolated git worktree**
+(`.claude/worktrees/crm-followups`, base `6bcc162`) so it never collides with the inventory
+loop running on `feature/purchase-bot-mvp`. OBJECTIVE (`ralph/PROMPT.md`): customer manual
+entry/edit → pickup calendar → metrics. Deferred (need decisions): `@예약`, sheet import.
+NOTE: this worktree's `.env` is a local sqlite dummy — never touches Boro prod.
+
+- Iteration 1 (done): customer write API. `POST /api/work/crm/customers` (create; phone
+  unique → 409 on dup) + `PATCH /api/work/crm/customers/[customerId]` (partial edit). Auth +
+  brand guard + missing-table 503. Lint + build pass. Next: 고객 수동 입력/수정 폼 UI on
+  `/work/customers` consuming these.
+
+## Done — CRM module core (Ralph loop, started 2026-06-15)
 
 Building the Borough CRM + reservations module (`docs/templates-and-crm.md`) via a Ralph
 loop driven by `ralph/PROMPT.md`. One bounded step per iteration on `feature/purchase-bot-mvp`.

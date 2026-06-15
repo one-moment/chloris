@@ -1,5 +1,17 @@
 # TODO.md
 
+## CRM Phase 2 follow-ups — isolated worktree `feature/crm-followups` (2026-06-15)
+
+CRM core shipped+deployed. This worktree (base `6bcc162`) is separate from the inventory loop
+(`feature/purchase-bot-mvp`). OBJECTIVE in `ralph/PROMPT.md`. One bounded step/iteration.
+
+- [x] (P2-1) 고객 쓰기 API: `POST /api/work/crm/customers` (생성, 전화 unique→409) +
+  `PATCH /api/work/crm/customers/[customerId]` (부분 수정). Auth+brand guard+503 degrade. Lint+build pass.
+- [ ] (P2-2) 고객 수동 입력/수정 폼 UI on `/work/customers` (위 API 소비). — next
+- [ ] (P2-3) 픽업 캘린더 뷰 on `/work/reservations`.
+- [ ] (P2-4) 지표 → 지점 인사이트 (메트릭 레지스트리).
+- 보류(결정 필요): `@예약` 채널 진입, 20개월 시트 import(지점 매핑 = 1호점/2호점/3호점 → 강남1/강남2/잠실, 23년7월~ 월별 탭).
+
 ## Multi-company split & branding (2026-06-11, night)
 
 Product serves 3 companies (internal tools): 원모먼트(online delivery), 보로플라워마켓(offline franchise), 오늘꽃(wholesale + venue supply). Shared base = chat + board; custom modules per company.
