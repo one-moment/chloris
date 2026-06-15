@@ -16,3 +16,7 @@
 ### iter 2 — S2 (DS 토큰 + .workspace-root 래퍼) 리뷰
 - (발견사항 없음) — 토큰 충돌 회피(앱 --accent/--warning 보존), 폰트 fallback만 미세 차이(무시 가능), .workspace-root 레이아웃 투명, JSX 균형 확인.
 - S1 발견사항 4건: [해결] (iter 2에서 선수정).
+
+### iter 3 — S3 (셸+레일 도입) 리뷰
+- [열림] (S3) 768~980px 빈 사이드바 열 회귀: globals `@media(max-width:980px) .sidebar{position:fixed; translateX(-105%)}`(오프캔버스)와 borough-shell의 `@media(min-width:768px)` 3열 강제가 겹쳐, 292px 열은 예약되나 사이드바가 화면 밖이라 rail~main 사이 빈칸. 수정: 3열/레일 분기점을 모바일 드로어 경계(≤980 = 모바일)와 일치(예: `min-width:981px`)시키거나 S4 드로어 전환을 이 구간까지 포함. (S4와 동일 영역 → S4에서 함께 처리)
+- (확인됨) 토큰 전부 정의됨, 레일 값 정본 충실, 아바타 골드/대비 OK, 검색버튼=기존 핸들러(로직 변경 없음), 모바일 기존 동작 불변, 모듈 경계 위반 없음.
