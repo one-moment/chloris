@@ -37,6 +37,26 @@ core "예약" button (Topbar) → channel summary card. All lint + build green; 
 Phase 2: Phase-2 + @예약 v1 live only on this branch). v2 `@예약` action-mention deferred to the
 agent-platform work; 20-month sheet import waiting on the sheet key.
 
+## In progress — 20개월 시트 import (dry-run done, 2026-06-16)
+
+Sheet "[보로] 지점별 예약현황" (id 1Fdgg0…Qz-r7A) shared with service account; key via env
+`GOOGLE_APPLICATION_CREDENTIALS` (NOT in repo). Dry-run script: `scripts/import-boro-reservations.mjs`
+(read-only, no DB; `--apply` not built yet — pending decisions). Structure: **1 tab = 1 month × 1 branch**,
+tab name `(YY년 M월)N호점`; 1/2/3호점 → 강남1/강남2/잠실. Columns A–I = 성함·연락처·예약날짜·픽업일시·
+상품·결제금액·예약경로·수령방법·비고. Dates `YY/MM/DD`, amount `55,000`(comma).
+
+Dry-run result: 90 tabs (78 month-tabs parsed, **12 no-year `(M월)N호점` tabs skipped**),
+**3,522 valid rows**, **2,653 distinct customers**; byBranch 강남1=1357/강남2=712/잠실=1453.
+
+BLOCKERS before `--apply` (need user decisions — do NOT import until resolved):
+1. **8 branch mismatches** (tab-name 호점 ≠ in-cell title 호점), incl. a **`…의 사본`(copy) tab** that
+   would double-count. Which is authoritative per tab? Exclude the copy tab?
+2. **12 no-year tabs** `(M월)N호점` (likely 2023 H2, the earliest data) currently excluded — include as 2023?
+3. Data quality: **764 unparseable dates, 615 unparseable amounts, 674 blank 수령방법, 9 missing phone**.
+   Need: receiveMethod default (proposed 방문수령), status default (proposed 픽업완료 for past), and a
+   parser pass to characterize the bad dates/amounts (empty vs format variance). dateRange max 2026-12-31 looks off.
+4. `--apply` path + prod prisma client (postgres) + staging validation, then run only after approval.
+
 ## Done — CRM Phase 2 follow-ups (isolated worktree `feature/crm-followups`, 2026-06-15)
 
 CRM core is shipped + deployed (see below). This branch is an **isolated git worktree**
