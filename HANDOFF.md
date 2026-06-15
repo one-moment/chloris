@@ -30,8 +30,14 @@ NOTE: this worktree's `.env` is a local sqlite dummy — never touches Boro prod
   (`modules/crm/ui/ReservationsDashboard.jsx`) — 목록/캘린더 toggle + month grid bucketed by
   pickupAt (per-day chips, today highlight, month nav), reusing the fetched reservations.
   Added `.work-cal-*` CSS. Lint + build pass.
-- Next (P2-4, last): metrics → 지점 인사이트 (reservation count, revenue, source mix,
-  repeat-visit rate, byBranch) via the metrics registry. Then OBJECTIVE complete → RALPH-DONE.
+- Iteration 4 (done): 지점 인사이트 aggregate API `GET /api/work/crm/metrics`
+  (`app/api/work/crm/metrics/route.js`) — total count/revenue/customers/repeatRate + byBranch
+  (count, revenue) + sourceMix, via Prisma groupBy. Auth + brand guard + missing-table 0-value
+  degrade. Lint + build pass. SCOPE NOTE: the platform generic `metricsRegistry` is not built
+  yet, so insights are implemented **module-locally** (scoped, per PROMPT "no broad rewrites");
+  migrate to the registry when it exists (platform TODO).
+- Next (P2-4b, last): 지점 인사이트 UI consuming the metrics API. Then OBJECTIVE complete →
+  output `<promise>RALPH-DONE</promise>` and stop the loop.
 
 ## Done — CRM module core (Ralph loop, started 2026-06-15)
 

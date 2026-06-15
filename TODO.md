@@ -9,7 +9,10 @@ CRM core shipped+deployed. This worktree (base `6bcc162`) is separate from the i
   `PATCH /api/work/crm/customers/[customerId]` (부분 수정). Auth+brand guard+503 degrade. Lint+build pass.
 - [x] (P2-2) 고객 수동 입력/수정 폼 UI on `/work/customers`: 헤더 "+ 새 고객" 생성 폼 + 선택 고객 "수정" 폼(공용 `CustomerForm`), 홈지점 select(예약 API의 branches), 제출 → POST/PATCH → 검색 갱신. Lint+build pass.
 - [x] (P2-3) 픽업 캘린더 뷰 on `/work/reservations`: 목록/캘린더 토글 + 월 그리드(픽업일 버킷, 일별 예약 칩 최대 3 + "+N", 오늘 강조, 월 이동). New CSS `.work-cal-*`. Lint+build pass.
-- [ ] (P2-4) 지표 → 지점 인사이트 (메트릭 레지스트리). — next
+- [~] (P2-4) 지표 → 지점 인사이트.
+  - [x] (P2-4a) 집계 API `GET /api/work/crm/metrics`: 총 예약건수·매출·고객수·재방문율 + byBranch(건수/매출) + sourceMix. groupBy 집계, 인증+브랜드 가드+테이블 부재 0값 degrade. Lint+build pass.
+  - [ ] (P2-4b) 지점 인사이트 UI(위 API 소비). — next → 완료 시 OBJECTIVE 끝 → RALPH-DONE.
+  - NOTE: 플랫폼 제네릭 `metricsRegistry`는 미구현이라 지점 인사이트를 **모듈 로컬 집계**로 구현(범위 최소). 레지스트리 생기면 이관. (플랫폼 TODO 유지)
 - 보류(결정 필요): `@예약` 채널 진입, 20개월 시트 import(지점 매핑 = 1호점/2호점/3호점 → 강남1/강남2/잠실, 23년7월~ 월별 탭).
 
 ## Multi-company split & branding (2026-06-11, night)
