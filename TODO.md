@@ -33,7 +33,8 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
 - [~] **Phase 4 — stock-in + 거래명세서 OCR**:
   - [x] (4-1, iter 12) stock-in write API + helpers: `stock-ins` POST(draft|submitted, lotId 자동발번
     YYYYMMDD_품목_거래처_NNNN, 3중대조 상태, 입고가액)/GET. `buildLotId`/`stockInLineStatus`/serialize. lint+build.
-  - [ ] (4-2) stock-in form UI: 품목/발주/영수증/실입고/단가/특이사항 표, 불일치 하이라이트, 거래처·입고일, draft/submit.
+  - [x] (4-2, iter 13) stock-in form UI: 품목/발주/영수증/실입고/단가/특이사항 표, 품목 combobox, 키보드 이동,
+    클라 3중대조 미리보기(행 하이라이트+상태칩), 거래처·입고일, 입고 등록(lotId 자동발번), 엑셀 복사. lint+build.
   - [ ] (4-3) 거래명세서 Vision OCR → 표 prefill (`lib/agents/openaiClient.js`, 키 없으면 degrade).
 - [ ] **Phase 5 — sheet sync + import** (human-gated for live connection): NEW Google Sheet, one-way append;
   import past lots+disposals (link past disposals to past lots) into new sheet + DB. Existing sheet untouched.
