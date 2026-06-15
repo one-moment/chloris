@@ -32,8 +32,15 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
   Boro prod; needs approval). Scalar cross-module ids, intra-module FK (delivery→line, batch→line,
   ON DELETE CASCADE); money=Int(원), quantity=Float(소수). Both schemas `prisma validate` ✓,
   `generate` ✓, `npm run lint` ✓ (module boundaries ok).
-- Next: Phase 2 — module skeleton (`modules/inventory` manifests + registry + brand gating + route/
-  dashboard stubs) and lookup/validation APIs (`/api/work/inventory/items|reasons|lots`).
+- Iteration 3 (done, Phase 2a): module skeleton. `modules/inventory/index.js` (manifests
+  `disposalModule` slug disposal→/work/disposal, `stockInModule` slug stockin→/work/stock-in)
+  registered in `modules/registry.js`; brand gating in `lib/brand.js` (borough += disposal, stockin);
+  route pages `app/(workspace)/work/disposal|stock-in/page.jsx` with `isModuleEnabled` guard; stub
+  dashboards (`modules/inventory/ui/DisposalDashboard|StockInDashboard.jsx`). `npm run lint` +
+  `next build` pass (both routes compile static, sidebar nav renders them).
+- Next: Phase 2b — lookup/validation APIs `GET /api/work/inventory/items` (autocomplete + exact-match
+  validation), `/reasons` (causes + fixed categories), `/lots` (4-day lot suggestion). Then admin
+  master screens + `NewItemRequest` approval. All auth + brand guard + degrade-to-empty.
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 

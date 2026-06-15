@@ -9,9 +9,12 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
 - [x] **Phase 1 — data model** (iter 2): six models in both schemas + migration
   `20260615140000_add_inventory_module` (NOT applied to prod). Money=Int(원), quantity=Float(소수);
   scalar cross-module ids, intra-module FK (ON DELETE CASCADE). validate+generate+lint pass.
-- [ ] **Phase 2 — masters + lookup APIs**: module skeleton/registry/brand gating, route+dashboard stubs;
-  `GET /api/work/inventory/items|reasons|lots` (autocomplete+validation, 4-day lot suggest); admin master
-  screens + `NewItemRequest` approval. Degrade-to-empty pre-migration.
+- [~] **Phase 2 — masters + lookup APIs**:
+  - [x] (2a, iter 3) module skeleton: `modules/inventory` manifests (disposal→/work/disposal,
+    stockin→/work/stock-in) + registry + brand gating + route pages + stub dashboards. lint+build pass.
+  - [ ] (2b) lookup/validation APIs `GET /api/work/inventory/items|reasons|lots` (autocomplete+validation,
+    4-day lot suggest). Degrade-to-empty pre-migration.
+  - [ ] (2c) admin master screens (FlowerItem/DisposalCause edit) + `NewItemRequest` approval.
 - [ ] **Phase 3 — disposal form**: table, Enter/Tab nav (IME-safe), item combobox, category+cause dropdowns,
   lot picker, save-time validation gate, 임시저장/최종제출 + submit API.
 - [ ] **Phase 4 — stock-in + 거래명세서 OCR**: inbound table, 발주/영수증/실입고 3-way, lotId auto-numbering,
