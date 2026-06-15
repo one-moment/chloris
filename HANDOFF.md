@@ -1,5 +1,20 @@
 # HANDOFF.md
 
+## ⚠️ PENDING (next): merge `feature/crm-followups` → deploy line, then redeploy
+
+CRM Phase 2 (customer manual entry/edit, **pickup calendar**, 지점 인사이트) + @예약 v1 are committed
+on `feature/crm-followups` and were briefly live (deploy `dpl_53WyS…` / `k8ttin7tv`, 2026-06-16) but
+were **overwritten in prod** by a later inventory-line deploy (`chloris-kfe1v0fw0`, ~00:33 KST). So the
+calendar/insights/forms/@예약 are NOT in current prod; only CRM core + inventory are. The imported data
+(2,810 customers / 3,122 reservations) is in the prod DB and unaffected.
+
+Decision (2026-06-16, user): **finish the inventory work first, THEN merge.** Do NOT ping-pong deploys.
+When ready: merge `feature/crm-followups` into the inventory deploy line (`feature/purchase-bot-mvp`),
+resolve conflicts in shared files (`app/globals.css`, `modules/registry.js`, `prisma/schema*.prisma`,
+`TODO.md`, `HANDOFF.md`), then deploy ONCE so prod has inventory + CRM Phase 2 + @예약 together.
+No new migration needed for CRM Phase 2 (uses existing tables). Do NOT touch the inventory branch until
+the other conversation says it has settled.
+
 ## Current Goal
 
 Build Chloris into an internal communication and work automation platform.
