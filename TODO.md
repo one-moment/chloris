@@ -17,7 +17,8 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
   - [~] (2c) admin master management + `NewItemRequest` approval:
     - [x] (2c-1, iter 5) master CRUD APIs: `admin/items` (GET/POST) + `[itemId]` (PATCH), `admin/causes`
       (GET/POST) + `[causeId]` (PATCH). Admin-gated, name dup-check, degrade. lint+build pass.
-    - [ ] (2c-2) `NewItemRequest` API (member create / admin list / approve→upsert FlowerItem / reject).
+    - [x] (2c-2, iter 6) `NewItemRequest` API: `item-requests` (member POST create+dedup / admin GET list)
+      + `[requestId]` PATCH (approve→find-or-create FlowerItem / reject). degrade. lint+build pass.
     - [ ] (2c-3) admin master UI screen (items + causes + pending requests).
 - [ ] **Phase 3 — disposal form**: table, Enter/Tab nav (IME-safe), item combobox, category+cause dropdowns,
   lot picker, save-time validation gate, 임시저장/최종제출 + submit API.

@@ -46,8 +46,11 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
 - Iteration 5 (done, Phase 2c-1): master CRUD write APIs (admin-gated, `user.role==="admin"`).
   `GET/POST /api/work/inventory/admin/items` + `PATCH .../items/[itemId]` (name dup-check, 활성여부);
   `GET/POST .../admin/causes` + `PATCH .../causes/[causeId]`. Auth+admin+degrade. lint+build pass.
-- Next: Phase 2c-2 — `NewItemRequest` API (member POST create from form, admin GET list + PATCH
-  approve→upsert FlowerItem / reject). Then admin master UI screen. Then Phase 3 (disposal form).
+- Iteration 6 (done, Phase 2c-2): `NewItemRequest` API. `POST /api/work/inventory/item-requests`
+  (member; dedups vs existing item + pending request), `GET` (admin, status filter),
+  `PATCH .../[requestId]` (admin: approve→find-or-create FlowerItem + link / reject). Degrade. lint+build pass.
+- Next: Phase 2c-3 — admin master UI screen (items + causes + pending requests, consuming the
+  admin APIs). Then Phase 3 (disposal form).
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 
