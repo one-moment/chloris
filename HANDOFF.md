@@ -1,5 +1,23 @@
 # HANDOFF.md
 
+## ▶ RESUME HERE — CRM Phase 3 (새 대화에서 이어가기)
+
+격리 워크트리 `feature/crm-phase3` (배포 라인 `feature/purchase-bot-mvp` @ `b859630` 기준, 푸시됨).
+deps/`.env`(sqlite 더미)/prisma client 셋업 완료, baseline lint 통과. OBJECTIVE는 `ralph/PROMPT.md`:
+- **Part A — `@예약` v2 액션-멘션**: 코어 `components/MentionInput.jsx`를 모듈 선언 액션-멘션으로 확장
+  (매니페스트 컨트랙트, 코어→모듈 import 금지). 선택 시 텍스트 삽입 대신 `/work/reservations?new=1&channel=&branch=`
+  딥링크. @유저 멘션 회귀 금지. 설계 = `docs/crm-reservation-mention.md` 해법 A. v1 버튼은 검증 전까지 유지.
+- **Part B — 예약→구글시트 append (코드만, env 미설정 시 no-op)**: `POST /api/work/crm/reservations` 최종제출 시
+  새 시트에 한 줄 append(서비스계정 JWT + Sheets API v4). 베스트-에포트. 키 커밋 금지, 운영 연결은 사용자 ops.
+
+**새 대화에서 재개 방법**: 이 워크트리에 들어가서(`EnterWorktree` path `.claude/worktrees/crm-phase3`) `/loop`로
+`ralph/PROMPT.md` 따라 진행. (메인/다른 브랜치는 건드리지 말 것 — 한 워크트리=한 루프.)
+
+**사용자 ops 선행(Part B 활성화용)**: ① CRM 예약용 새 구글시트 생성 ② 서비스계정
+`boro-reservation@boro-reservation.iam.gserviceaccount.com`에 편집자 공유 ③ Vercel 운영 env에 키+시트ID.
+
+**현재 운영(prod)**: 인벤토리 + CRM Phase 2(캘린더·인사이트·폼) + @예약 v1(버튼) + import 데이터(고객 2,810/예약 3,122) 라이브.
+
 ## 2026-06-16: CRM ↔ 인벤토리 병합 + 운영 배포 (회귀 해소)
 
 `feature/crm-followups`를 배포 라인 `feature/purchase-bot-mvp`에 병합(merge `8fee95f`) → 운영 배포
