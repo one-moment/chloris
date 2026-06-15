@@ -2146,6 +2146,71 @@ button:disabled {
   align-items: center;
 }
 
+.work-calendar {
+  display: grid;
+  gap: 10px;
+}
+
+.work-cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.work-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.work-cal-head {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 4px 0;
+}
+
+.work-cal-cell {
+  min-height: 72px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px;
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  background: var(--surface);
+}
+
+.work-cal-empty {
+  background: transparent;
+  border-color: transparent;
+}
+
+.work-cal-today {
+  border-color: var(--accent);
+}
+
+.work-cal-day {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.work-cal-item {
+  font-size: 11px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--accent-weak);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.work-cal-more {
+  font-size: 11px;
+  color: var(--muted);
+}
+
 .work-table {
   width: 100%;
   border-collapse: collapse;

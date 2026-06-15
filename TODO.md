@@ -8,8 +8,8 @@ CRM core shipped+deployed. This worktree (base `6bcc162`) is separate from the i
 - [x] (P2-1) 고객 쓰기 API: `POST /api/work/crm/customers` (생성, 전화 unique→409) +
   `PATCH /api/work/crm/customers/[customerId]` (부분 수정). Auth+brand guard+503 degrade. Lint+build pass.
 - [x] (P2-2) 고객 수동 입력/수정 폼 UI on `/work/customers`: 헤더 "+ 새 고객" 생성 폼 + 선택 고객 "수정" 폼(공용 `CustomerForm`), 홈지점 select(예약 API의 branches), 제출 → POST/PATCH → 검색 갱신. Lint+build pass.
-- [ ] (P2-3) 픽업 캘린더 뷰 on `/work/reservations`. — next
-- [ ] (P2-4) 지표 → 지점 인사이트 (메트릭 레지스트리).
+- [x] (P2-3) 픽업 캘린더 뷰 on `/work/reservations`: 목록/캘린더 토글 + 월 그리드(픽업일 버킷, 일별 예약 칩 최대 3 + "+N", 오늘 강조, 월 이동). New CSS `.work-cal-*`. Lint+build pass.
+- [ ] (P2-4) 지표 → 지점 인사이트 (메트릭 레지스트리). — next
 - 보류(결정 필요): `@예약` 채널 진입, 20개월 시트 import(지점 매핑 = 1호점/2호점/3호점 → 강남1/강남2/잠실, 23년7월~ 월별 탭).
 
 ## Multi-company split & branding (2026-06-11, night)

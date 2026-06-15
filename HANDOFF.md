@@ -26,8 +26,12 @@ NOTE: this worktree's `.env` is a local sqlite dummy — never touches Boro prod
   (`modules/crm/ui/CustomersDashboard.jsx`) — header "+ 새 고객" create form + per-customer
   "수정" edit form (shared `CustomerForm`), homeBranch select sourced from the reservations
   API `branches`, submit → POST/PATCH → search refresh. Lint + build pass.
-- Next (P2-3): pickup calendar view on `/work/reservations` (month grid by pickupAt, toggle
-  with list). Then (P2-4) metrics → 지점 인사이트.
+- Iteration 3 (done): pickup calendar view on `/work/reservations`
+  (`modules/crm/ui/ReservationsDashboard.jsx`) — 목록/캘린더 toggle + month grid bucketed by
+  pickupAt (per-day chips, today highlight, month nav), reusing the fetched reservations.
+  Added `.work-cal-*` CSS. Lint + build pass.
+- Next (P2-4, last): metrics → 지점 인사이트 (reservation count, revenue, source mix,
+  repeat-visit rate, byBranch) via the metrics registry. Then OBJECTIVE complete → RALPH-DONE.
 
 ## Done — CRM module core (Ralph loop, started 2026-06-15)
 

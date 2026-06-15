@@ -33,6 +33,75 @@ function formatDate(value) {
   return date.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
+function dayKey(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function buildMonthCells(month) {
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+  const startWeekday = new Date(year, monthIndex, 1).getDay();
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < startWeekday; i += 1) cells.push(null);
+  for (let day = 1; day <= daysInMonth; day += 1) cells.push(new Date(year, monthIndex, day));
+  while (cells.length % 7 !== 0) cells.push(null);
+  return cells;
+}
+
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+function ReservationCalendar({ reservations, month, onPrev, onNext, onToday }) {
+  const byDay = new Map();
+  for (const reservation of reservations) {
+    const key = dayKey(reservation.pickupAt);
+    if (!key) continue;
+    const list = byDay.get(key) ?? [];
+    list.push(reservation);
+    byDay.set(key, list);
+  }
+  const cells = buildMonthCells(month);
+  const todayKey = dayKey(new Date());
+
+  return (
+    <div className="work-calendar">
+      <div className="work-cal-nav">
+        <button type="button" className="ghost-button" onClick={onPrev} aria-label="이전 달">◀</button>
+        <strong>{month.getFullYear()}년 {month.getMonth() + 1}월</strong>
+        <button type="button" className="ghost-button" onClick={onNext} aria-label="다음 달">▶</button>
+        <button type="button" className="ghost-button" onClick={onToday}>오늘</button>
+      </div>
+      <div className="work-cal-grid">
+        {WEEKDAYS.map((weekday) => (
+          <div key={weekday} className="work-cal-head">{weekday}</div>
+        ))}
+        {cells.map((date, index) => {
+          if (!date) return <div key={`empty-${index}`} className="work-cal-cell work-cal-empty" />;
+          const key = dayKey(date);
+          const list = byDay.get(key) ?? [];
+          return (
+            <div key={key} className={`work-cal-cell${key === todayKey ? " work-cal-today" : ""}`}>
+              <div className="work-cal-day">{date.getDate()}</div>
+              {list.slice(0, 3).map((reservation) => (
+                <div
+                  key={reservation.id}
+                  className="work-cal-item"
+                  title={`${reservation.customerName ?? ""} ${reservation.product} (${reservation.branchName ?? ""})`}
+                >
+                  {reservation.customerName ?? reservation.product}
+                </div>
+              ))}
+              {list.length > 3 && <div className="work-cal-more">+{list.length - 3}</div>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function ReservationsDashboard() {
   const [reservations, setReservations] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -40,6 +109,8 @@ export default function ReservationsDashboard() {
   const [status, setStatus] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState("");
+  const [view, setView] = useState("list");
+  const [calMonth, setCalMonth] = useState(() => new Date());
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -264,6 +335,10 @@ export default function ReservationsDashboard() {
             </select>
           </label>
         </div>
+        <div className="work-header-actions">
+          <button type="button" className="ghost-button" aria-pressed={view === "list"} onClick={() => setView("list")}>목록</button>
+          <button type="button" className="ghost-button" aria-pressed={view === "calendar"} onClick={() => setView("calendar")}>캘린더</button>
+        </div>
         {error && <p className="action-error">{error}</p>}
       </section>
 
@@ -281,6 +356,14 @@ export default function ReservationsDashboard() {
       <section className="work-section">
         {!isLoaded ? (
           <p className="work-empty">불러오는 중...</p>
+        ) : view === "calendar" ? (
+          <ReservationCalendar
+            reservations={reservations}
+            month={calMonth}
+            onPrev={() => setCalMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}
+            onNext={() => setCalMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}
+            onToday={() => setCalMonth(new Date())}
+          />
         ) : reservations.length === 0 ? (
           <p className="work-empty">조건에 맞는 예약이 없습니다.</p>
         ) : (
