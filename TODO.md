@@ -255,3 +255,18 @@ Notes:
 - [ ] Update `BUG_LOG.md` if a bug was found or fixed.
 - [x] Run relevant tests or explicitly record why tests were not run.
 - [ ] Do not leave sensitive values in docs, logs, or committed files.
+
+## 구조형 완성 디자인 — 그린 레일 + 모바일 드로어 + Lucide  (ralph loop · worktree: design/structural-rail)
+
+정본: `docs/design/borough/borough.css`. 범위: 스타일·레이아웃 구조만(동작 로직·모듈 경계 불변, AGENTS.md 준수).
+규칙: 한 이터레이션 = 한 단계. 구현 → `npm run lint`+`npm run build` 통과 → 독립 리뷰 서브에이전트 실행(발견사항 `docs/design/REVIEW-structural-rail.md` 기록) → 해당 단계 체크 → 한국어 커밋. 리뷰가 찾은 버그/누락은 다음 이터레이션에서 먼저 수정.
+
+- [ ] S1. Lucide 아이콘 인프라: `lucide-react` 의존성 + `components/Icon.jsx` 래퍼(name→icon). UI 변화 없음, 빌드 통과.
+- [ ] S2. DS 토큰 정비 + `.workspace-root` 래퍼: Borough 토큰 전체(spacing/radius/shadow/motion/typography/status)를 `styles.css`에 보강 + WorkspaceShell 앱 셸을 `.workspace-root`로 감싸고 기본 변형 속성(theme=forest/sidebar=dark/cards=comfortable/chips=soft) + `container` 설정. 시각 변화 최소, 빌드 통과.
+- [ ] S3. borough.css 도입 + 데스크톱 그린 레일: `borough.css`를 `.workspace-root` 스코프로 적용 + `.rail` 요소(로고·네비·아바타, Lucide) 추가. 데스크톱 3열(레일+사이드바+메인).
+- [ ] S4. 모바일 오프캔버스 드로어: `.app-shell[data-drawer]` open/close + 백드롭 + 햄버거 토글(기존 `.sidebar.mobile-open` 대체). 모바일 드로어 동작.
+- [ ] S5. 컴포넌트 정합: Topbar/IdeasView/MessagesView/템플릿/구매 등 마크업을 borough.css 클래스 기대에 맞춤(탭 배지·상태 칩 클래스·post-card-header 등). 신규 컴포넌트 안 깨지게.
+- [ ] S6. Lucide UI 적용: 텍스트 글리프(햄버거·+·×·탭·전송·첨부 등)를 Lucide로 교체.
+- [ ] S7. 반응형 검증 + 마감: 모바일/POS/데스크톱 컨테이너 쿼리 확인, 리뷰 잔여 수정, 최종 lint+build(+safe tests) 통과.
+
+완료 조건: S1~S7 전부 체크 AND `docs/design/REVIEW-structural-rail.md`에 미해결(열림) 항목 없음 → `<promise>DONE</promise>` 출력.
