@@ -43,7 +43,13 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
 - [~] **Phase 5 — sheet sync + import** (human-gated for live connection):
   - [x] (5-1, iter 18) sheet-sync code `lib/inventorySheetSync.js`: 순수 매핑 + SA JWT → Sheets append.
     기본 skipped(env 없으면 외부연결 안 함). disposal POST/PATCH·stock-in POST 제출에 비치명적 연결. lint+build.
-  - [ ] (5-2) historical-import 스크립트(기존 시트 CSV → 정규화, dry-run 기본). 실행은 승인 후.
+  - [x] (5-2, iter 19) `scripts/import-inventory-sheet.mjs`: 입고/폐기 CSV → 정규화(₩/콤마, 구분(원인) 분해,
+    소수 보존, lotId/sourceLotId 보존), 폐기→입고 lot 연결 리포트. **dry-run 기본**(--commit+--branch만 DB 쓰기,
+    prisma 동적 import). node --check + 픽스처 dry-run 검증. **Phase 5 코드 완료(실행은 사람 승인).**
+
+**Inventory 모듈 OBJECTIVE 완료 (Phase 1~4·6 구현 + Phase 5 코드, 사람 승인 게이트).** 모든 단계 lint+build 통과,
+마이그레이션·시트연결·import는 미실행(승인 대기). 다음은 사람: ①운영 마이그레이션 적용 ②새 시트+Service Account
+env ③과거행 branchId 결정 후 import 실행 ④배포.
 - [~] **Phase 6 — metrics**:
   - [x] (6-1, iter 16) metrics API `inventory/metrics` (submitted-only): 폐기 건수/수량/가액·사유/구분 비중,
     입고 가액·불일치율, 폐기율(가액), byBranch. 기간/지점 필터, degrade-to-zero. lint+build.

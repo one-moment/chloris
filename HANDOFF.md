@@ -103,8 +103,15 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
   skipped**: `isSheetSyncConfigured()` requires `INVENTORY_SHEET_SYNC_ENABLED=1` + `INVENTORY_SHEET_ID`
   + `GOOGLE_SA_CLIENT_EMAIL`/`GOOGLE_SA_PRIVATE_KEY`; without them it never connects. Wired non-fatally
   into disposal POST/PATCH submit (sets `syncedAt`) + stock-in POST submit. lint+build pass.
-- Next: Phase 5-2 (human-gated) — historical-import script (parse existing-sheet CSV tabs → normalized
-  records, dry-run default). Then STOP + record the human action and output RALPH-DONE.
+- Iteration 19 (done, Phase 5-2): `scripts/import-inventory-sheet.mjs` — parses 입고/폐기 CSV exports,
+  normalizes (₩/comma→Int, `구분(원인)`→category+cause, decimals, preserves lotId/sourceLotId), reports
+  past-disposal→past-lot linkage, **dry-run by default** (`--commit`+`--branch` required to write; prisma
+  dynamically imported so dry-run never connects). Verified via `node --check` + fixture dry-run. Not run
+  against any DB. lint clean.
+
+**INVENTORY MODULE OBJECTIVE COMPLETE** (2026-06-15, Ralph). Phases 1–4 + 6 implemented; Phase 5
+(sheet sync + import) code exists, human-gated. Every iteration committed on `feature/purchase-bot-mvp`,
+`npm run lint` + `next build` green throughout. Nothing applied to prod / no live external connection.
 - ⚠️ HUMAN ACTION REQUIRED before sheet sync / import go live (do NOT do unattended):
   1. Create a NEW Google Sheet (separate from the existing one) + a Service Account; set the env vars above.
   2. Decide `branchId` attribution for the existing sheet's ~20 months of rows (which branch).
