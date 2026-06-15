@@ -599,3 +599,140 @@ model BotRun {
   createdAt      DateTime @default(now())
   channel        Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
 }
+
+// Inventory module (Borough-only): flower item master, disposal causes, stock-in lots,
+// disposal records with lot-cost mapping. Loosely coupled to core (scalar branchId/channelId/
+// messageId/itemId/sourceLotId, no cross-module FK) like Customer/Reservation, so the app
+// degrades safely before the migration is applied. Intra-module relations use FK.
+// Money = Int (KRW), quantity = Float (decimal stems/bunches). See docs/inventory-stockin-disposal.md.
+model FlowerItem {
+  id          String   @id
+  name        String   @unique(map: "uniq_flower_items_name")
+  category    String?
+  origin      String?
+  isImported  Boolean  @default(false)
+  defaultUnit String   @default("송이")
+  aliasesJson String   @default("[]")
+  isActive    Boolean  @default(true)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name], map: "idx_flower_items_name")
+  @@index([isActive], map: "idx_flower_items_active")
+}
+
+model DisposalCause {
+  id        String   @id
+  name      String   @unique(map: "uniq_disposal_causes_name")
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StockInDelivery {
+  id              String        @id
+  branchId        String
+  channelId       String?
+  messageId       String?
+  supplier        String
+  statementDate   DateTime
+  totalAmount     Int?
+  status          String        @default("draft")
+  sourceText      String        @default("")
+  attachmentsJson String        @default("[]")
+  createdById     String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  lines           StockInLine[]
+
+  @@index([branchId, statementDate], map: "idx_stockin_deliveries_branch_date")
+  @@index([status], map: "idx_stockin_deliveries_status")
+}
+
+model StockInLine {
+  id          String          @id
+  deliveryId  String
+  lineIndex   Int
+  lotId       String          @unique(map: "uniq_stockin_lines_lot")
+  itemId      String?
+  itemName    String
+  supplier    String
+  stockInDate DateTime
+  unit        String          @default("송이")
+  unitPrice   Int
+  quantity    Float
+  amount      Int
+  orderedQty  Float?
+  receiptQty  Float?
+  note        String?
+  status      String          @default("ok")
+  rawText     String          @default("")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  delivery    StockInDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId, lineIndex], map: "idx_stockin_lines_delivery_order")
+  @@index([itemName, stockInDate], map: "idx_stockin_lines_item_date")
+}
+
+model DisposalBatch {
+  id              String         @id
+  branchId        String
+  channelId       String?
+  messageId       String?
+  disposalDate    DateTime
+  status          String         @default("draft")
+  sourceText      String         @default("")
+  attachmentsJson String         @default("[]")
+  createdById     String?
+  submittedAt     DateTime?
+  syncedAt        DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  lines           DisposalLine[]
+
+  @@index([branchId, disposalDate], map: "idx_disposal_batches_branch_date")
+  @@index([status], map: "idx_disposal_batches_status")
+}
+
+model DisposalLine {
+  id          String        @id
+  batchId     String
+  lineIndex   Int
+  itemId      String?
+  itemName    String
+  quantity    Float
+  unit        String        @default("송이")
+  category    String
+  cause       String
+  sourceLotId String?
+  unitPrice   Int?
+  amount      Int?
+  note        String?
+  rawText     String        @default("")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  batch       DisposalBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, lineIndex], map: "idx_disposal_lines_batch_order")
+  @@index([itemName], map: "idx_disposal_lines_item")
+  @@index([sourceLotId], map: "idx_disposal_lines_lot")
+}
+
+model NewItemRequest {
+  id             String    @id
+  requestedName  String
+  branchId       String?
+  channelId      String?
+  requestedById  String?
+  status         String    @default("pending")
+  resolvedItemId String?
+  decidedById    String?
+  decidedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, createdAt], map: "idx_new_item_requests_status_created")
+}

@@ -26,7 +26,14 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
 
 - Iteration 1 (done): spec doc `docs/inventory-stockin-disposal.md` + repointed `ralph/PROMPT.md`
   OBJECTIVE + set loop completion promise. No code/schema change yet (docs only → repo stays green).
-- Next: Phase 1 — add the six models to both Prisma schemas + hand-written migration (NOT applied to prod).
+- Iteration 2 (done, Phase 1): six models added to BOTH schemas (`FlowerItem`, `DisposalCause`,
+  `StockInDelivery`/`StockInLine` with unique `lotId`, `DisposalBatch`/`DisposalLine`, `NewItemRequest`)
+  + hand-written migration `20260615140000_add_inventory_module`. **NOT applied to prod** (`.env` →
+  Boro prod; needs approval). Scalar cross-module ids, intra-module FK (delivery→line, batch→line,
+  ON DELETE CASCADE); money=Int(원), quantity=Float(소수). Both schemas `prisma validate` ✓,
+  `generate` ✓, `npm run lint` ✓ (module boundaries ok).
+- Next: Phase 2 — module skeleton (`modules/inventory` manifests + registry + brand gating + route/
+  dashboard stubs) and lookup/validation APIs (`/api/work/inventory/items|reasons|lots`).
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 

@@ -6,9 +6,9 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
 `/work/disposal` + `/work/stock-in` + admin masters. Driven by `ralph/PROMPT.md`, one bounded step/iteration.
 
 - [x] Spec doc + repoint Ralph runbook OBJECTIVE + set loop completion promise (`RALPH-DONE`, cap 30). (iter 1)
-- [ ] **Phase 1 — data model**: `FlowerItem`, `DisposalCause`, `StockInDelivery`/`StockInLine`(lotId),
-  `DisposalBatch`/`DisposalLine`, `NewItemRequest` in both schemas + hand-written migration (NOT applied to prod).
-  Money=Int(원), quantity=Float(소수); scalar cross-module ids, intra-module FK only.
+- [x] **Phase 1 — data model** (iter 2): six models in both schemas + migration
+  `20260615140000_add_inventory_module` (NOT applied to prod). Money=Int(원), quantity=Float(소수);
+  scalar cross-module ids, intra-module FK (ON DELETE CASCADE). validate+generate+lint pass.
 - [ ] **Phase 2 — masters + lookup APIs**: module skeleton/registry/brand gating, route+dashboard stubs;
   `GET /api/work/inventory/items|reasons|lots` (autocomplete+validation, 4-day lot suggest); admin master
   screens + `NewItemRequest` approval. Degrade-to-empty pre-migration.
