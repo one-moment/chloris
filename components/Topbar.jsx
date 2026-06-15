@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { CHANNEL_TYPES, TABS } from "../lib/constants";
+import { isModuleEnabled } from "../lib/brand";
 import { Badge } from "./common";
 import Icon from "./Icon";
 import Timestamp from "./Timestamp";
@@ -32,6 +34,8 @@ export default function Topbar({
   const type = CHANNEL_TYPES[channel.type];
   const channelBranch = branches.find((branch) => branch.id === channel.branchId);
   const canEditBranch = currentUser?.role === "admin" && onChangeBranch && branches.length > 0;
+  // #지점방(브랜치 연결 채널) + 예약 모듈 활성 시 "예약" 진입 버튼. 코어→모듈 import 없이 라우트 이동만.
+  const canReserve = isModuleEnabled("reservations") && Boolean(channel.branchId);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef(null);
 
@@ -127,6 +131,14 @@ export default function Topbar({
           ) : channelBranch ? (
             <span className="branch-badge">{channelBranch.name}</span>
           ) : null}
+          {canReserve && (
+            <Link
+              className="ghost-button"
+              href={`/work/reservations?new=1&channel=${encodeURIComponent(channel.id)}&branch=${encodeURIComponent(channel.branchId)}`}
+            >
+              예약
+            </Link>
+          )}
         </div>
         <p>{project.description}</p>
       </div>
