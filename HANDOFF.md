@@ -22,9 +22,14 @@ button (route-navigation, boundary-safe). Decisions: 모달 / branchId 채널만
   (async `searchParams`) → passes `initialNew/initialChannelId/initialBranchId` to
   `ReservationsDashboard` → form auto-opens with branch fixed + channelId. Route now dynamic.
   Lint + build pass.
-- Next: (v1-3) core channel-view "예약" button — for channels with a `branchId`, a `next/link`
-  to `/work/reservations?new=1&channel=<id>&branch=<branchId>` (core must NOT import the module);
-  (v1-4) post-submit channel summary card.
+- Iteration 3 (done): core "예약" button in `components/Topbar.jsx` channel header — shows for
+  branch-linked channels when the reservations module is enabled; `next/link` to
+  `/work/reservations?new=1&channel=&branch=`. Boundary-safe (core imports only `next/link` +
+  `lib/brand`, never `modules/`). Module-boundary lint + build pass.
+- Next (v1-4, last): after a reservation is created via the channel flow (channelId present),
+  post a short summary card/message to that #지점방. Then v1 OBJECTIVE complete → RALPH-DONE.
+  (Open: the summary post needs a server-side hook — the create API could post to the channel,
+  or the client posts after; pick the lower-risk path that respects module boundaries.)
 
 ## Done — CRM Phase 2 follow-ups (isolated worktree `feature/crm-followups`, 2026-06-15)
 
