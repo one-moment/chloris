@@ -119,11 +119,20 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
 - Deploy `dpl_7TLchkAbb1jrUsPUcPoMAsnoi5y6` (READY, target production), alias
   `https://mattermost-project-mvp.vercel.app`. Health ok / database ok. Smoke: `/api/work/inventory/
   reasons` 401 (auth-gated, deployed), `/work/disposal` 200, `/work/inventory/insights` 200.
-- STILL PENDING (blocked on human): (a) #배포로그 + #기능개선건의 posts — no prod-app credentials in this
-  env, needs a logged-in session; (b) Google Sheets sync — new sheet + Service Account + env
-  (`INVENTORY_SHEET_SYNC_ENABLED=1`, `INVENTORY_SHEET_ID`, `GOOGLE_SA_CLIENT_EMAIL/PRIVATE_KEY`);
-  (c) historical import — decide `branchId` for the ~20-month sheet + provide 입고/폐기 CSV exports, then
-  `scripts/import-inventory-sheet.mjs` dry-run → `--commit`.
+- POST-DEPLOY follow-ups (2026-06-15, user decisions):
+  - 보로2호점 = **강남2호점** (`branch-gangnam-2`) → import `--branch=branch-gangnam-2`. (NOTE: forms'
+    branch dropdown still shows 강남1/강남2/잠실 labels — real store is "보로2호점"; consider relabeling
+    branch-gangnam-2 → "보로2호점" or adding proper Boro branch names later.)
+  - NEW Google Sheet created (separate from existing): `INVENTORY_SHEET_ID=1cpB9fOjrMVOcfoCEe5IFXhWVoAv1ECVMmSIxh2n3w6A`
+    (보로 입고·폐기 (Chloris 자동연동), owner captain@1moment.co.kr). Needs tabs "입고"/"폐기" + Service
+    Account shared as editor before sync.
+  - STILL BLOCKED: (a) #배포로그 + #기능개선건의 posts — Claude Chrome extension NOT connected (no browser
+    available) and no prod-app API creds; needs the extension enabled OR user pastes. (b) Sheets sync —
+    Service Account creds (`GOOGLE_SA_CLIENT_EMAIL`/`GOOGLE_SA_PRIVATE_KEY`) + set Vercel env
+    (`INVENTORY_SHEET_SYNC_ENABLED=1`, `INVENTORY_SHEET_ID` above) + redeploy. (c) import — need clean
+    CSV exports of the existing sheet's 입고/폐기 tabs (the Drive markdown export concatenates many
+    ranges → unreliable to parse); then `node scripts/import-inventory-sheet.mjs --stockin=.. --disposal=..`
+    dry-run → `--branch=branch-gangnam-2 --commit`.
 - ⚠️ HUMAN ACTION REQUIRED before sheet sync / import go live (do NOT do unattended):
   1. Create a NEW Google Sheet (separate from the existing one) + a Service Account; set the env vars above.
   2. Decide `branchId` attribution for the existing sheet's ~20 months of rows (which branch).
