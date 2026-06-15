@@ -8,26 +8,34 @@ you to continue.
 
 ## OBJECTIVE (edit this section to point the loop at a task)
 
-Build **Phase 2 CRM follow-ups** for 보로플라워마켓, per `docs/templates-and-crm.md`. The CRM
-core (models, APIs, `/work/customers`, `/work/reservations` + 새 예약 form) is already shipped
-and deployed to prod. Build these three, in order, one bounded step per iteration:
+Build **@예약 #지점방 진입 v1 (버튼 방식)** for 보로플라워마켓, per
+`docs/crm-reservation-mention.md`. Phase-2 CRM follow-ups (customer manual entry, calendar,
+지점 인사이트) are done and deployed. Confirmed decisions (2026-06-15): **trigger = "예약" 버튼
+v1 (route-navigation, 경계 안전)**, 폼 = 모달, 활성 채널 = branchId 연결된 채널만, 제출 후 #지점방
+요약 카드 = 켬, 권한 = 인증 사용자 누구나(CRM 활성 브랜드 한정). Build in order, one bounded step
+per iteration:
 
-- **Customer manual entry/edit** on `/work/customers`: create/edit a Customer (name, phone,
-  homeBranchId, memo) via `POST`/`PATCH /api/work/crm/customers` + a small form. No new table
-  (Customer already exists), so no migration needed.
-- **Pickup calendar view** on `/work/reservations`: a month grid keyed by `pickupAt` (toggle
-  with the existing list), reusing the reservations list API. No schema change.
-- **Metrics → 지점 인사이트**: reservation count, revenue (amount sum), source mix, repeat-visit
-  rate, byBranch — via the metrics registry (`docs/platform-architecture.md`). Read-only.
+1. **Form extraction**: pull the "새 예약" form out of `modules/crm/ui/ReservationsDashboard.jsx`
+   into a reusable `modules/crm/ui/ReservationForm.jsx` (props: fixed `branchId`, `channelId`,
+   `onSubmitted`, `branches`); `/work/reservations` uses it. No behavior change.
+2. **Deep-link open**: `/work/reservations` reads `?new=1&channel=<id>&branch=<id>` → opens the
+   form modal with branch pre-fixed + channelId set. (Core button passes both ids.)
+3. **Core "예약" button**: in the channel view (core chat UI), for channels with a `branchId`,
+   render a "예약" button linking to `/work/reservations?new=1&channel=<id>&branch=<branchId>`.
+   Boundary-safe: a Link only — core does NOT import the CRM module.
+4. **Channel summary card (선택, 켬)**: after a reservation is created via this flow (channelId
+   present), post a short summary to the channel (reuse existing message/post API).
 
-DO NOT build (deferred — need a human decision; if you reach these, STOP and write the question
-in HANDOFF.md instead of guessing):
-- `@예약` channel entry point (needs mention/channel integration design).
-- 20-month Google-sheet one-time import (BLOCKED: branchId attribution for those rows is unresolved).
+Boundary rule is critical: core (channel UI) must NOT import `modules/`. The button is a plain
+`next/link` to a `/work/...` route; all CRM logic stays in the module.
 
-This objective is complete when the three buildable items above exist, `npm run lint` + `next build`
-pass, and the tracking docs are updated. Prefer no new migrations; if one is unavoidable, create it
-locally only and do NOT apply it to production without explicit approval.
+This objective is complete when the four steps exist, `npm run lint` + `next build` pass, and the
+tracking docs are updated. No new migration (Reservation already has `channelId`). v2 (`@예약`
+action-mention) is OUT OF SCOPE here — deferred to the agent-platform work.
+
+DEFERRED (do NOT build; if reached, STOP and note in HANDOFF.md):
+- v2 `@예약` action-mention (needs core mention-system extension + manifest contract).
+- 20-month sheet import (waiting on sheet access key/CSV from the user).
 
 ## Every iteration, in order
 
