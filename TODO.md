@@ -262,7 +262,7 @@ Notes:
 규칙: 한 이터레이션 = 한 단계. 구현 → `npm run lint`+`npm run build` 통과 → 독립 리뷰 서브에이전트 실행(발견사항 `docs/design/REVIEW-structural-rail.md` 기록) → 해당 단계 체크 → 한국어 커밋. 리뷰가 찾은 버그/누락은 다음 이터레이션에서 먼저 수정.
 
 - [x] S1. Lucide 아이콘 인프라: `lucide-react` 의존성 + `components/Icon.jsx` 래퍼(name→icon). UI 변화 없음, 빌드 통과. (iter 1)
-- [ ] S2. DS 토큰 정비 + `.workspace-root` 래퍼: Borough 토큰 전체(spacing/radius/shadow/motion/typography/status)를 `styles.css`에 보강 + WorkspaceShell 앱 셸을 `.workspace-root`로 감싸고 기본 변형 속성(theme=forest/sidebar=dark/cards=comfortable/chips=soft) + `container` 설정. 시각 변화 최소, 빌드 통과.
+- [x] S2. DS 토큰 정비 + `.workspace-root` 래퍼: DS 토큰을 `app/ds/{colors,typography,spacing}.css`로 들여와 globals에서 import(앱 `--accent`=그린/`--warning` 충돌 2개는 제외해 회귀 방지). WorkspaceShell 인증 셸을 `.workspace-root`(theme=forest/sidebar=dark/cards=comfortable/chips=soft)로 래핑. 시각 변화 없음(borough.css는 S3). lint+build 통과. (iter 2) — S1 리뷰 4건 선수정 포함.
 - [ ] S3. borough.css 도입 + 데스크톱 그린 레일: `borough.css`를 `.workspace-root` 스코프로 적용 + `.rail` 요소(로고·네비·아바타, Lucide) 추가. 데스크톱 3열(레일+사이드바+메인).
 - [ ] S4. 모바일 오프캔버스 드로어: `.app-shell[data-drawer]` open/close + 백드롭 + 햄버거 토글(기존 `.sidebar.mobile-open` 대체). 모바일 드로어 동작.
 - [ ] S5. 컴포넌트 정합: Topbar/IdeasView/MessagesView/템플릿/구매 등 마크업을 borough.css 클래스 기대에 맞춤(탭 배지·상태 칩 클래스·post-card-header 등). 신규 컴포넌트 안 깨지게.

@@ -1,4 +1,7 @@
 @import "../styles.css";
+@import "./ds/colors.css";
+@import "./ds/typography.css";
+@import "./ds/spacing.css";
 
 .status-select {
   height: 28px;

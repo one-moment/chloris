@@ -27,12 +27,19 @@ import {
   RotateCcw,
   Hash,
   Sparkles,
-  Heart
+  Heart,
+  AlertTriangle,
+  LayoutDashboard,
+  Ruler,
+  SquareDashed,
+  Smartphone,
+  GitCommitHorizontal
 } from "lucide-react";
 
-// Borough DS iconography — Lucide, thin stroke (1.75). Registry is keyed by the
-// kebab-case names the design uses (data-lucide="...") so components can stay
-// declarative: <Icon name="message-circle" />. Outline only.
+// Borough DS iconography — Lucide, thin stroke (1.75), outline only. Registry is
+// keyed by the kebab-case names the design uses (data-lucide="...") so components
+// stay declarative: <Icon name="message-circle" />. The rendered <svg> also carries
+// data-lucide={name} so borough.css's `[data-lucide]` rules can size/style it.
 const REGISTRY = {
   menu: Menu,
   "menu-2": Menu,
@@ -66,20 +73,33 @@ const REGISTRY = {
   "rotate-ccw": RotateCcw,
   hash: Hash,
   sparkles: Sparkles,
-  heart: Heart
+  heart: Heart,
+  "alert-triangle": AlertTriangle,
+  "layout-dashboard": LayoutDashboard,
+  ruler: Ruler,
+  "square-dashed": SquareDashed,
+  smartphone: Smartphone,
+  "git-commit-horizontal": GitCommitHorizontal
 };
 
-export default function Icon({ name, size = 18, strokeWidth = 1.75, className, label }) {
+export default function Icon({ name, size = 18, strokeWidth = 1.75, className, label, ...rest }) {
   const Glyph = REGISTRY[name];
-  if (!Glyph) return null;
+  if (!Glyph) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(`Icon: unknown name "${name}"`);
+    }
+    return null;
+  }
   return (
     <Glyph
       size={size}
       strokeWidth={strokeWidth}
       className={className}
+      data-lucide={name}
       aria-hidden={label ? undefined : true}
       aria-label={label}
       role={label ? "img" : undefined}
+      {...rest}
     />
   );
 }

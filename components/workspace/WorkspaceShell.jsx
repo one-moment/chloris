@@ -1103,6 +1103,7 @@ export default function WorkspaceShell({ children }) {
           isSubmitting={isAuthSubmitting}
         />
       ) : (
+        <div className="workspace-root" data-theme="forest" data-sidebar="dark" data-cards="comfortable" data-chips="soft">
         <main className="app-shell">
           <ProjectSidebar
             projects={state.projects}
@@ -1186,6 +1187,7 @@ export default function WorkspaceShell({ children }) {
             </div>
           )}
         </main>
+        </div>
       )}
     </WorkspaceContext.Provider>
   );
