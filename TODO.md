@@ -292,3 +292,7 @@ Notes:
 - [x] S7. 반응형 검증 + 마감 (단일 검증 패스): 분기점 코드 검증 — ≤980 모바일(단일열+오프캔버스 드로어, 레일 숨김)·≥981 데스크톱(레일64+사이드바292+메인 3열), globals 980 경계와 상호배타 정합 확인. 리뷰 열림 0건. 최종 `npm run lint`(모듈 경계 포함)+`npm run build`(37 라우트)+`agent-gateway:test`+`purchase-bot:test` 통과. (iter 7) — 비고: POS(~880px)는 모바일 드로어로 동작(기존 980 경계 유지, 추후 필요 시 경계 하향은 별도 작업). 실브라우저 시각 확인은 머지 전 리더 검토 권장.
 
 완료 조건: S1~S7 전부 체크 AND `docs/design/REVIEW-structural-rail.md`에 미해결(열림) 항목 없음 → `<promise>DONE</promise>` 출력.
+
+## Deployed 2026-06-15: 구조형 완성 디자인 (그린 레일 + 모바일 드로어 + Lucide)
+- design/structural-rail(S1~S7 완료, 독립 리뷰 6건 전부 해결) → feature/purchase-bot-mvp 머지 `9108ace` → 배포 `dpl_8unCwqYHSEVuns6r5zhQNpRzeRVZ`(헬스 ok, 41 라우트). 마이그레이션 없음. 배포로그 `post-deploy-log-20260615-structural-design-rail`.
+- [ ] (후속, 선택) POS(~880px) 레일 노출 위해 모바일 경계(980) 하향 검토 — 전역 반응형 영향 있어 별도 작업.

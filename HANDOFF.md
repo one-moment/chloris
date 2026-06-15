@@ -384,3 +384,12 @@ Target model:
 - Do not store raw secrets or sensitive data in docs.
 - Debug Coupang automation only from artifacts, not selector guesswork.
 - Keep deployment logs in the Ideas board for `#배포로그`.
+
+## Done — 구조형 완성 디자인 배포 (2026-06-15)
+
+그린 레일 + 모바일 오프캔버스 드로어 + Lucide 아이콘을 ralph loop(워크트리 `design/structural-rail`, 7단계, 단계별 독립 리뷰 서브에이전트)로 개발 → `feature/purchase-bot-mvp` 머지(`9108ace`) → 운영 배포.
+- 배포 `dpl_8unCwqYHSEVuns6r5zhQNpRzeRVZ`, 헬스 ok/database ok, 마이그레이션 없음(CSS·마크업·아이콘만).
+- 데스크톱 ≥981px 3열(레일64+사이드바292+메인), 모바일 ≤980px 드로어. 보로 전용(brand 게이팅), 앱 로직·모듈 경계 불변.
+- 정본 `docs/design/borough/`, 리뷰 추적 `docs/design/REVIEW-structural-rail.md`, 단계 TODO는 TODO.md 구조형 섹션(S1~S7 완료).
+- 배포로그: `post-deploy-log-20260615-structural-design-rail`.
+- 잔여: POS(~880px) 레일 노출 경계 하향(추후 별도), 실사용 시각 점검 권장.
