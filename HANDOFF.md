@@ -1,5 +1,16 @@
 # HANDOFF.md
 
+## 2026-06-16: CRM ↔ 인벤토리 병합 + 운영 배포 (회귀 해소)
+
+`feature/crm-followups`를 배포 라인 `feature/purchase-bot-mvp`에 병합(merge `8fee95f`) → 운영 배포
+`dpl_8xzgv9ZuitM25BfXBLBGsxA6XhDm`. 이제 운영에 **인벤토리 + CRM Phase 2(고객 입력폼·픽업 캘린더·
+지점 인사이트) + @예약 v1 + 시트 import 데이터(고객 2,810/예약 3,122)** 가 모두 함께 라이브.
+헬스 ok/db ok, CRM API 미인증 401, /work/customers·/work/reservations·/work/disposal·/work/stock-in 200.
+충돌은 문서 3건(HANDOFF/TODO/ralph PROMPT)뿐 — 배포 라인 버전 채택(CRM 상세는 `feature/crm-followups`
+브랜치+git 히스토리에 보존). 코드(globals.css·Topbar 등)는 자동 병합, 새 마이그레이션 없음.
+- 후속(코드 외): @예약 v2 액션-멘션(에이전트 플랫폼과), Sheets API 운영 연동·게시(GCP/Vercel 설정).
+- `feature/crm-followups` 워크트리/브랜치는 병합 완료 — 정리(삭제) 가능.
+
 ## Current Goal
 
 Build Chloris into an internal communication and work automation platform.
