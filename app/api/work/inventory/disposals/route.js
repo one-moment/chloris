@@ -12,6 +12,7 @@ import {
   validateDisposalForSubmit,
   isMissingInventoryTableError
 } from "../../../../../lib/inventoryServer";
+import { syncDisposalBatch } from "../../../../../lib/inventorySheetSync";
 
 export const runtime = "nodejs";
 export const preferredRegion = "icn1";
@@ -89,6 +90,19 @@ export async function POST(request) {
       },
       include: { lines: { orderBy: { lineIndex: "asc" } } }
     });
+
+    // 구글시트 한 방향 연동(기본 비활성; env 설정 시에만 동작). 실패는 비치명적.
+    if (created.status === "submitted") {
+      try {
+        const synced = await syncDisposalBatch(created, { author: user.name });
+        if (!synced.skipped) {
+          await prisma.disposalBatch.update({ where: { id: created.id }, data: { syncedAt: new Date() } });
+        }
+      } catch (syncError) {
+        console.error("disposal_sheet_sync_failed", syncError);
+      }
+    }
+
     return Response.json(serializeDisposalBatch(created), { status: 201 });
   } catch (error) {
     if (isMissingInventoryTableError(error)) {

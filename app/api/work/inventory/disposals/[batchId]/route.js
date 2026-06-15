@@ -11,6 +11,7 @@ import {
   validateDisposalForSubmit,
   isMissingInventoryTableError
 } from "../../../../../../lib/inventoryServer";
+import { syncDisposalBatch } from "../../../../../../lib/inventorySheetSync";
 
 export const runtime = "nodejs";
 export const preferredRegion = "icn1";
@@ -80,6 +81,18 @@ export async function PATCH(request, { params }) {
         include: { lines: { orderBy: { lineIndex: "asc" } } }
       });
     });
+
+    // 구글시트 한 방향 연동(기본 비활성). 최종제출 전환 시에만, 비치명적.
+    if (updated.status === "submitted") {
+      try {
+        const synced = await syncDisposalBatch(updated, { author: user.name });
+        if (!synced.skipped) {
+          await prisma.disposalBatch.update({ where: { id: batchId }, data: { syncedAt: new Date() } });
+        }
+      } catch (syncError) {
+        console.error("disposal_sheet_sync_failed", syncError);
+      }
+    }
 
     return Response.json(serializeDisposalBatch(updated));
   } catch (error) {

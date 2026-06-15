@@ -98,8 +98,17 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
   member nav → /work/inventory/insights) + route + `InventoryInsightsDashboard.jsx` (client):
   지점·기간 filter, stat cards (폐기율/폐기가액/입고가액/불일치율), 사유 비중 table, 지점별 table.
   Consumes metrics API. lint+build pass. **Phase 6 COMPLETE.**
-- Next: Phase 5 (human-gated) — write sheet-sync code + historical-import script but **DO NOT** connect
-  to live Google Sheets or run the import. Then output RALPH-DONE (phases 1–4+6 done, phase 5 code-only).
+- Iteration 18 (done, Phase 5-1): sheet-sync code `lib/inventorySheetSync.js` — pure column mappers
+  (`disposalSheetRows`/`stockInSheetRows`) + Service-Account JWT → Sheets `values:append`. **Default
+  skipped**: `isSheetSyncConfigured()` requires `INVENTORY_SHEET_SYNC_ENABLED=1` + `INVENTORY_SHEET_ID`
+  + `GOOGLE_SA_CLIENT_EMAIL`/`GOOGLE_SA_PRIVATE_KEY`; without them it never connects. Wired non-fatally
+  into disposal POST/PATCH submit (sets `syncedAt`) + stock-in POST submit. lint+build pass.
+- Next: Phase 5-2 (human-gated) — historical-import script (parse existing-sheet CSV tabs → normalized
+  records, dry-run default). Then STOP + record the human action and output RALPH-DONE.
+- ⚠️ HUMAN ACTION REQUIRED before sheet sync / import go live (do NOT do unattended):
+  1. Create a NEW Google Sheet (separate from the existing one) + a Service Account; set the env vars above.
+  2. Decide `branchId` attribution for the existing sheet's ~20 months of rows (which branch).
+  3. Run the import script in dry-run, review, then run for real against the NEW sheet + DB (approval).
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 

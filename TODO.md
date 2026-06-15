@@ -40,8 +40,10 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
       POST → `{degraded, supplier, statementDate, lines}`. 키 없음/실패 시 degraded. lint+build.
     - [x] (4-3b, iter 15) 폼 연동: "거래명세서 인식" 버튼 → 업로드(압축/presign/S3, inline→dataURL) → `/ocr`
       → 표 prefill(영수증=실입고=명세서 수량, 단가) + 거래처/입고일, degraded 시 수기 폴백. **Phase 4 완료.** lint+build.
-- [ ] **Phase 5 — sheet sync + import** (human-gated for live connection): NEW Google Sheet, one-way append;
-  import past lots+disposals (link past disposals to past lots) into new sheet + DB. Existing sheet untouched.
+- [~] **Phase 5 — sheet sync + import** (human-gated for live connection):
+  - [x] (5-1, iter 18) sheet-sync code `lib/inventorySheetSync.js`: 순수 매핑 + SA JWT → Sheets append.
+    기본 skipped(env 없으면 외부연결 안 함). disposal POST/PATCH·stock-in POST 제출에 비치명적 연결. lint+build.
+  - [ ] (5-2) historical-import 스크립트(기존 시트 CSV → 정규화, dry-run 기본). 실행은 승인 후.
 - [~] **Phase 6 — metrics**:
   - [x] (6-1, iter 16) metrics API `inventory/metrics` (submitted-only): 폐기 건수/수량/가액·사유/구분 비중,
     입고 가액·불일치율, 폐기율(가액), byBranch. 기간/지점 필터, degrade-to-zero. lint+build.
