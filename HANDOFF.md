@@ -27,9 +27,13 @@ loop driven by `ralph/PROMPT.md`. One bounded step per iteration on `feature/pur
   (`app/api/work/crm/customers/route.js`) — name/phone search → customer + reservationCount,
   totalAmount, recentReservations. Auth + `isModuleEnabled("crm")` guard + missing-table
   degrade-to-empty. Lint + build pass.
-- Next: real `/work/customers` screen (search box consuming the lookup API, profile + history),
-  then `/work/reservations` (list/calendar/HQ rollup), then the reservation form
-  (submit → Customer upsert + Reservation create), then metrics.
+- Iteration 4 (done): real `/work/customers` screen (`modules/crm/ui/CustomersDashboard.jsx`,
+  now a client component) — debounced name/phone search hitting the lookup API, customer cards
+  with 단골 badge + counts, click-to-expand recent reservation history. Added CSS
+  `.work-list/.work-list-row/.work-badge` in `app/globals.css`. Lint + build pass.
+- Next: `/work/reservations` screen (list + pickup calendar + branch filter + HQ rollup) —
+  needs branchId→name mapping for display. Then the reservation form (submit → Customer
+  upsert + Reservation create via a POST API), then customer manual entry, then metrics.
 - Pending human action: apply `20260615103000_add_crm_module` to Boro prod when the CRM
   feature is ready to ship (and decide branchId attribution for the 20-month sheet import).
 
