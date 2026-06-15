@@ -46,7 +46,16 @@ branch, lint + build green every iteration, commits local (not pushed). No new m
 existing Customer/Reservation tables); nothing deployed. Deferred (need decisions): `@예약`
 channel entry, 20-month sheet import (branch mapping captured: 1호점/2호점/3호점 →
 강남1/강남2/잠실, 월별 탭 23년7월~). Platform TODO: generic `metricsRegistry` (insights are
-module-local for now). To ship: PR/merge `feature/crm-followups`; no prod migration needed.
+module-local for now).
+
+- DEPLOYED standalone to prod (2026-06-15, user-approved "crm만 단독 배포"): pushed
+  `feature/crm-followups` + Vercel prod deploy `dpl_53WyS8YskVWxeKAksqht4L9ddd2Y` (READY,
+  mattermost-project-mvp.vercel.app) directly from this worktree. No new migration. Health ok /
+  database ok; new endpoints (metrics, customers POST) return 401 unauth; pages 200.
+- ⚠️ REGRESSION RISK: Phase-2 commits live ONLY on `feature/crm-followups`, NOT on the inventory
+  deploy line `feature/purchase-bot-mvp`. The next prod deploy from that line will DROP Phase-2
+  until `feature/crm-followups` is merged into it. TODO: merge Phase-2 into the deploy line
+  (expect conflicts in shared files: globals.css, TODO.md, HANDOFF.md) once inventory settles.
 
 ## Done — CRM module core (Ralph loop, started 2026-06-15)
 
