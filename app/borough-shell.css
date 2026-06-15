@@ -92,3 +92,15 @@
     display: flex;
   }
 }
+
+/* S5 — 컴포넌트 정합: 새 셸과 코어-comms 표면 정합 (scoped, additive).
+   카드·칩·세리프 등 컴포넌트는 기존 Borough 패스에서 적용됨 → 여기선 셸 통합만.
+   메인 영역 paper 배경 + flex 스크롤 컨텍스트(레일/3열 셸에서 컬럼이 늘어지지 않게).
+   .main-header/.work-surface는 채팅·게시판 뷰 전용(모듈 페이지는 .work-page라 무영향). */
+.workspace-root .main-area {
+  background: var(--surface-page);
+  min-height: 0;
+}
+.workspace-root .main-header {
+  padding: var(--space-3) var(--space-5);
+}

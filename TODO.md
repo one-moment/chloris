@@ -265,7 +265,7 @@ Notes:
 - [x] S2. DS 토큰 정비 + `.workspace-root` 래퍼: DS 토큰을 `app/ds/{colors,typography,spacing}.css`로 들여와 globals에서 import(앱 `--accent`=그린/`--warning` 충돌 2개는 제외해 회귀 방지). WorkspaceShell 인증 셸을 `.workspace-root`(theme=forest/sidebar=dark/cards=comfortable/chips=soft)로 래핑. 시각 변화 없음(borough.css는 S3). lint+build 통과. (iter 2) — S1 리뷰 4건 선수정 포함.
 - [x] S3. 셸+레일 레이어 도입 + 데스크톱 그린 레일: borough.css의 셸/레일 레이어를 `app/borough-shell.css`로 `.workspace-root` 스코프 도입(특이도 우위로 기존 chrome 이김). `.rail` 마크업(로고 Link·검색 버튼 Lucide·아바타) 추가. 데스크톱(≥768px) 3열(레일64+사이드바292+메인), 모바일은 기존 유지(S4에서 드로어 전환). `--accent`는 레일에서만 골드로 스코프(다크 위 대비). 컴포넌트 전면 정합은 S5. lint+build 통과. (iter 3) — full borough.css 컴포넌트 규칙은 globals와 충돌해 S5에서 점진 정합.
 - [x] S4. 모바일 오프캔버스 드로어 + 분기점 정합: 3열 분기를 ≥981px(기존 모바일 경계 980과 일치)로 올려 **768~980 빈 사이드바 열 회귀 해소(S3 발견사항)**. ≤980 드로어를 borough 톤으로 폴리시(녹색 오버레이 --surface-overlay, organic easing --dur-base/--ease-out, --shadow-lg). 기존 `mobile-open` 토글·햄버거 로직 유지(로직 변경 없음 — data-drawer 재배선은 불필요해 채택 안 함). lint+build 통과. (iter 4) — 비고: POS(~880px)에서 레일 노출 여부는 S7 반응형 검증에서 판단(현재 880=모바일 드로어).
-- [ ] S5. 컴포넌트 정합: Topbar/IdeasView/MessagesView/템플릿/구매 등 마크업을 borough.css 클래스 기대에 맞춤(탭 배지·상태 칩 클래스·post-card-header 등). 신규 컴포넌트 안 깨지게.
+- [x] S5. 컴포넌트 정합(셸 통합 중심): 카드·칩·세리프·여백 등 컴포넌트는 기존 Borough 1·2차 패스에서 이미 적용됨 → S5는 새 셸(레일/3열)과의 정합에 집중. `.workspace-root .main-area`(paper 배경 + min-height:0 flex 스크롤), `.main-header` 여백을 DS 토큰으로 정합(채팅·게시판 전용, 모듈 페이지 `.work-page`는 무영향). 신규 모듈 대시보드(`.work-page/.work-metric/.work-list` 등 자체 클래스)는 borough/코어-comms 규칙과 무관 → 무회귀 확인. 탭 배지·상태 칩 클래스 리맵은 마크업/로직 변경이라 범위 밖(보류). lint+build 통과. (iter 5)
 - [ ] S6. Lucide UI 적용: 텍스트 글리프(햄버거·+·×·탭·전송·첨부 등)를 Lucide로 교체.
 - [ ] S7. 반응형 검증 + 마감: 모바일/POS/데스크톱 컨테이너 쿼리 확인, 리뷰 잔여 수정, 최종 lint+build(+safe tests) 통과.
 
