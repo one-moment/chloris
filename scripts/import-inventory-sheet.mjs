@@ -46,6 +46,31 @@ function toNumber(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+// 다양한 날짜 표기를 ISO(YYYY-MM-DD)로 정규화. M/D(연도 없음)는 monthHint(YYYY-MM 컬럼)에서 연도를 보충.
+// 인식 불가하면 null(해당 행 제외).
+function parseDate(raw, monthHint) {
+  const s = String(raw ?? "").trim();
+  if (!s) return null;
+  let year;
+  let month;
+  let day;
+  let match;
+  if ((match = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/))) {
+    year = Number(match[1]); month = Number(match[2]); day = Number(match[3]);
+  } else if ((match = s.match(/^(\d{2})[-/.](\d{1,2})[-/.](\d{1,2})$/))) {
+    year = 2000 + Number(match[1]); month = Number(match[2]); day = Number(match[3]);
+  } else if ((match = s.match(/^(\d{1,2})[-/.](\d{1,2})$/))) {
+    const hint = String(monthHint ?? "").match(/^(\d{4})-(\d{1,2})/);
+    if (!hint) return null;
+    year = Number(hint[1]); month = Number(match[1]); day = Number(match[2]);
+  } else {
+    return null;
+  }
+  if (!year || !month || !day || month > 12 || day > 31) return null;
+  const iso = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  return Number.isNaN(new Date(iso).getTime()) ? null : iso;
+}
+
 function splitReason(raw) {
   const text = String(raw ?? "").trim();
   const match = text.match(/^(.+?)\((.+)\)$/);
@@ -76,7 +101,8 @@ function parseStockIn(path) {
     item: headerIndex(header, ["품목"]),
     unitPrice: headerIndex(header, ["단가(원/송이)", "단가"]),
     quantity: headerIndex(header, ["입고수량"]),
-    amount: headerIndex(header, ["입고가액(원)", "입고가액"])
+    amount: headerIndex(header, ["입고가액(원)", "입고가액"]),
+    month: headerIndex(header, ["입고월"])
   };
   const warnings = [];
   const lines = [];
@@ -84,12 +110,17 @@ function parseStockIn(path) {
     const itemName = String(row[col.item] ?? "").trim();
     const lotId = String(row[col.lotId] ?? "").trim();
     if (!itemName || !lotId) return;
+    const stockInDate = parseDate(row[col.date], col.month >= 0 ? row[col.month] : "");
+    if (!stockInDate) {
+      warnings.push(`입고 ${i + 2}행(${itemName}): 입고일 인식불가(${String(row[col.date] ?? "").trim()}) → 제외`);
+      return;
+    }
     const quantity = toNumber(row[col.quantity]) ?? 0;
     const unitPrice = toNumber(row[col.unitPrice]) ?? 0;
     lines.push({
       lotId,
       supplier: String(row[col.supplier] ?? "").trim(),
-      stockInDate: String(row[col.date] ?? "").trim(),
+      stockInDate,
       itemName,
       unitPrice,
       quantity,
@@ -109,7 +140,8 @@ function parseDisposal(path) {
     sourceLot: headerIndex(header, ["LotID(출처)", "LotID"]),
     unitPrice: headerIndex(header, ["단가(원/송이)", "단가"]),
     amount: headerIndex(header, ["폐기가액(원)", "폐기가액"]),
-    reason: headerIndex(header, ["폐기원인"])
+    reason: headerIndex(header, ["폐기원인"]),
+    month: headerIndex(header, ["폐기월"])
   };
   if (col.date < 0) col.date = 0; // 폐기일 컬럼 헤더가 비어있는 export(첫 칸) 대응
   const warnings = [];
@@ -117,10 +149,15 @@ function parseDisposal(path) {
   data.forEach((row, i) => {
     const itemName = String(row[col.item] ?? "").trim();
     if (!itemName) return;
+    const disposalDate = parseDate(row[col.date], col.month >= 0 ? row[col.month] : "");
+    if (!disposalDate) {
+      warnings.push(`폐기 ${i + 2}행(${itemName}): 폐기일 인식불가(${String(row[col.date] ?? "").trim()}) → 제외`);
+      return;
+    }
     const { category, cause } = splitReason(row[col.reason]);
     const sourceLotId = String(row[col.sourceLot] ?? "").trim() || null;
     lines.push({
-      disposalDate: String(row[col.date] ?? "").trim(),
+      disposalDate,
       itemName,
       quantity: toNumber(row[col.quantity]) ?? 0,
       sourceLotId,
