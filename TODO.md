@@ -20,7 +20,7 @@ CRM core shipped+deployed. This worktree (base `6bcc162`) is separate from the i
   - [x] (v1-3) 코어 "예약" 버튼: `components/Topbar.jsx` 채널 헤더에 branchId 연결 채널 + 예약 모듈 활성 시 `next/link` → `/work/reservations?new=1&channel=&branch=`. 코어→모듈 import 없음(lib/brand만). 모듈 경계 lint + build pass.
   - [x] (v1-4) 제출 후 #지점방 요약 카드: 채널 진입(channelId) 예약 제출 시 `POST /api/channels/[id]/messages`(bot:true → 에이전트/봇 재처리 안 함)로 요약 게시. 베스트-에포트(실패해도 예약 생성됨). 모듈→코어 HTTP 호출(경계 안전). Lint+build pass.
   - **@예약 v1 OBJECTIVE 완료** (2026-06-16, 4 iterations): 폼 분리 → 딥링크 → 코어 버튼 → 요약카드. lint+build green. 미배포(코드만, 새 마이그레이션 없음). v2 멘션은 별도.
-- 보류(입력 필요): 20개월 시트 import — 지점 매핑은 받음(1호점/2호점/3호점 → 강남1/강남2/잠실, 23년7월~ 월별 탭). 남은 것: 시트 접근수단(Sheets API 키 or CSV) + 운영 import 승인. (사용자: 시트키 전달 예정)
+- [x] **20개월 시트 import 완료** (2026-06-16, 운영 적용): `scripts/import-boro-reservations.mjs --apply` → 보로 운영에 고객 2,810 + 예약 3,122 적재(강남1 1342/강남2 730/잠실 1050). 결정적 id로 멱등. 서비스계정 키는 env(미커밋). 날짜 검증(23/08/35 등 무효 → 대체) 포함. 이미 배포된 CRM 화면에 반영됨.
 
 ## Multi-company split & branding (2026-06-11, night)
 

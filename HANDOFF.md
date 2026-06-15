@@ -37,6 +37,21 @@ core "예약" button (Topbar) → channel summary card. All lint + build green; 
 Phase 2: Phase-2 + @예약 v1 live only on this branch). v2 `@예약` action-mention deferred to the
 agent-platform work; 20-month sheet import waiting on the sheet key.
 
+## DONE — 20개월 시트 import → 운영 적용 완료 (2026-06-16)
+
+**Imported to Boro prod**: **2,810 customers** (`cust-imp-*`) + **3,122 reservations** (`resv-imp-*`).
+byBranch 강남1=1342 (₩63.1M) / 강남2=730 (₩48.5M) / 잠실=1050 (₩52.5M). Script
+`scripts/import-boro-reservations.mjs --apply` run via DIRECT_URL (session, 5432). Customers/reservations
+use deterministic ids (`cust-imp-<sha1(phone)>`, `resv-imp-<sha1(branch+phone+dates+product+amount)>`) →
+idempotent re-run (skipDuplicates on postgres). receiveMethod default 방문수령, status 픽업완료, amount 0
+for 2 "-" rows, source 미상 if blank. Data quality fix found via dry-run: one date "23/08/35" (day 35) →
+parseDate now validates real calendar dates (invalid → null → fallback to the other date). Live on the
+already-deployed CRM screens (`/work/customers`, `/work/reservations`, 지점 인사이트).
+Service-account key stayed in env (never committed); `.gitignore` guards credential JSONs.
+Note: re-import is idempotent; to re-run, use DIRECT_URL + `GOOGLE_APPLICATION_CREDENTIALS`.
+
+<details><summary>Earlier (dry-run details, superseded)</summary>
+
 ## In progress — 20개월 시트 import (dry-run done, 2026-06-16)
 
 Sheet "[보로] 지점별 예약현황" (id 1Fdgg0…Qz-r7A) shared with service account; key via env
@@ -55,13 +70,9 @@ CLEAN dry-run (phone-gated; bottom summary/stat rows excluded via valid-phone fi
 badAmount **2** ("-"), missing 수령방법 **106** (→ default 방문수령). Note: dateRange max 2026-12-31
 = 1–2 real rows with a far-future/typo pickup date (verify). 7 tab/title mismatches → tab name wins (resolved).
 
-REMAINING to import (prod write — gated, needs final approval):
-- Build `--apply`: resolve branch name→id (prisma), upsert Customer by phone, create Reservation with
-  defaults (amount 0 for the 2 "-", source "미상" if blank, receiveMethod 방문수령, status 픽업완료,
-  pickupAt← reservedAt fallback). Deterministic reservation id (hash of branch+phone+dates+product+amount)
-  for idempotent re-runs.
-- Prod prisma client is postgres (`schema.postgres.prisma`); run `--apply` against STAGING (local) first,
-  validate, then PROD only after explicit approval.
+(REMAINING — now done; see the DONE block above.)
+
+</details>
 
 ## Done — CRM Phase 2 follow-ups (isolated worktree `feature/crm-followups`, 2026-06-15)
 

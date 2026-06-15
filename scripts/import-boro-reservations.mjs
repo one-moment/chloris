@@ -50,14 +50,22 @@ function hoFromTitleCell(text) {
   const m = String(text ?? "").match(/(\d)호점/);
   return m ? Number(m[1]) : null;
 }
-// "26/06/02" → "2026-06-02" (실패 시 null)
+// "26/06/02" → "2026-06-02". 무효 날짜(예: 08/35, 02/30, 월 13)는 null 반환(→ 호출부에서 대체).
 function parseDate(v) {
   const s = String(v ?? "").trim();
+  let y, mo, da;
   let m = s.match(/^(\d{2})\/(\d{1,2})\/(\d{1,2})/);
-  if (m) return `20${m[1]}-${String(m[2]).padStart(2, "0")}-${String(m[3]).padStart(2, "0")}`;
-  m = s.match(/^(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/);
-  if (m) return `${m[1]}-${String(m[2]).padStart(2, "0")}-${String(m[3]).padStart(2, "0")}`;
-  return null;
+  if (m) { y = 2000 + Number(m[1]); mo = Number(m[2]); da = Number(m[3]); }
+  else {
+    m = s.match(/^(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/);
+    if (m) { y = Number(m[1]); mo = Number(m[2]); da = Number(m[3]); }
+  }
+  if (!m) return null;
+  const iso = `${y}-${String(mo).padStart(2, "0")}-${String(da).padStart(2, "0")}`;
+  const dt = new Date(iso);
+  // 롤오버/무효 거부: 구성한 Date가 실제로 같은 연·월·일이어야 유효
+  if (Number.isNaN(dt.getTime()) || dt.getUTCFullYear() !== y || dt.getUTCMonth() + 1 !== mo || dt.getUTCDate() !== da) return null;
+  return iso;
 }
 function parseAmount(v) {
   const digits = String(v ?? "").replace(/[^0-9]/g, "");
@@ -88,6 +96,10 @@ const report = {
   issues: { badDate: 0, emptyDate: 0, badAmount: 0, emptyAmount: 0, missingPhone: 0, missingReceiveMethod: 0, branchTitleMismatch: 0 },
   badDateSamples: [],
   badAmountSamples: [],
+  maxAmount: 0,
+  amountsOverInt4: [],
+  constructedInvalidDate: 0,
+  constructedInvalidSamples: [],
   mismatchTabs: [],
   dateRange: { min: null, max: null },
   samples: []
@@ -135,6 +147,17 @@ monthTabs.forEach((tab, i) => {
       else if (report.badAmountSamples.length < 12) report.badAmountSamples.push({ tab, f: r?.[5] ?? "" });
     }
     if (!String(r?.[7] ?? "").trim()) report.issues.missingReceiveMethod += 1;
+    if (amount !== null) {
+      if (amount > report.maxAmount) report.maxAmount = amount;
+      if (amount > 2147483647 && report.amountsOverInt4.length < 20) report.amountsOverInt4.push({ tab, raw: r?.[5], amount, name, phone });
+    }
+    // applyImport와 동일하게 Date 구성 → 무효(Invalid Date)면 postgres 클라이언트가 거부
+    const riso = reservedAt || pickupAt;
+    const piso = pickupAt || reservedAt;
+    if (Number.isNaN(new Date(riso).getTime()) || Number.isNaN(new Date(piso).getTime())) {
+      report.constructedInvalidDate += 1;
+      if (report.constructedInvalidSamples.length < 20) report.constructedInvalidSamples.push({ tab, rawC: r?.[2] ?? "", rawD: r?.[3] ?? "", reservedAt, pickupAt });
+    }
     const d = reservedAt || pickupAt;
     if (d) {
       if (!report.dateRange.min || d < report.dateRange.min) report.dateRange.min = d;
@@ -164,6 +187,7 @@ function sha1(str) {
 }
 
 async function applyImport(rows) {
+  if (process.env.BORO_LIMIT) rows = rows.slice(0, Number(process.env.BORO_LIMIT)); // 디버그: 소량만
   const { PrismaClient } = await import("@prisma/client");
   const prisma = new PrismaClient();
   // skipDuplicates는 SQLite 미지원 → 스테이징(sqlite)은 옵션 없이(빈 DB라 충돌 없음), 운영(postgres)은 멱등.
@@ -220,9 +244,14 @@ async function applyImport(rows) {
     const reservationDeduped = [...byId.values()];
     const collapsedDuplicates = reservationData.length - reservationDeduped.length;
     let resvCreated = 0;
-    for (let i = 0; i < reservationDeduped.length; i += 500) {
-      const res = await prisma.reservation.createMany({ data: reservationDeduped.slice(i, i + 500), ...createOpts });
-      resvCreated += res.count;
+    try {
+      for (let i = 0; i < reservationDeduped.length; i += 500) {
+        const res = await prisma.reservation.createMany({ data: reservationDeduped.slice(i, i + 500), ...createOpts });
+        resvCreated += res.count;
+      }
+    } catch (e) {
+      console.log("RESV_ERR code:", e.code, "| name:", e.constructor?.name, "| msg:", String(e.message).split("\n").find((l) => /[A-Za-z가-힣]/.test(l) && !/^\s*(id:|customerId:|branchId:|reservedAt:|pickupAt:|product:|amount:|source:|receiveMethod:|status:|note:|\{|\}|\[|\])/.test(l)) ?? String(e.message).slice(0, 200));
+      throw e;
     }
 
     const target = (process.env.DATABASE_URL || "").match(/@([^:/?]+)/)?.[1] ?? "(local sqlite)";
