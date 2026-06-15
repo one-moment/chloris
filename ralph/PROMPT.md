@@ -8,19 +8,26 @@ you to continue.
 
 ## OBJECTIVE (edit this section to point the loop at a task)
 
-Build the **CRM + reservations module** for 보로플라워마켓, per `docs/templates-and-crm.md`.
+Build **Phase 2 CRM follow-ups** for 보로플라워마켓, per `docs/templates-and-crm.md`. The CRM
+core (models, APIs, `/work/customers`, `/work/reservations` + 새 예약 form) is already shipped
+and deployed to prod. Build these three, in order, one bounded step per iteration:
 
-Scope for this objective (and nothing beyond it without approval):
-- `modules/crm` vertical slice (server + ui + manifest), registered in `modules/registry.js`.
-- Prisma models `Customer` and `Order`/`Reservation` exactly as specified in `docs/templates-and-crm.md`
-  and TODO.md. Create the migration locally; **do NOT apply it to any production DB.**
-- Lookup API `GET /api/work/crm/customers?q=` (name or phone) → matches + recent orders.
-- Route `/work/customers` (search/profile/manual entry) and `/work/reservations` ("새 예약" form).
-- Borough-only module gating via `lib/brand.js` (CRM/reservations are Borough-only; purchase stays shared).
+- **Customer manual entry/edit** on `/work/customers`: create/edit a Customer (name, phone,
+  homeBranchId, memo) via `POST`/`PATCH /api/work/crm/customers` + a small form. No new table
+  (Customer already exists), so no migration needed.
+- **Pickup calendar view** on `/work/reservations`: a month grid keyed by `pickupAt` (toggle
+  with the existing list), reusing the reservations list API. No schema change.
+- **Metrics → 지점 인사이트**: reservation count, revenue (amount sum), source mix, repeat-visit
+  rate, byBranch — via the metrics registry (`docs/platform-architecture.md`). Read-only.
 
-This objective is complete when all the above exist, `npm run lint` and the relevant
-tests pass, the tracking docs are updated, and no production migration/deploy has been
-performed.
+DO NOT build (deferred — need a human decision; if you reach these, STOP and write the question
+in HANDOFF.md instead of guessing):
+- `@예약` channel entry point (needs mention/channel integration design).
+- 20-month Google-sheet one-time import (BLOCKED: branchId attribution for those rows is unresolved).
+
+This objective is complete when the three buildable items above exist, `npm run lint` + `next build`
+pass, and the tracking docs are updated. Prefer no new migrations; if one is unavoidable, create it
+locally only and do NOT apply it to production without explicit approval.
 
 ## Every iteration, in order
 
