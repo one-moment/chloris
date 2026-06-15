@@ -36,8 +36,17 @@ NOTE: this worktree's `.env` is a local sqlite dummy — never touches Boro prod
   degrade. Lint + build pass. SCOPE NOTE: the platform generic `metricsRegistry` is not built
   yet, so insights are implemented **module-locally** (scoped, per PROMPT "no broad rewrites");
   migrate to the registry when it exists (platform TODO).
-- Next (P2-4b, last): 지점 인사이트 UI consuming the metrics API. Then OBJECTIVE complete →
-  output `<promise>RALPH-DONE</promise>` and stop the loop.
+- Iteration 5 (done): 지점 인사이트 UI on `/work/reservations` — added an "인사이트" view to the
+  목록/캘린더/인사이트 toggle: summary metrics (count/revenue/customers/repeatRate) + per-branch
+  table + source-mix table, consuming the metrics API. Lint + build pass.
+
+**Ralph loop Phase 2 OBJECTIVE complete (2026-06-15, isolated worktree `feature/crm-followups`,
+5 iterations).** Customer manual entry/edit + pickup calendar + 지점 인사이트 all shipped on the
+branch, lint + build green every iteration, commits local (not pushed). No new migration (used
+existing Customer/Reservation tables); nothing deployed. Deferred (need decisions): `@예약`
+channel entry, 20-month sheet import (branch mapping captured: 1호점/2호점/3호점 →
+강남1/강남2/잠실, 월별 탭 23년7월~). Platform TODO: generic `metricsRegistry` (insights are
+module-local for now). To ship: PR/merge `feature/crm-followups`; no prod migration needed.
 
 ## Done — CRM module core (Ralph loop, started 2026-06-15)
 

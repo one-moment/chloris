@@ -11,8 +11,9 @@ CRM core shipped+deployed. This worktree (base `6bcc162`) is separate from the i
 - [x] (P2-3) 픽업 캘린더 뷰 on `/work/reservations`: 목록/캘린더 토글 + 월 그리드(픽업일 버킷, 일별 예약 칩 최대 3 + "+N", 오늘 강조, 월 이동). New CSS `.work-cal-*`. Lint+build pass.
 - [~] (P2-4) 지표 → 지점 인사이트.
   - [x] (P2-4a) 집계 API `GET /api/work/crm/metrics`: 총 예약건수·매출·고객수·재방문율 + byBranch(건수/매출) + sourceMix. groupBy 집계, 인증+브랜드 가드+테이블 부재 0값 degrade. Lint+build pass.
-  - [ ] (P2-4b) 지점 인사이트 UI(위 API 소비). — next → 완료 시 OBJECTIVE 끝 → RALPH-DONE.
+  - [x] (P2-4b) 지점 인사이트 UI: `/work/reservations` "인사이트" 뷰(목록/캘린더/인사이트 토글) — 요약지표(총건수·매출·고객수·재방문율) + 지점별 표 + 경로비중 표. metrics API 소비. Lint+build pass.
   - NOTE: 플랫폼 제네릭 `metricsRegistry`는 미구현이라 지점 인사이트를 **모듈 로컬 집계**로 구현(범위 최소). 레지스트리 생기면 이관. (플랫폼 TODO 유지)
+- **Ralph 루프 Phase 2 OBJECTIVE 완료** (2026-06-15, 격리 워크트리 feature/crm-followups, 5 iterations): 고객 수동입력/수정 ✓ · 픽업 캘린더 ✓ · 지점 인사이트 ✓. 전부 lint+build green. 운영 미배포(코드만, 새 마이그레이션 없음). 커밋 로컬.
 - 보류(결정 필요): `@예약` 채널 진입, 20개월 시트 import(지점 매핑 = 1호점/2호점/3호점 → 강남1/강남2/잠실, 23년7월~ 월별 탭).
 
 ## Multi-company split & branding (2026-06-11, night)

@@ -102,6 +102,86 @@ function ReservationCalendar({ reservations, month, onPrev, onNext, onToday }) {
   );
 }
 
+function InsightsPanel() {
+  const [metrics, setMetrics] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await requestJson("/api/work/crm/metrics");
+        if (!cancelled) {
+          setMetrics(data);
+          setError("");
+        }
+      } catch (loadError) {
+        if (!cancelled) setError(loadError.message);
+      } finally {
+        if (!cancelled) setLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!loaded) return <p className="work-empty">불러오는 중...</p>;
+  if (error) return <p className="action-error">{error}</p>;
+  if (!metrics) return <p className="work-empty">데이터가 없습니다.</p>;
+
+  const { total, byBranch, sourceMix } = metrics;
+  const sourceTotal = sourceMix.reduce((sum, row) => sum + row.count, 0);
+
+  return (
+    <>
+      <div className="work-metric-grid">
+        <div className="work-metric"><span>총 예약</span><strong>{total.count}</strong></div>
+        <div className="work-metric"><span>총 매출</span><strong>{formatAmount(total.revenue)}</strong></div>
+        <div className="work-metric"><span>고객 수</span><strong>{total.customers}</strong></div>
+        <div className="work-metric"><span>재방문율</span><strong>{total.repeatRate}%</strong></div>
+      </div>
+
+      <h3>지점별</h3>
+      {byBranch.length === 0 ? (
+        <p className="work-empty">데이터가 없습니다.</p>
+      ) : (
+        <table className="work-table">
+          <thead><tr><th>지점</th><th>예약 건수</th><th>매출</th></tr></thead>
+          <tbody>
+            {byBranch.map((row) => (
+              <tr key={row.branchId}>
+                <td>{row.branchName}</td>
+                <td>{row.count}</td>
+                <td>{formatAmount(row.revenue)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <h3>예약 경로 비중</h3>
+      {sourceMix.length === 0 ? (
+        <p className="work-empty">데이터가 없습니다.</p>
+      ) : (
+        <table className="work-table">
+          <thead><tr><th>경로</th><th>건수</th><th>비중</th></tr></thead>
+          <tbody>
+            {sourceMix.map((row) => (
+              <tr key={row.source}>
+                <td>{row.source}</td>
+                <td>{row.count}</td>
+                <td>{sourceTotal ? Math.round((row.count / sourceTotal) * 100) : 0}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </>
+  );
+}
+
 export default function ReservationsDashboard() {
   const [reservations, setReservations] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -338,6 +418,7 @@ export default function ReservationsDashboard() {
         <div className="work-header-actions">
           <button type="button" className="ghost-button" aria-pressed={view === "list"} onClick={() => setView("list")}>목록</button>
           <button type="button" className="ghost-button" aria-pressed={view === "calendar"} onClick={() => setView("calendar")}>캘린더</button>
+          <button type="button" className="ghost-button" aria-pressed={view === "insights"} onClick={() => setView("insights")}>인사이트</button>
         </div>
         {error && <p className="action-error">{error}</p>}
       </section>
@@ -356,6 +437,8 @@ export default function ReservationsDashboard() {
       <section className="work-section">
         {!isLoaded ? (
           <p className="work-empty">불러오는 중...</p>
+        ) : view === "insights" ? (
+          <InsightsPanel />
         ) : view === "calendar" ? (
           <ReservationCalendar
             reservations={reservations}
