@@ -24,8 +24,10 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
 - [~] **Phase 3 — disposal form**:
   - [x] (3-1, iter 8) write API + `lib/inventoryServer.js`: `disposals` POST(draft|submitted, server
     validation gate→422, lot 단가 스냅샷)/GET, `[batchId]` GET/PATCH(draft 행교체+최종제출 전환, tx). lint+build.
-  - [ ] (3-2) disposal form UI: table, Enter/Tab nav (IME-safe), item combobox, category+cause dropdowns,
-    lot picker, inline validation, 임시저장/최종제출 + 엑셀 복사.
+  - [x] (3-2, iter 9) disposal form UI (full form replaces stub): table, Enter/last-cell→new-row (IME-safe),
+    품목 combobox, 구분/폐기원인 dropdowns, 지점·폐기일 header, 임시저장/최종제출(422 per-row errors), 엑셀 복사.
+    `apiClient` attaches status+data; `.work-suggest` CSS. lint+build pass.
+  - [ ] (3-3) lot picker in the form: per-row `/lots` 4-day suggestion → sourceLotId + unitPrice display.
 - [ ] **Phase 4 — stock-in + 거래명세서 OCR**: inbound table, 발주/영수증/실입고 3-way, lotId auto-numbering,
   Vision extract via `lib/agents/openaiClient.js` (degrade if no key).
 - [ ] **Phase 5 — sheet sync + import** (human-gated for live connection): NEW Google Sheet, one-way append;

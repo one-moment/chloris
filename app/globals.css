@@ -2169,6 +2169,50 @@ button:disabled {
   border-bottom: 0;
 }
 
+.work-table td input,
+.work-table td select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.work-suggest {
+  position: absolute;
+  z-index: 5;
+  left: 8px;
+  right: 8px;
+  top: 100%;
+  margin: 2px 0 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--panel, #ffffff);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.work-suggest li {
+  margin: 0;
+}
+
+.work-suggest button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 6px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 6px;
+  color: inherit;
+}
+
+.work-suggest button:hover {
+  background: var(--hover, rgba(0, 0, 0, 0.06));
+}
+
 .work-mono {
   font-family: ui-monospace, monospace;
   font-size: 12px;

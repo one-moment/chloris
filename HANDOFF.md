@@ -60,9 +60,14 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
   error, no save; lot unitPrice snapshot → amount=round(price*qty)), `GET` (list, branch/status/date
   filters), `GET/PATCH .../[batchId]` (resume draft: replace lines + draft→submitted transition in a
   tx; submitted records locked). Degrade. lint+build pass.
-- Next: Phase 3-2 — disposal form UI (replace `DisposalDashboard` stub): table grid, Enter/Tab nav
-  (IME-safe), item combobox (`/items`), category+cause dropdowns (`/reasons`), lot picker (`/lots`),
-  inline validation, 임시저장(POST draft)/최종제출(PATCH submitted). Then 엑셀 복사.
+- Iteration 9 (done, Phase 3-2): disposal form UI (`DisposalDashboard.jsx` now a full form, replaces
+  stub). Table grid; Enter=next cell / last-cell Enter=new row (IME-safe via `nativeEvent.isComposing`);
+  품목 combobox (`/items`, debounced, free-input); 구분/폐기원인 dropdowns (`/reasons`); 지점·폐기일 header
+  (branches from `disposals` GET); 임시저장(POST draft → keeps batchId)/최종제출(PATCH submitted);
+  server 422 errors shown per-row (red) + list; 엑셀 복사(TSV clipboard). `apiClient` now attaches
+  `.status`+`.data` to thrown errors (for 422 body); `.work-suggest`/cell-input CSS added. lint+build pass.
+- Next: Phase 3-3 — lot picker in the form (per-row `/lots?item=&date=` 4-day suggestion → sets
+  sourceLotId, shows unitPrice). Then Phase 4 (stock-in + 거래명세서 OCR).
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 

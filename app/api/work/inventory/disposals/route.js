@@ -33,6 +33,9 @@ export async function GET(request) {
     if (to) where.disposalDate.lte = new Date(to);
   }
 
+  // 지점 목록은 폼/필터를 위해 항상 반환한다(폐기 테이블 부재와 무관, 예약 라우트와 동일 패턴).
+  const branches = await prisma.branch.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
+
   try {
     const batches = await prisma.disposalBatch.findMany({
       where,
@@ -40,9 +43,9 @@ export async function GET(request) {
       take: 50,
       include: { lines: { orderBy: { lineIndex: "asc" } } }
     });
-    return Response.json({ batches: batches.map(serializeDisposalBatch) });
+    return Response.json({ batches: batches.map(serializeDisposalBatch), branches });
   } catch (error) {
-    if (isMissingInventoryTableError(error)) return Response.json({ batches: [] });
+    if (isMissingInventoryTableError(error)) return Response.json({ batches: [], branches });
     throw error;
   }
 }
