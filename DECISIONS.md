@@ -1,6 +1,19 @@
 # DECISIONS.md
 
-## 2026-06-15: CRM module data model (Ralph loop, iteration 1)
+## 2026-06-16: `mentionActions` 매니페스트 컨트랙트 (CRM Phase 3, @예약 v2)
+
+- 코어 작성기에서 `@예약` 같은 **액션형 멘션**을 트리거하되 동작은 모듈이 소유하도록, 모듈 매니페스트에
+  `mentionActions: [{ token, label, minRole?, requiresBranch?, hrefFor(channel) }]` 컨트랙트를 둔다
+  (`docs/crm-reservation-mention.md` 해법 A, 2026-06-15 사용자 확정).
+- 코어는 `modules/registry.js`의 `getMentionActions(currentUser, channel)`로 **데이터만** 읽고, 선택 시
+  텍스트 삽입 대신 `href` 딥링크로 라우팅한다. 코어는 `modules/`를 직접 import하지 않는다(경계 유지).
+  코어→registry import는 기존 허용 패턴(`ProjectSidebar`의 `getWorkNavItems`).
+- AGENTS.md "매니페스트 컨트랙트 필드는 2개 이상 모듈이 필요할 때만 추가" 가이드와의 긴장: 지금은
+  reservations 모듈만 사용하지만, 이 필드는 reservations 전용이 아니라 **에이전트-멘션 오픈 플랫폼**
+  (`docs/platform-architecture.md` 9·12절)의 범용 확장점으로 설계됐다(향후 @구매/@입고 등 에이전트 멘션이
+  동일 컨트랙트 사용). OBJECTIVE(`ralph/PROMPT.md`)가 이 컨트랙트를 명시 지시하므로 채택.
+
+
 
 - `Customer` and `Reservation` modeled per `docs/templates-and-crm.md`. Loosely coupled like
   `PostTemplate`: scalar id fields, **no Prisma `@relation` / no FK constraints**, indexes only.

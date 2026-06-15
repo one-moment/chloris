@@ -1,5 +1,25 @@
 # TODO.md
 
+## CRM Phase 3 — Ralph loop (2026-06-16, worktree: feature/crm-phase3)
+
+OBJECTIVE: `ralph/PROMPT.md`. 병합된 배포 라인(인벤토리 + CRM Phase 2 라이브) 위에서 두 파트. 새 마이그레이션 불필요.
+한 이터레이션 = 한 관심사. 매 단계 `npm run lint`+`next build` 통과 + 추적 문서 갱신 + `feature/crm-phase3` 커밋.
+
+- [~] **Part A — `@예약` v2 (액션-멘션)** (`docs/crm-reservation-mention.md` 해법 A):
+  - [x] (A-1, iter 1) 매니페스트 컨트랙트: `reservationsModule.mentionActions`(token 예약, requiresBranch,
+    hrefFor→`/work/reservations?new=1&channel=&branch=`) + `modules/registry.js` `getMentionActions(user, channel)`
+    셀렉터(role/branch 필터, brand 게이팅 자동). 코어가 데이터만 읽음(모듈 import 금지). 소비처 아직 없음(무회귀). lint+build pass.
+  - [ ] (A-2) 코어 `components/MentionInput.jsx` 확장: `mentionActions` prop + `onAction(href)` 콜백 → `@예약`
+    후보 노출, 선택 시 텍스트 삽입 대신 onAction 호출. @유저 멘션 IME-safety/방향키·Enter·Tab·전송 회귀 금지.
+  - [ ] (A-3) 채널 작성기(`components/MessagesView.jsx`) 배선: registry에서 mentionActions(채널 branchId로 필터)
+    전달 + onAction → router.push 딥링크. v1 "예약" 버튼은 v2 검증까지 유지.
+- [ ] **Part B — 예약 → 구글시트 append** (코드만, env 미설정 시 no-op):
+  - [ ] (B-1) Sheets 헬퍼(SA JWT + values:append) — `lib/inventorySheetSync.js` 패턴 재사용/공유.
+  - [ ] (B-2) `POST /api/work/crm/reservations` 최종제출 시 새 시트에 한 줄 append(베스트-에포트, 실패해도 예약 성공).
+    env(`CRM_RESERVATION_SHEET_ID` 등) 미설정 시 degrade. 키 커밋 금지, 운영 연결은 사용자 ops.
+
+완료 조건: Part A·B 코드 존재 + lint+build 통과 + 추적 문서 갱신 + 커밋. 라이브 시트 연결은 사람 게이트(여기선 env 미설정).
+
 ## Inventory (입고·폐기) module — Ralph loop (2026-06-15)
 
 Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/inventory` (Borough-only),

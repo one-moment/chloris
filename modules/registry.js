@@ -21,3 +21,25 @@ export function getWorkNavItems(currentUser) {
     })
     .map((module) => ({ slug: module.slug, ...module.nav }));
 }
+
+// 액션형 멘션 컨트랙트(@예약 등)를 코어 작성기에 데이터로 노출한다.
+// 코어(components/MentionInput.jsx의 부모 작성기)가 이 함수를 호출해 후보를 받고,
+// 선택 시 텍스트 삽입 대신 반환된 href로 라우팅한다. 코어는 modules/를 직접 import하지 않는다.
+// modules는 이미 brand 게이팅(isModuleEnabled)으로 필터돼 있어 비활성 모듈 액션은 빠진다.
+export function getMentionActions(currentUser, channel) {
+  if (!channel) return [];
+  return modules
+    .flatMap((module) => module.mentionActions ?? [])
+    .filter((action) => {
+      if (action.minRole === "admin") return currentUser?.role === "admin";
+      return Boolean(currentUser);
+    })
+    .filter((action) => !action.requiresBranch || Boolean(channel.branchId))
+    .map((action) => ({
+      token: action.token,
+      label: action.label,
+      description: action.description ?? "",
+      href: typeof action.hrefFor === "function" ? action.hrefFor(channel) : null
+    }))
+    .filter((action) => Boolean(action.href));
+}

@@ -18,6 +18,15 @@ deps/`.env`(sqlite 더미)/prisma client 셋업 완료, baseline lint 통과. OB
 
 **현재 운영(prod)**: 인벤토리 + CRM Phase 2(캘린더·인사이트·폼) + @예약 v1(버튼) + import 데이터(고객 2,810/예약 3,122) 라이브.
 
+### Phase 3 진행 로그 (Ralph loop, `feature/crm-phase3`)
+- iter 1 (done, **Part A-1** 매니페스트 컨트랙트): `modules/crm/index.js` `reservationsModule.mentionActions`
+  추가([{token:"예약", label, minRole:"member", requiresBranch:true, hrefFor(channel)→
+  `/work/reservations?new=1&channel=<id>&branch=<branchId>`}]) + `modules/registry.js`
+  `getMentionActions(currentUser, channel)` 셀렉터(role 필터 + requiresBranch면 channel.branchId 필요,
+  href 없는 항목 제외; `modules`는 이미 brand 게이팅됨). 코어→registry는 기존 허용 패턴(ProjectSidebar의
+  `getWorkNavItems`와 동일). 코어는 modules/를 import하지 않고 데이터만 읽음. **소비처 아직 없음 → 무회귀.**
+  `npm run lint`(모듈 경계 ok) + `next build`(라우트 변화 없음) 통과. 다음: A-2(MentionInput 확장).
+
 ## 2026-06-16: CRM ↔ 인벤토리 병합 + 운영 배포 (회귀 해소)
 
 `feature/crm-followups`를 배포 라인 `feature/purchase-bot-mvp`에 병합(merge `8fee95f`) → 운영 배포
