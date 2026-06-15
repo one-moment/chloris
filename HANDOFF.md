@@ -31,9 +31,14 @@ loop driven by `ralph/PROMPT.md`. One bounded step per iteration on `feature/pur
   now a client component) — debounced name/phone search hitting the lookup API, customer cards
   with 단골 badge + counts, click-to-expand recent reservation history. Added CSS
   `.work-list/.work-list-row/.work-badge` in `app/globals.css`. Lint + build pass.
-- Next: `/work/reservations` screen (list + pickup calendar + branch filter + HQ rollup) —
-  needs branchId→name mapping for display. Then the reservation form (submit → Customer
-  upsert + Reservation create via a POST API), then customer manual entry, then metrics.
+- Iteration 5 (done): reservations list API `GET /api/work/crm/reservations`
+  (`app/api/work/crm/reservations/route.js`) — branchId/status/from/to filters → reservations
+  with customerName + branchName, plus a `branches` list for the filter UI. Auth + brand guard
+  + degrade. Lint + build pass.
+- Next: `/work/reservations` screen (list + pickup calendar + branch filter + HQ rollup),
+  consuming the list API (branch names already resolved server-side). Then the reservation form
+  (submit → Customer upsert + Reservation create via a POST API), then customer manual entry,
+  then metrics.
 - Pending human action: apply `20260615103000_add_crm_module` to Boro prod when the CRM
   feature is ready to ship (and decide branchId attribution for the 20-month sheet import).
 
