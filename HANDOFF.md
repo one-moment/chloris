@@ -21,8 +21,13 @@ NOTE: this worktree's `.env` is a local sqlite dummy — never touches Boro prod
 
 - Iteration 1 (done): customer write API. `POST /api/work/crm/customers` (create; phone
   unique → 409 on dup) + `PATCH /api/work/crm/customers/[customerId]` (partial edit). Auth +
-  brand guard + missing-table 503. Lint + build pass. Next: 고객 수동 입력/수정 폼 UI on
-  `/work/customers` consuming these.
+  brand guard + missing-table 503. Lint + build pass.
+- Iteration 2 (done): customer manual entry/edit form UI on `/work/customers`
+  (`modules/crm/ui/CustomersDashboard.jsx`) — header "+ 새 고객" create form + per-customer
+  "수정" edit form (shared `CustomerForm`), homeBranch select sourced from the reservations
+  API `branches`, submit → POST/PATCH → search refresh. Lint + build pass.
+- Next (P2-3): pickup calendar view on `/work/reservations` (month grid by pickupAt, toggle
+  with list). Then (P2-4) metrics → 지점 인사이트.
 
 ## Done — CRM module core (Ralph loop, started 2026-06-15)
 
