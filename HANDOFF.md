@@ -52,9 +52,14 @@ module shipped end-to-end on `feature/purchase-bot-mvp`: models + local migratio
 `/work/customers` search screen, `/work/reservations` list + 새 예약 form, reservation
 create/list APIs, brand-gated. All iterations lint + build green; commits are local (not pushed).
 
-- BEFORE this can be used in prod (human steps, needs approval): apply migration
-  `20260615103000_add_crm_module` to Boro prod, then deploy. Decide branchId attribution for
-  the 20-month sheet import.
+- DEPLOYED to prod (2026-06-15, user-approved): migration `20260615103000_add_crm_module`
+  applied to Boro prod (ref rodzysyxieneykcuokwh) via `prisma migrate deploy`; Vercel prod
+  deploy `dpl_4kuqaGPSdpkomjt7VhwAqifUSvsc` (mattermost-project-mvp.vercel.app). Health ok /
+  database ok; new CRM APIs return 401 unauthenticated; `/work/customers` + `/work/reservations`
+  return 200. CRM features are now live for Borough; data appears as reservations are entered.
+- PENDING: #배포로그 Ideas post (배포봇, `post-deploy-log-20260615-crm-module`) — held off
+  (prod DB write beyond approved migration/deploy scope); create via app or with explicit ok.
+- STILL OPEN: branchId attribution for the 20-month sheet import (decision needed before import).
 - Beyond OBJECTIVE (future iterations): customer manual entry/edit, pickup calendar view,
   `@예약` channel entry point, metrics → 지점 인사이트, one-time sheet CSV import.
 - NOTE: all CRM data screens stay empty until migration `20260615103000_add_crm_module` is
