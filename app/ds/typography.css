@@ -1,0 +1,97 @@
+/* Borough Flower Market — Typography Tokens
+   Cormorant Garamond (editorial Latin display) pairs with the ornate logo;
+   Gowun Batang carries Korean serif copy; Gothic A1 handles all UI / dense
+   ERP surfaces where legibility at small sizes matters. */
+
+:root {
+  /* ---- Families ---- */
+  --font-display: 'Cormorant Garamond', 'Gowun Batang', Georgia, serif;
+  --font-serif:   'Gowun Batang', 'Cormorant Garamond', Georgia, serif;
+  --font-sans:    'Gothic A1', system-ui, -apple-system, 'Apple SD Gothic Neo', sans-serif;
+  --font-mono:    ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, monospace;
+
+  /* ---- Display sizes (Cormorant, editorial headlines) ---- */
+  --fs-display-1: clamp(52px, 7vw, 104px); /* @kind font */
+  --fs-display-2: clamp(40px, 5.2vw, 76px); /* @kind font */
+  --fs-display-3: clamp(32px, 4vw, 52px); /* @kind font */
+
+  /* ---- Heading + body scale (UI) ---- */
+  --fs-h1: 40px; /* @kind font */
+  --fs-h2: 31px; /* @kind font */
+  --fs-h3: 25px; /* @kind font */
+  --fs-h4: 20px; /* @kind font */
+  --fs-title: 17px; /* @kind font */
+  --fs-body-lg: 18px; /* @kind font */
+  --fs-body: 15px; /* @kind font */
+  --fs-body-sm: 14px; /* @kind font */
+  --fs-caption: 13px; /* @kind font */
+  --fs-micro: 12px; /* @kind font */
+  --fs-overline: 11px; /* @kind font */
+
+  /* ---- Weights ---- */
+  --fw-light: 300; /* @kind font */
+  --fw-regular: 400; /* @kind font */
+  --fw-medium: 500; /* @kind font */
+  --fw-semibold: 600; /* @kind font */
+  --fw-bold: 700; /* @kind font */
+  --fw-extrabold: 800; /* @kind font */
+
+  /* ---- Line heights ---- */
+  --lh-tight: 1.04; /* @kind font */
+  --lh-snug: 1.18; /* @kind font */
+  --lh-heading: 1.28; /* @kind font */
+  --lh-normal: 1.5; /* @kind font */
+  --lh-relaxed: 1.72; /* @kind font */
+
+  /* ---- Letter spacing ---- */
+  --tracking-tighter: -0.03em; /* @kind font */
+  --tracking-tight: -0.015em; /* @kind font */
+  --tracking-normal: 0; /* @kind font */
+  --tracking-wide: 0.04em; /* @kind font */
+  --tracking-wider: 0.1em; /* @kind font */
+  --tracking-overline: 0.2em; /* @kind font */
+}
+
+/* ---- Type helper classes ---- */
+.t-display {
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-display-1);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-strong);
+}
+.t-display--serif-ko {
+  font-family: var(--font-serif);
+  font-weight: var(--fw-regular);
+}
+.t-h1 { font-family: var(--font-sans); font-weight: var(--fw-bold); font-size: var(--fs-h1); line-height: var(--lh-heading); letter-spacing: var(--tracking-tight); color: var(--text-strong); }
+.t-h2 { font-family: var(--font-sans); font-weight: var(--fw-bold); font-size: var(--fs-h2); line-height: var(--lh-heading); letter-spacing: var(--tracking-tight); color: var(--text-strong); }
+.t-h3 { font-family: var(--font-sans); font-weight: var(--fw-semibold); font-size: var(--fs-h3); line-height: var(--lh-snug); color: var(--text-strong); }
+.t-h4 { font-family: var(--font-sans); font-weight: var(--fw-semibold); font-size: var(--fs-h4); line-height: var(--lh-snug); color: var(--text-strong); }
+
+/* Editorial serif lede — Korean poetic copy */
+.t-lede {
+  font-family: var(--font-serif);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-body-lg);
+  line-height: var(--lh-relaxed);
+  color: var(--text-body);
+}
+
+.t-body { font-family: var(--font-sans); font-weight: var(--fw-regular); font-size: var(--fs-body); line-height: var(--lh-normal); color: var(--text-body); }
+.t-body-sm { font-family: var(--font-sans); font-weight: var(--fw-regular); font-size: var(--fs-body-sm); line-height: var(--lh-normal); color: var(--text-body); }
+.t-caption { font-family: var(--font-sans); font-weight: var(--fw-regular); font-size: var(--fs-caption); line-height: var(--lh-normal); color: var(--text-muted); }
+
+/* All-caps Latin overline — labels, eyebrows, section markers */
+.t-overline {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-overline);
+  line-height: 1;
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.t-mono { font-family: var(--font-mono); font-size: var(--fs-body-sm); letter-spacing: 0; }

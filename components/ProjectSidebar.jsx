@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CHANNEL_TYPES } from "../lib/constants";
 import { getWorkNavItems } from "../modules/registry";
+import Icon from "./Icon";
 
 function activityTime(record) {
   const date = new Date(record?.createdAtIso ?? record?.createdAt ?? "");
@@ -58,8 +59,8 @@ export default function ProjectSidebar({
           </div>
         </div>
         <div className="sidebar-header-actions">
-          <button className="icon-button" onClick={onNewProject} aria-label="프로젝트 생성">+</button>
-          <button className="icon-button sidebar-close-button" onClick={onClose} aria-label="채널 패널 닫기">×</button>
+          <button className="icon-button" onClick={onNewProject} aria-label="프로젝트 생성"><Icon name="plus" size={18} /></button>
+          <button className="icon-button sidebar-close-button" onClick={onClose} aria-label="채널 패널 닫기"><Icon name="x" size={18} /></button>
         </div>
       </div>
 

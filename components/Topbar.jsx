@@ -1,12 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { CHANNEL_TYPES, TABS } from "../lib/constants";
 import { Badge } from "./common";
+import Icon from "./Icon";
 import Timestamp from "./Timestamp";
 
 const NOTIFICATION_TYPE_LABELS = {
   mention: "멘션",
   comment: "댓글",
   notice: "공지"
+};
+
+const TAB_ICONS = {
+  messages: "message-circle",
+  ideas: "lightbulb",
+  files: "folder-closed"
 };
 
 export default function Topbar({
@@ -48,20 +55,19 @@ export default function Topbar({
     <header className="main-header">
       <div className="header-nav-row">
         <button className="channel-menu-button" type="button" onClick={onToggleSidebar} aria-label="채널 패널 열기">
-          <span />
-          <span />
-          <span />
+          <Icon name="menu" size={20} />
         </button>
         <nav className="tabs" aria-label="채널 작업 탭">
           {TABS.map((tab) => (
             <button key={tab.id} className={activeTab === tab.id ? "active" : ""} onClick={() => onTabChange(tab.id)}>
+              {TAB_ICONS[tab.id] && <Icon name={TAB_ICONS[tab.id]} size={16} />}
               {tab.label}
             </button>
           ))}
         </nav>
         <div className="header-actions">
           {onOpenSearch && (
-            <button className="header-action-button" type="button" onClick={onOpenSearch}>검색</button>
+            <button className="header-action-button" type="button" onClick={onOpenSearch}><Icon name="search" size={15} />검색</button>
           )}
           <div className="notifications-wrap" ref={notificationsRef}>
             <button
@@ -70,6 +76,7 @@ export default function Topbar({
               onClick={() => setIsNotificationsOpen((current) => !current)}
               aria-label={`알림 ${notifications.length}건`}
             >
+              <Icon name="bell" size={15} />
               알림
               {notifications.length > 0 && <b className="notification-count">{notifications.length}</b>}
             </button>

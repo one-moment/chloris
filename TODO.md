@@ -277,3 +277,18 @@ Notes:
 - [ ] Update `BUG_LOG.md` if a bug was found or fixed.
 - [x] Run relevant tests or explicitly record why tests were not run.
 - [ ] Do not leave sensitive values in docs, logs, or committed files.
+
+## 구조형 완성 디자인 — 그린 레일 + 모바일 드로어 + Lucide  (ralph loop · worktree: design/structural-rail)
+
+정본: `docs/design/borough/borough.css`. 범위: 스타일·레이아웃 구조만(동작 로직·모듈 경계 불변, AGENTS.md 준수).
+규칙: 한 이터레이션 = 한 단계. 구현 → `npm run lint`+`npm run build` 통과 → 독립 리뷰 서브에이전트 실행(발견사항 `docs/design/REVIEW-structural-rail.md` 기록) → 해당 단계 체크 → 한국어 커밋. 리뷰가 찾은 버그/누락은 다음 이터레이션에서 먼저 수정.
+
+- [x] S1. Lucide 아이콘 인프라: `lucide-react` 의존성 + `components/Icon.jsx` 래퍼(name→icon). UI 변화 없음, 빌드 통과. (iter 1)
+- [x] S2. DS 토큰 정비 + `.workspace-root` 래퍼: DS 토큰을 `app/ds/{colors,typography,spacing}.css`로 들여와 globals에서 import(앱 `--accent`=그린/`--warning` 충돌 2개는 제외해 회귀 방지). WorkspaceShell 인증 셸을 `.workspace-root`(theme=forest/sidebar=dark/cards=comfortable/chips=soft)로 래핑. 시각 변화 없음(borough.css는 S3). lint+build 통과. (iter 2) — S1 리뷰 4건 선수정 포함.
+- [x] S3. 셸+레일 레이어 도입 + 데스크톱 그린 레일: borough.css의 셸/레일 레이어를 `app/borough-shell.css`로 `.workspace-root` 스코프 도입(특이도 우위로 기존 chrome 이김). `.rail` 마크업(로고 Link·검색 버튼 Lucide·아바타) 추가. 데스크톱(≥768px) 3열(레일64+사이드바292+메인), 모바일은 기존 유지(S4에서 드로어 전환). `--accent`는 레일에서만 골드로 스코프(다크 위 대비). 컴포넌트 전면 정합은 S5. lint+build 통과. (iter 3) — full borough.css 컴포넌트 규칙은 globals와 충돌해 S5에서 점진 정합.
+- [x] S4. 모바일 오프캔버스 드로어 + 분기점 정합: 3열 분기를 ≥981px(기존 모바일 경계 980과 일치)로 올려 **768~980 빈 사이드바 열 회귀 해소(S3 발견사항)**. ≤980 드로어를 borough 톤으로 폴리시(녹색 오버레이 --surface-overlay, organic easing --dur-base/--ease-out, --shadow-lg). 기존 `mobile-open` 토글·햄버거 로직 유지(로직 변경 없음 — data-drawer 재배선은 불필요해 채택 안 함). lint+build 통과. (iter 4) — 비고: POS(~880px)에서 레일 노출 여부는 S7 반응형 검증에서 판단(현재 880=모바일 드로어).
+- [x] S5. 컴포넌트 정합(셸 통합 중심): 카드·칩·세리프·여백 등 컴포넌트는 기존 Borough 1·2차 패스에서 이미 적용됨 → S5는 새 셸(레일/3열)과의 정합에 집중. `.workspace-root .main-area`(paper 배경 + min-height:0 flex 스크롤), `.main-header` 여백을 DS 토큰으로 정합(채팅·게시판 전용, 모듈 페이지 `.work-page`는 무영향). 신규 모듈 대시보드(`.work-page/.work-metric/.work-list` 등 자체 클래스)는 borough/코어-comms 규칙과 무관 → 무회귀 확인. 탭 배지·상태 칩 클래스 리맵은 마크업/로직 변경이라 범위 밖(보류). lint+build 통과. (iter 5)
+- [x] S6. Lucide UI 적용: Topbar 햄버거(menu)·탭(message-circle/lightbulb/folder-closed)·검색(search)·알림(bell), ProjectSidebar +(plus)·×(x)를 `<Icon>`로 교체. 아이콘+라벨 버튼 정렬 scoped CSS(.tabs button/.header-action-button inline-flex, .icon-button grid). 로직/핸들러 불변. lint+build 통과. (iter 6) — S5 헤더여백 발견사항 선수정 포함. (전송/첨부 composer 글리프는 후속 여지로 남김 — 핵심 내비 글리프 우선 교체.)
+- [x] S7. 반응형 검증 + 마감 (단일 검증 패스): 분기점 코드 검증 — ≤980 모바일(단일열+오프캔버스 드로어, 레일 숨김)·≥981 데스크톱(레일64+사이드바292+메인 3열), globals 980 경계와 상호배타 정합 확인. 리뷰 열림 0건. 최종 `npm run lint`(모듈 경계 포함)+`npm run build`(37 라우트)+`agent-gateway:test`+`purchase-bot:test` 통과. (iter 7) — 비고: POS(~880px)는 모바일 드로어로 동작(기존 980 경계 유지, 추후 필요 시 경계 하향은 별도 작업). 실브라우저 시각 확인은 머지 전 리더 검토 권장.
+
+완료 조건: S1~S7 전부 체크 AND `docs/design/REVIEW-structural-rail.md`에 미해결(열림) 항목 없음 → `<promise>DONE</promise>` 출력.
