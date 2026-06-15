@@ -23,9 +23,13 @@ loop driven by `ralph/PROMPT.md`. One bounded step per iteration on `feature/pur
 - Iteration 2 (done): module skeleton. `modules/crm/` with two manifests (crm→/work/customers,
   reservations→/work/reservations), stub dashboards, registered in `modules/registry.js`;
   route pages with `isModuleEnabled` brand guard. `npm run lint` + `next build` pass.
-- Next: lookup API `/api/work/crm/customers` (name/phone → customer + recent reservations),
-  then real `/work/customers` + `/work/reservations` screens, then the reservation form,
-  then metrics.
+- Iteration 3 (done): lookup API `GET /api/work/crm/customers?q=`
+  (`app/api/work/crm/customers/route.js`) — name/phone search → customer + reservationCount,
+  totalAmount, recentReservations. Auth + `isModuleEnabled("crm")` guard + missing-table
+  degrade-to-empty. Lint + build pass.
+- Next: real `/work/customers` screen (search box consuming the lookup API, profile + history),
+  then `/work/reservations` (list/calendar/HQ rollup), then the reservation form
+  (submit → Customer upsert + Reservation create), then metrics.
 - Pending human action: apply `20260615103000_add_crm_module` to Boro prod when the CRM
   feature is ready to ship (and decide branchId attribution for the 20-month sheet import).
 
