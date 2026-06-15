@@ -12,8 +12,8 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
 - [~] **Phase 2 — masters + lookup APIs**:
   - [x] (2a, iter 3) module skeleton: `modules/inventory` manifests (disposal→/work/disposal,
     stockin→/work/stock-in) + registry + brand gating + route pages + stub dashboards. lint+build pass.
-  - [ ] (2b) lookup/validation APIs `GET /api/work/inventory/items|reasons|lots` (autocomplete+validation,
-    4-day lot suggest). Degrade-to-empty pre-migration.
+  - [x] (2b, iter 4) lookup/validation APIs + `lib/inventory.js` constants. `items` (autocomplete+exactMatch),
+    `reasons` (fixed categories+causes), `lots` (4-day same-item suggestion). Auth+brand+degrade. lint+build pass.
   - [ ] (2c) admin master screens (FlowerItem/DisposalCause edit) + `NewItemRequest` approval.
 - [ ] **Phase 3 — disposal form**: table, Enter/Tab nav (IME-safe), item combobox, category+cause dropdowns,
   lot picker, save-time validation gate, 임시저장/최종제출 + submit API.

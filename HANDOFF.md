@@ -38,9 +38,13 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
   route pages `app/(workspace)/work/disposal|stock-in/page.jsx` with `isModuleEnabled` guard; stub
   dashboards (`modules/inventory/ui/DisposalDashboard|StockInDashboard.jsx`). `npm run lint` +
   `next build` pass (both routes compile static, sidebar nav renders them).
-- Next: Phase 2b — lookup/validation APIs `GET /api/work/inventory/items` (autocomplete + exact-match
-  validation), `/reasons` (causes + fixed categories), `/lots` (4-day lot suggestion). Then admin
-  master screens + `NewItemRequest` approval. All auth + brand guard + degrade-to-empty.
+- Iteration 4 (done, Phase 2b): lookup/validation APIs + `lib/inventory.js` (constants:
+  `DISPOSAL_CATEGORIES` 3-fixed, `DEFAULT_LOT_WINDOW_DAYS=4`). `GET /api/work/inventory/items?q=`
+  (autocomplete + `exactMatch` for save-gate), `/reasons` (fixed categories + active causes),
+  `/lots?item=&date=&window=` (same-item lots in [date-N, date], newest first — 4-day auto-mapping).
+  Auth + brand guard + missing-table degrade-to-empty. `npm run lint` + `next build` pass (3 routes register).
+- Next: Phase 2c — admin master screens (FlowerItem/DisposalCause CRUD write APIs + UI) +
+  `NewItemRequest` approval. Then Phase 3 (disposal form).
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 
