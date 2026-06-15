@@ -11,7 +11,26 @@ The current priority is Purchase Agent stabilization:
 - Coupang tasks can be queued for the local purchase worker
 - final payment remains human-reviewed
 
-## In progress — CRM module (Ralph loop, started 2026-06-15)
+## In progress — Inventory (입고·폐기) module (Ralph loop, started 2026-06-15)
+
+Building the flower stock-in + disposal module (`docs/inventory-stockin-disposal.md`, spec confirmed
+2026-06-15) via the Ralph loop. Runbook OBJECTIVE in `ralph/PROMPT.md` repointed at this work; loop
+completion promise = `RALPH-DONE` (max_iterations 30 safety cap). One bounded step per iteration on
+`feature/purchase-bot-mvp`. Six phases: ①data model ②master+lookup APIs ③disposal form ④stock-in+OCR
+⑤sheet sync+import ⑥metrics.
+
+Key confirmed decisions (doc §3): Chloris = system of record; lot-cost tracking with 4-day
+auto-lot-mapping (daily fresh-flower price variance); category fixed 3 (기타/제작폐기_꽃다발/제작폐기_오늘의꽃);
+item-name validation gate + "신규 품목 등록 요청" approval; 임시저장/최종제출; one-way sync to a NEW
+Google Sheet (existing sheet untouched); import past lots+disposals so past disposals link to past lots.
+
+- Iteration 1 (done): spec doc `docs/inventory-stockin-disposal.md` + repointed `ralph/PROMPT.md`
+  OBJECTIVE + set loop completion promise. No code/schema change yet (docs only → repo stays green).
+- Next: Phase 1 — add the six models to both Prisma schemas + hand-written migration (NOT applied to prod).
+- Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
+  Sheets connection + historical import run (approval-gated); 4-day window default.
+
+## Done — CRM module (Ralph loop, 2026-06-15)
 
 Building the Borough CRM + reservations module (`docs/templates-and-crm.md`) via a Ralph
 loop driven by `ralph/PROMPT.md`. One bounded step per iteration on `feature/purchase-bot-mvp`.

@@ -1,5 +1,26 @@
 # TODO.md
 
+## Inventory (입고·폐기) module — Ralph loop (2026-06-15)
+
+Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/inventory` (Borough-only),
+`/work/disposal` + `/work/stock-in` + admin masters. Driven by `ralph/PROMPT.md`, one bounded step/iteration.
+
+- [x] Spec doc + repoint Ralph runbook OBJECTIVE + set loop completion promise (`RALPH-DONE`, cap 30). (iter 1)
+- [ ] **Phase 1 — data model**: `FlowerItem`, `DisposalCause`, `StockInDelivery`/`StockInLine`(lotId),
+  `DisposalBatch`/`DisposalLine`, `NewItemRequest` in both schemas + hand-written migration (NOT applied to prod).
+  Money=Int(원), quantity=Float(소수); scalar cross-module ids, intra-module FK only.
+- [ ] **Phase 2 — masters + lookup APIs**: module skeleton/registry/brand gating, route+dashboard stubs;
+  `GET /api/work/inventory/items|reasons|lots` (autocomplete+validation, 4-day lot suggest); admin master
+  screens + `NewItemRequest` approval. Degrade-to-empty pre-migration.
+- [ ] **Phase 3 — disposal form**: table, Enter/Tab nav (IME-safe), item combobox, category+cause dropdowns,
+  lot picker, save-time validation gate, 임시저장/최종제출 + submit API.
+- [ ] **Phase 4 — stock-in + 거래명세서 OCR**: inbound table, 발주/영수증/실입고 3-way, lotId auto-numbering,
+  Vision extract via `lib/agents/openaiClient.js` (degrade if no key).
+- [ ] **Phase 5 — sheet sync + import** (human-gated for live connection): NEW Google Sheet, one-way append;
+  import past lots+disposals (link past disposals to past lots) into new sheet + DB. Existing sheet untouched.
+- [ ] **Phase 6 — metrics**: 폐기율·폐기가액·사유 비중·입고 불일치율, byBranch (metrics registry).
+- Pending human decisions: branchId for imported past rows; live Sheets connection + import run; 4-day window default.
+
 ## Multi-company split & branding (2026-06-11, night)
 
 Product serves 3 companies (internal tools): 원모먼트(online delivery), 보로플라워마켓(offline franchise), 오늘꽃(wholesale + venue supply). Shared base = chat + board; custom modules per company.
