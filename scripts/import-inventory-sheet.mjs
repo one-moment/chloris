@@ -111,6 +111,7 @@ function parseDisposal(path) {
     amount: headerIndex(header, ["폐기가액(원)", "폐기가액"]),
     reason: headerIndex(header, ["폐기원인"])
   };
+  if (col.date < 0) col.date = 0; // 폐기일 컬럼 헤더가 비어있는 export(첫 칸) 대응
   const warnings = [];
   const lines = [];
   data.forEach((row, i) => {
