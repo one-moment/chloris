@@ -14,7 +14,11 @@ CRM core shipped+deployed. This worktree (base `6bcc162`) is separate from the i
   - [x] (P2-4b) 지점 인사이트 UI: `/work/reservations` "인사이트" 뷰(목록/캘린더/인사이트 토글) — 요약지표(총건수·매출·고객수·재방문율) + 지점별 표 + 경로비중 표. metrics API 소비. Lint+build pass.
   - NOTE: 플랫폼 제네릭 `metricsRegistry`는 미구현이라 지점 인사이트를 **모듈 로컬 집계**로 구현(범위 최소). 레지스트리 생기면 이관. (플랫폼 TODO 유지)
 - **Ralph 루프 Phase 2 OBJECTIVE 완료** (2026-06-15, 격리 워크트리 feature/crm-followups, 5 iterations): 고객 수동입력/수정 ✓ · 픽업 캘린더 ✓ · 지점 인사이트 ✓. 전부 lint+build green. 운영 미배포(코드만, 새 마이그레이션 없음). 커밋 로컬.
-- [~] `@예약` #지점방 진입: **설계 초안 작성** `docs/crm-reservation-mention.md` — 권장 빌드순서(폼 분리 → v1 "예약" 버튼 → 선택 요약카드 → v2 @예약 멘션) + 코어↔모듈 경계 해법 + 미결 5건(트리거/폼표시/활성채널/요약카드/권한). 사용자 결정 대기.
+- [~] `@예약` #지점방 진입 v1 (버튼) — 설계 확정(`docs/crm-reservation-mention.md`), OBJECTIVE = `ralph/PROMPT.md`. 진행 중:
+  - [x] (v1-1) 예약 폼 분리: `modules/crm/ui/ReservationForm.jsx`(props: branches/fixedBranchId/channelId/onSubmitted/onCancel); `/work/reservations`가 사용. 무동작-변경. lint+build pass.
+  - [ ] (v1-2) `/work/reservations` 딥링크 `?new=1&channel=&branch=` → 폼 모달(지점 고정+channelId). — next
+  - [ ] (v1-3) 코어 채널 뷰에 "예약" 버튼(branchId 채널만, next/link만 — 모듈 import 금지).
+  - [ ] (v1-4) 제출 후 #지점방 요약 카드(선택, 켬).
 - 보류(입력 필요): 20개월 시트 import — 지점 매핑은 받음(1호점/2호점/3호점 → 강남1/강남2/잠실, 23년7월~ 월별 탭). 남은 것: 시트 접근수단(Sheets API 키 or CSV) + 운영 import 승인. (사용자: 시트키 전달 예정)
 
 ## Multi-company split & branding (2026-06-11, night)

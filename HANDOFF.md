@@ -11,7 +11,18 @@ The current priority is Purchase Agent stabilization:
 - Coupang tasks can be queued for the local purchase worker
 - final payment remains human-reviewed
 
-## In progress — CRM Phase 2 follow-ups (isolated worktree `feature/crm-followups`, 2026-06-15)
+## In progress — @예약 #지점방 진입 v1 (버튼) — isolated worktree `feature/crm-followups`, 2026-06-15
+
+Confirmed design `docs/crm-reservation-mention.md`; OBJECTIVE in `ralph/PROMPT.md`. v1 = "예약"
+button (route-navigation, boundary-safe). Decisions: 모달 / branchId 채널만 / 요약카드 켬 / 인증·보로.
+- Iteration 1 (done): extracted the 새 예약 form into `modules/crm/ui/ReservationForm.jsx`
+  (props branches/fixedBranchId/channelId/onSubmitted/onCancel); `/work/reservations` uses it.
+  No behavior change. Lint + build pass.
+- Next: (v1-2) `/work/reservations` deep-link `?new=1&channel=&branch=` opens the form modal
+  (branch fixed + channelId); (v1-3) core channel-view "예약" button (next/link only, no module
+  import); (v1-4) post-submit channel summary card.
+
+## Done — CRM Phase 2 follow-ups (isolated worktree `feature/crm-followups`, 2026-06-15)
 
 CRM core is shipped + deployed (see below). This branch is an **isolated git worktree**
 (`.claude/worktrees/crm-followups`, base `6bcc162`) so it never collides with the inventory
