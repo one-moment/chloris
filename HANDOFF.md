@@ -43,9 +43,20 @@ loop driven by `ralph/PROMPT.md`. One bounded step per iteration on `feature/pur
   same route file) — field validation → Customer upsert by phone + Reservation create
   (status 예약접수). No payment/external order; customer data only persisted, never logged.
   Missing-table → 503. Lint + build pass.
-- Next: reservation form UI ("새 예약" on `/work/reservations` + later `@예약`) — typed fields,
-  validation, customer-lookup autofill (customers API), submit → the POST above. Then customer
-  manual entry, pickup calendar view, then metrics.
+- Iteration 8 (done): reservation "새 예약" form on `/work/reservations` — typed fields +
+  validation + customer-lookup autofill (debounced; click an existing customer to fill) +
+  submit → POST + list reload. Added `.work-header-actions` CSS. Lint + build pass.
+
+**Ralph loop OBJECTIVE complete (2026-06-15, 8 iterations).** Borough CRM + reservations
+module shipped end-to-end on `feature/purchase-bot-mvp`: models + local migration, lookup API,
+`/work/customers` search screen, `/work/reservations` list + 새 예약 form, reservation
+create/list APIs, brand-gated. All iterations lint + build green; commits are local (not pushed).
+
+- BEFORE this can be used in prod (human steps, needs approval): apply migration
+  `20260615103000_add_crm_module` to Boro prod, then deploy. Decide branchId attribution for
+  the 20-month sheet import.
+- Beyond OBJECTIVE (future iterations): customer manual entry/edit, pickup calendar view,
+  `@예약` channel entry point, metrics → 지점 인사이트, one-time sheet CSV import.
 - NOTE: all CRM data screens stay empty until migration `20260615103000_add_crm_module` is
   applied to Boro prod (deferred, needs approval) and reservations are entered.
 - Pending human action: apply `20260615103000_add_crm_module` to Boro prod when the CRM

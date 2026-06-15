@@ -2140,6 +2140,12 @@ button:disabled {
   color: var(--muted);
 }
 
+.work-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .work-table {
   width: 100%;
   border-collapse: collapse;
