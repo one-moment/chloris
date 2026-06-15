@@ -38,7 +38,8 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
   - [~] (4-3) 거래명세서 Vision OCR → 표 prefill:
     - [x] (4-3a, iter 14) OCR backend: `extractStatementLineItems` (openaiClient Vision) + `stock-ins/ocr`
       POST → `{degraded, supplier, statementDate, lines}`. 키 없음/실패 시 degraded. lint+build.
-    - [ ] (4-3b) 폼 연동: 명세서 사진 업로드 → `/ocr` → 표 prefill + 거래처/입고일 채움.
+    - [x] (4-3b, iter 15) 폼 연동: "거래명세서 인식" 버튼 → 업로드(압축/presign/S3, inline→dataURL) → `/ocr`
+      → 표 prefill(영수증=실입고=명세서 수량, 단가) + 거래처/입고일, degraded 시 수기 폴백. **Phase 4 완료.** lint+build.
 - [ ] **Phase 5 — sheet sync + import** (human-gated for live connection): NEW Google Sheet, one-way append;
   import past lots+disposals (link past disposals to past lots) into new sheet + DB. Existing sheet untouched.
 - [ ] **Phase 6 — metrics**: 폐기율·폐기가액·사유 비중·입고 불일치율, byBranch (metrics registry).

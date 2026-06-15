@@ -86,8 +86,13 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
   `OPENAI_AGENT_MODEL`; returns skipped/parseError/result). `POST /api/work/inventory/stock-ins/ocr`
   → normalized `{ degraded, supplier, statementDate, lines }`. No key / API error / parse fail →
   `degraded:true` + empty lines (form falls back to manual). lint+build pass.
-- Next: Phase 4-3b — wire OCR into the stock-in form (attach 명세서 photo → upload → `/ocr` → prefill
-  rows + supplier/date). Then Phase 6 (metrics). Phase 5 (sheet sync + import) human-gated.
+- Iteration 15 (done, Phase 4-3b): OCR wired into stock-in form. "거래명세서 인식" file button →
+  `uploadStatementImage` (maybeCompressImage → presign → S3 PUT, inline→dataURL fallback) → `/ocr` →
+  prefills rows (receiptQty=receivedQty=명세서 수량, unitPrice) + supplier/date; `degraded`→수기 폴백 안내.
+  lint+build pass. **Phase 4 COMPLETE** (stock-in API + form + 3-way + lotId + OCR).
+- Next: Phase 6 — metrics (폐기율·폐기가액·사유 비중·입고 불일치율, byBranch). Then Phase 5
+  (sheet sync + historical import) — build code but **STOP before live Google Sheets connection /
+  import run** (needs Service Account + branchId-attribution decision; record request in HANDOFF).
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 

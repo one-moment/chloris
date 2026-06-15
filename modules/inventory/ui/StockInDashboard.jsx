@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { requestJson } from "../../../lib/core/apiClient";
+import { maybeCompressImage } from "../../../lib/imageCompress";
 
 // 입고 입력 폼 (보로 inventory 모듈). 표 입력 + 키보드 이동(IME 안전) + 품목 자동완성 +
 // 발주/영수증/실입고 3중 대조(불일치 하이라이트) + 입고 등록(lotId 자동발번). 거래명세서 OCR은 Phase 4-3.
@@ -58,6 +59,7 @@ export default function StockInDashboard() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [ocrBusy, setOcrBusy] = useState(false);
   const [itemSuggest, setItemSuggest] = useState({ row: -1, items: [] });
 
   const cellRefs = useRef({});
@@ -144,6 +146,62 @@ export default function StockInDashboard() {
     focusCell(rowIndex, 1);
   }
 
+  // 거래명세서 사진 업로드(압축 → presign → S3, inline은 dataURL). 반환 URL을 OCR에 전달.
+  async function uploadStatementImage(file) {
+    const compressed = await maybeCompressImage(file);
+    const target = await requestJson("/api/uploads/presign", {
+      method: "POST",
+      body: JSON.stringify({ fileName: compressed.name, fileType: compressed.type || "image/jpeg", fileSize: compressed.size })
+    });
+    if (target.provider === "s3") {
+      await fetch(target.uploadUrl, { method: "PUT", headers: { "Content-Type": compressed.type || "image/jpeg" }, body: compressed });
+      return target.publicUrl;
+    }
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(compressed);
+    });
+  }
+
+  async function onStatementFile(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setError("");
+    setMessage("");
+    setOcrBusy(true);
+    try {
+      const imageUrl = await uploadStatementImage(file);
+      const result = await requestJson("/api/work/inventory/stock-ins/ocr", { method: "POST", body: JSON.stringify({ imageUrl }) });
+      if (result.degraded) {
+        setMessage("자동 인식을 사용할 수 없어 수기 입력으로 진행합니다.");
+        return;
+      }
+      if (result.supplier && !supplier.trim()) setSupplier(result.supplier);
+      if (result.statementDate) setStatementDate(result.statementDate);
+      const ocrRows = (result.lines ?? []).map((line) => ({
+        ...emptyRow(),
+        itemName: line.itemName,
+        receiptQty: line.quantity ? String(line.quantity) : "",
+        receivedQty: line.quantity ? String(line.quantity) : "",
+        unitPrice: line.unitPrice ? String(line.unitPrice) : "",
+        note: line.note ?? ""
+      }));
+      if (ocrRows.length === 0) {
+        setMessage("명세서에서 품목을 찾지 못했습니다. 수기로 입력하세요.");
+        return;
+      }
+      setRows([...ocrRows, emptyRow()]);
+      setMessage(`명세서에서 ${ocrRows.length}건을 불러왔습니다. 발주/실입고를 대조한 뒤 등록하세요.`);
+    } catch (ocrError) {
+      setError(ocrError.message);
+    } finally {
+      setOcrBusy(false);
+    }
+  }
+
   const totalAmount = rows.reduce((sum, row) => {
     const amount = (Number(row.unitPrice) || 0) * (Number(row.receivedQty) || 0);
     return sum + amount;
@@ -228,6 +286,10 @@ export default function StockInDashboard() {
         <label>
           입고일{" "}
           <input type="date" value={statementDate} onChange={(event) => setStatementDate(event.target.value)} aria-label="입고일" />
+        </label>
+        <label className="ghost-button" style={{ cursor: ocrBusy ? "default" : "pointer" }}>
+          {ocrBusy ? "인식 중..." : "거래명세서 인식"}
+          <input type="file" accept="image/*" onChange={onStatementFile} disabled={ocrBusy} style={{ display: "none" }} />
         </label>
       </section>
 
