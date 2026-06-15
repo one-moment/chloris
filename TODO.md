@@ -9,8 +9,10 @@ OBJECTIVE: `ralph/PROMPT.md`. 병합된 배포 라인(인벤토리 + CRM Phase 2
   - [x] (A-1, iter 1) 매니페스트 컨트랙트: `reservationsModule.mentionActions`(token 예약, requiresBranch,
     hrefFor→`/work/reservations?new=1&channel=&branch=`) + `modules/registry.js` `getMentionActions(user, channel)`
     셀렉터(role/branch 필터, brand 게이팅 자동). 코어가 데이터만 읽음(모듈 import 금지). 소비처 아직 없음(무회귀). lint+build pass.
-  - [ ] (A-2) 코어 `components/MentionInput.jsx` 확장: `mentionActions` prop + `onAction(href)` 콜백 → `@예약`
-    후보 노출, 선택 시 텍스트 삽입 대신 onAction 호출. @유저 멘션 IME-safety/방향키·Enter·Tab·전송 회귀 금지.
+  - [x] (A-2, iter 3) 코어 `components/MentionInput.jsx` 확장: `mentionActions` prop + `onAction(action)` 콜백.
+    `filterMentionActions`(유저와 동일 매칭) + 통합 `items`(액션 상단→유저) 기준 방향키/Enter/Tab 내비, 액션 선택 시
+    텍스트 삽입 대신 `clearActiveMention`+`onAction` 위임. **기존 호출부(IdeasView/PostCard/MessagesView)는 새 prop
+    미전달 → items=유저후보로 동일 동작(무회귀)**. IME 가드 불변. `.mention-action` 액센트 CSS. lint+build pass.
   - [ ] (A-3) 채널 작성기(`components/MessagesView.jsx`) 배선: registry에서 mentionActions(채널 branchId로 필터)
     전달 + onAction → router.push 딥링크. v1 "예약" 버튼은 v2 검증까지 유지.
 - [~] **Part B — 예약 → 구글시트 append** (코드만, env 미설정 시 no-op):

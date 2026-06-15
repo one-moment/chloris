@@ -44,6 +44,12 @@ deps/`.env`(sqlite 더미)/prisma client 셋업 완료, baseline lint 통과. OB
 > 초기화**된다(EnterWorktree no-op 이후/턴 경계). 워크트리 작업은 매 Bash 명령에서 `cd .claude/worktrees/crm-phase3`
 > (또는 `git -C`/절대경로) 필수. 메인 `.env`=운영 Postgres / 워크트리 `.env`=sqlite 더미. 워크트리에서 DB 쓰기 안전,
 > 메인에서는 절대 DB 쓰기/커밋 금지. A-1·B 작업은 모두 워크트리(`feature/crm-phase3`)에 커밋됨(메인 clean 확인).
+- iter 3 (done, **Part A-2** 코어 MentionInput 액션-멘션 지원): `components/MentionInput.jsx`에 `mentionActions`
+  prop + `onAction(action)` 콜백 추가. `filterMentionActions`(유저 멘션과 동일 매칭: 빈쿼리→전체/부분일치) +
+  통합 `items` 리스트(액션 상단→유저)로 방향키/Enter/Tab 내비; 액션 선택 시 `clearActiveMention`(잔여 @토큰 제거)
+  + `onAction(action)` 위임(텍스트 삽입 안 함). 코어는 modules/ 비의존(데이터는 prop으로만). **기존 호출부
+  (IdeasView/PostCard/MessagesView)는 새 prop 미전달 → items=유저후보, @유저 멘션 동작/IME/키보드 무회귀.**
+  `.mention-action` 액센트 CSS(globals.css). lint(모듈 경계 ok)+build 통과. 다음: A-3(MessagesView 배선).
 
 ## 2026-06-16: CRM ↔ 인벤토리 병합 + 운영 배포 (회귀 해소)
 

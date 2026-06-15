@@ -1149,6 +1149,15 @@
   font-size: 11px;
 }
 
+/* 액션형 멘션(@예약 등) — 유저 멘션과 구분되는 액센트 토큰. */
+.mention-popover button.mention-action strong {
+  color: var(--blue);
+}
+
+.mention-popover button.mention-action {
+  box-shadow: inset 2px 0 0 var(--accent-weak);
+}
+
 .mention-token {
   display: inline-flex;
   align-items: center;
