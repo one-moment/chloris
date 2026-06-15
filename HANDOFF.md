@@ -90,9 +90,13 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
   `uploadStatementImage` (maybeCompressImage → presign → S3 PUT, inline→dataURL fallback) → `/ocr` →
   prefills rows (receiptQty=receivedQty=명세서 수량, unitPrice) + supplier/date; `degraded`→수기 폴백 안내.
   lint+build pass. **Phase 4 COMPLETE** (stock-in API + form + 3-way + lotId + OCR).
-- Next: Phase 6 — metrics (폐기율·폐기가액·사유 비중·입고 불일치율, byBranch). Then Phase 5
-  (sheet sync + historical import) — build code but **STOP before live Google Sheets connection /
-  import run** (needs Service Account + branchId-attribution decision; record request in HANDOFF).
+- Iteration 16 (done, Phase 6-1): metrics API `GET /api/work/inventory/metrics?from=&to=&branchId=`
+  (submitted-only). Returns disposal {batch/line/qty/amount, byCause, byCategory}, stockIn {amount,
+  discrepancyCount/Rate}, wasteRateByAmount (폐기가액/입고가액 %), byBranch [{disposal/stockIn amount,
+  wasteRate, discrepancyCount}]. Auth + brand guard + degrade-to-zero. lint+build pass.
+- Next: Phase 6-2 — insights UI (지점 인사이트 panel consuming metrics; period/branch filter). Then
+  Phase 5 (sheet sync + historical import) — build code but **STOP before live Google Sheets
+  connection / import run** (needs Service Account + branchId-attribution decision; record in HANDOFF).
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 

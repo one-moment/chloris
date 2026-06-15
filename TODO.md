@@ -42,7 +42,10 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
       → 표 prefill(영수증=실입고=명세서 수량, 단가) + 거래처/입고일, degraded 시 수기 폴백. **Phase 4 완료.** lint+build.
 - [ ] **Phase 5 — sheet sync + import** (human-gated for live connection): NEW Google Sheet, one-way append;
   import past lots+disposals (link past disposals to past lots) into new sheet + DB. Existing sheet untouched.
-- [ ] **Phase 6 — metrics**: 폐기율·폐기가액·사유 비중·입고 불일치율, byBranch (metrics registry).
+- [~] **Phase 6 — metrics**:
+  - [x] (6-1, iter 16) metrics API `inventory/metrics` (submitted-only): 폐기 건수/수량/가액·사유/구분 비중,
+    입고 가액·불일치율, 폐기율(가액), byBranch. 기간/지점 필터, degrade-to-zero. lint+build.
+  - [ ] (6-2) insights UI 패널(지점 인사이트) — metrics 소비, 기간/지점 필터.
 - Pending human decisions: branchId for imported past rows; live Sheets connection + import run; 4-day window default.
 
 ## Multi-company split & branding (2026-06-11, night)
