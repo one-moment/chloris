@@ -11,7 +11,13 @@ Product serves 3 companies (internal tools): 원모먼트(online delivery), 보�
 - [~] Borough feature build started (track A first; infra split deferred by user):
   - [x] TEMPLATE system (core, all brands): `PostTemplate` schema + migration `20260614120000_add_post_templates` (NOT applied to prod — needs approval), API `/api/post-templates` (+ `[templateId]`), token helper `lib/postTemplates.js` ({{지점}}/{{오늘}}/{{작성자}}), `TemplatePicker` in post composer, `TemplateManagerDialog` (create/edit/delete; personal=anyone, shared=admin). GET degrades to [] if table missing, so code is deploy-safe pre-migration. Lint+build+tests pass.
   - [x] Applied `20260614120000_add_post_templates` to Boro prod DB + deployed.
-  - [ ] CRM + reservations (Borough-only modules) per `docs/templates-and-crm.md` — next.
+  - [~] CRM + reservations (Borough-only modules) per `docs/templates-and-crm.md` — IN PROGRESS (Ralph loop).
+    - [x] (1a) Data model: `Customer` (phone `@unique` = chain-wide key) + `Reservation` (spreadsheet-row successor) added to both Prisma schemas; migration `20260615103000_add_crm_module` created (NOT applied to prod — needs approval). No FK (PostTemplate convention → deploy-safe pre-migration). `prisma validate`+`generate`+lint pass.
+    - [ ] (1b) Module skeleton: `modules/crm/` manifest + `ui/`, register in `modules/registry.js` (brand gating already in `lib/brand.js`). — next
+    - [ ] (2) Lookup API `GET /api/work/crm/customers?q=` (name/phone → customer + recent reservations).
+    - [ ] (3) `/work/customers` (search/profile/history/manual entry) + `/work/reservations` (list/calendar/HQ rollup).
+    - [ ] (4) Reservation form ("새 예약" + `@예약`), submit → Customer upsert + Reservation create.
+    - [ ] (5) Metrics → 지점 인사이트.
 
 ## Deployed 2026-06-14: Borough design 2nd pass + templates + mention nav
 

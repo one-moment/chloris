@@ -11,6 +11,21 @@ The current priority is Purchase Agent stabilization:
 - Coupang tasks can be queued for the local purchase worker
 - final payment remains human-reviewed
 
+## In progress — CRM module (Ralph loop, started 2026-06-15)
+
+Building the Borough CRM + reservations module (`docs/templates-and-crm.md`) via a Ralph
+loop driven by `ralph/PROMPT.md`. One bounded step per iteration on `feature/purchase-bot-mvp`.
+
+- Iteration 1 (done): `Customer`/`Reservation` Prisma models (both schemas) + hand-written
+  migration `20260615103000_add_crm_module`. **Migration NOT applied to prod** (`.env` points
+  at Boro prod; applying needs explicit approval). No FK (PostTemplate convention).
+  `prisma validate` + `generate` + `npm run lint` pass.
+- Next: module skeleton (`modules/crm/` manifest + register in `modules/registry.js`),
+  then lookup API `/api/work/crm/customers`, then `/work/customers` + `/work/reservations`
+  screens, then the reservation form, then metrics.
+- Pending human action: apply `20260615103000_add_crm_module` to Boro prod when the CRM
+  feature is ready to ship (and decide branchId attribution for the 20-month sheet import).
+
 ## Completed Work
 
 - Internal communication MVP:

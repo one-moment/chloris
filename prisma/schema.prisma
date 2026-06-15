@@ -494,6 +494,47 @@ model PostTemplate {
   @@index([channelId], map: "idx_post_templates_channel")
 }
 
+// CRM module (Borough-only). Chain-wide customer keyed by phone + reservations
+// (Google-sheet successor). Loosely coupled (scalar ids, no FK) like PostTemplate so
+// the app degrades safely before the migration is applied to production.
+model Customer {
+  id           String   @id
+  name         String
+  phone        String   @unique(map: "uniq_customers_phone")
+  homeBranchId String?
+  memo         String?
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([name], map: "idx_customers_name")
+  @@index([homeBranchId], map: "idx_customers_home_branch")
+}
+
+model Reservation {
+  id            String   @id
+  customerId    String
+  branchId      String
+  channelId     String?
+  postId        String?
+  reservedAt    DateTime @default(now())
+  pickupAt      DateTime
+  product       String
+  amount        Int
+  source        String
+  receiveMethod String
+  status        String   @default("예약접수")
+  note          String?
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([customerId], map: "idx_reservations_customer")
+  @@index([branchId], map: "idx_reservations_branch")
+  @@index([pickupAt], map: "idx_reservations_pickup")
+  @@index([status], map: "idx_reservations_status")
+}
+
 model Comment {
   id        String   @id
   postId    String

@@ -1,5 +1,20 @@
 # DECISIONS.md
 
+## 2026-06-15: CRM module data model (Ralph loop, iteration 1)
+
+- `Customer` and `Reservation` modeled per `docs/templates-and-crm.md`. Loosely coupled like
+  `PostTemplate`: scalar id fields, **no Prisma `@relation` / no FK constraints**, indexes only.
+  Rationale: keeps the table deploy-safe before the migration is applied (app degrades when
+  tables are absent) and avoids editing existing models (Branch/Channel) with back-relations.
+- `Customer.phone` is `@unique` (chain-wide identity key) so the reservation form can
+  `upsert` by phone (spec requires upsert-by-phone). One Customer per phone across all branches.
+- `Reservation.amount` is `Int` (KRW, no decimals). `status` defaults to `예약접수`.
+  `reservedAt` defaults to now(); `pickupAt` required. Spec-optional fields (`channelId`,
+  `postId`, `note`, `homeBranchId`, `memo`, `createdById`) are nullable.
+- Migration `20260615103000_add_crm_module` hand-written (additive CREATE TABLE, no FK),
+  **NOT applied to any production DB** — `.env DATABASE_URL` points at Boro prod, so no
+  `prisma migrate`/`db push` was run; apply is deferred to explicit user approval (AGENTS.md).
+
 ## 2026-06-11 (night): Multi-company split & Borough theme
 
 - The product serves three companies as internal tools: 원모먼트(online flower delivery), 보로플라워마켓(offline franchise flower shop), 오늘꽃(online flower wholesale + large-venue supply). Shared base = chat + board (게시판); each company gets custom modules per its work.
