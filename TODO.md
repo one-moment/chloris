@@ -21,8 +21,11 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
       + `[requestId]` PATCH (approve→find-or-create FlowerItem / reject). degrade. lint+build pass.
     - [x] (2c-3, iter 7) admin master UI `/work/inventory/masters` (inventory-master nav, admin only):
       신규 품목 요청 승인/반려, 품목·폐기원인 추가/활성토글. lint+build pass. **Phase 2 완료.**
-- [ ] **Phase 3 — disposal form**: table, Enter/Tab nav (IME-safe), item combobox, category+cause dropdowns,
-  lot picker, save-time validation gate, 임시저장/최종제출 + submit API.
+- [~] **Phase 3 — disposal form**:
+  - [x] (3-1, iter 8) write API + `lib/inventoryServer.js`: `disposals` POST(draft|submitted, server
+    validation gate→422, lot 단가 스냅샷)/GET, `[batchId]` GET/PATCH(draft 행교체+최종제출 전환, tx). lint+build.
+  - [ ] (3-2) disposal form UI: table, Enter/Tab nav (IME-safe), item combobox, category+cause dropdowns,
+    lot picker, inline validation, 임시저장/최종제출 + 엑셀 복사.
 - [ ] **Phase 4 — stock-in + 거래명세서 OCR**: inbound table, 발주/영수증/실입고 3-way, lotId auto-numbering,
   Vision extract via `lib/agents/openaiClient.js` (degrade if no key).
 - [ ] **Phase 5 — sheet sync + import** (human-gated for live connection): NEW Google Sheet, one-way append;

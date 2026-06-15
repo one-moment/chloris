@@ -54,9 +54,15 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
   InventoryMastersDashboard.jsx` (client): pending 신규 품목 요청 승인/반려, 품목 마스터 추가/활성토글,
   폐기원인 마스터 추가/활성토글. Consumes admin + item-requests APIs. lint+build pass.
   **Phase 2 COMPLETE** (skeleton + lookup/validation + master management).
-- Next: Phase 3 — disposal form (`/work/disposal` table: Enter/Tab nav IME-safe, item combobox using
-  `/items`, category+cause dropdowns using `/reasons`, lot picker using `/lots`, save-time validation
-  gate, 임시저장/최종제출) + submit API `POST /api/work/inventory/disposals`.
+- Iteration 8 (done, Phase 3-1): disposal write API + `lib/inventoryServer.js` (prisma helpers:
+  serialize/resolveLotPrices/buildLineData/validateForSubmit, shared by routes — boundary-safe core lib).
+  `POST /api/work/inventory/disposals` (draft|submitted; **server validation gate** → 422 on any line
+  error, no save; lot unitPrice snapshot → amount=round(price*qty)), `GET` (list, branch/status/date
+  filters), `GET/PATCH .../[batchId]` (resume draft: replace lines + draft→submitted transition in a
+  tx; submitted records locked). Degrade. lint+build pass.
+- Next: Phase 3-2 — disposal form UI (replace `DisposalDashboard` stub): table grid, Enter/Tab nav
+  (IME-safe), item combobox (`/items`), category+cause dropdowns (`/reasons`), lot picker (`/lots`),
+  inline validation, 임시저장(POST draft)/최종제출(PATCH submitted). Then 엑셀 복사.
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 
