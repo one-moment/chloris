@@ -32,3 +32,14 @@ export const inventoryMasterModule = {
     minRole: "admin"
   }
 };
+
+// 재고 인사이트: 폐기율·폐기가액·사유 비중·입고 불일치율, 지점별. (관리자/매니저용 지표)
+export const inventoryInsightsModule = {
+  slug: "inventory-insights",
+  name: "재고 인사이트",
+  nav: {
+    label: "재고 인사이트",
+    href: "/work/inventory/insights",
+    minRole: "member"
+  }
+};

@@ -45,7 +45,8 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
 - [~] **Phase 6 — metrics**:
   - [x] (6-1, iter 16) metrics API `inventory/metrics` (submitted-only): 폐기 건수/수량/가액·사유/구분 비중,
     입고 가액·불일치율, 폐기율(가액), byBranch. 기간/지점 필터, degrade-to-zero. lint+build.
-  - [ ] (6-2) insights UI 패널(지점 인사이트) — metrics 소비, 기간/지점 필터.
+  - [x] (6-2, iter 17) insights UI `/work/inventory/insights` (inventory-insights nav): 지점·기간 필터,
+    stat cards(폐기율/폐기가액/입고가액/불일치율), 사유 비중·지점별 table. **Phase 6 완료.** lint+build.
 - Pending human decisions: branchId for imported past rows; live Sheets connection + import run; 4-day window default.
 
 ## Multi-company split & branding (2026-06-11, night)

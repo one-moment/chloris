@@ -94,9 +94,12 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
   (submitted-only). Returns disposal {batch/line/qty/amount, byCause, byCategory}, stockIn {amount,
   discrepancyCount/Rate}, wasteRateByAmount (폐기가액/입고가액 %), byBranch [{disposal/stockIn amount,
   wasteRate, discrepancyCount}]. Auth + brand guard + degrade-to-zero. lint+build pass.
-- Next: Phase 6-2 — insights UI (지점 인사이트 panel consuming metrics; period/branch filter). Then
-  Phase 5 (sheet sync + historical import) — build code but **STOP before live Google Sheets
-  connection / import run** (needs Service Account + branchId-attribution decision; record in HANDOFF).
+- Iteration 17 (done, Phase 6-2): insights UI. `inventoryInsightsModule` (slug inventory-insights,
+  member nav → /work/inventory/insights) + route + `InventoryInsightsDashboard.jsx` (client):
+  지점·기간 filter, stat cards (폐기율/폐기가액/입고가액/불일치율), 사유 비중 table, 지점별 table.
+  Consumes metrics API. lint+build pass. **Phase 6 COMPLETE.**
+- Next: Phase 5 (human-gated) — write sheet-sync code + historical-import script but **DO NOT** connect
+  to live Google Sheets or run the import. Then output RALPH-DONE (phases 1–4+6 done, phase 5 code-only).
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 
