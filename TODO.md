@@ -30,8 +30,11 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
   - [x] (3-3, iter 11) lot picker in the form: item 선택 시 4일 lot 자동추천(최신 preselect), 출처(lot) 칸
     변경/해제 + 후보 popover(날짜·거래처·단가·D-n·추천)+출처없음. 품목 변경 시 매핑 초기화. unitPrice→폐기가액.
     **Phase 3 완료.** lint+build pass.
-- [ ] **Phase 4 — stock-in + 거래명세서 OCR**: inbound table, 발주/영수증/실입고 3-way, lotId auto-numbering,
-  Vision extract via `lib/agents/openaiClient.js` (degrade if no key).
+- [~] **Phase 4 — stock-in + 거래명세서 OCR**:
+  - [x] (4-1, iter 12) stock-in write API + helpers: `stock-ins` POST(draft|submitted, lotId 자동발번
+    YYYYMMDD_품목_거래처_NNNN, 3중대조 상태, 입고가액)/GET. `buildLotId`/`stockInLineStatus`/serialize. lint+build.
+  - [ ] (4-2) stock-in form UI: 품목/발주/영수증/실입고/단가/특이사항 표, 불일치 하이라이트, 거래처·입고일, draft/submit.
+  - [ ] (4-3) 거래명세서 Vision OCR → 표 prefill (`lib/agents/openaiClient.js`, 키 없으면 degrade).
 - [ ] **Phase 5 — sheet sync + import** (human-gated for live connection): NEW Google Sheet, one-way append;
   import past lots+disposals (link past disposals to past lots) into new sheet + DB. Existing sheet untouched.
 - [ ] **Phase 6 — metrics**: 폐기율·폐기가액·사유 비중·입고 불일치율, byBranch (metrics registry).

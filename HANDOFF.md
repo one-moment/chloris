@@ -71,9 +71,15 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
   shows unitPrice + 변경/해제, popover lists candidates (날짜·거래처·단가·D-n, newest=추천) + 출처 없음.
   Lot mapping clears when item text changes. unitPrice flows to server → 폐기가액 snapshot. **Phase 3 DONE.**
   lint+build pass.
-- Next: Phase 4 — stock-in form + lotId auto-numbering + 발주/영수증/실입고 3-way + 거래명세서 OCR
-  (Vision via `lib/agents/openaiClient.js`, degrade if no key). Then Phase 6 (metrics). Phase 5
-  (sheet sync + import) is human-gated — build code, STOP before live connection/import.
+- Iteration 12 (done, Phase 4-1): stock-in write API + server helpers (`lotDatePrefix`, `buildLotId`
+  = `YYYYMMDD_품목_거래처_NNNN` continuing the day's running seq, `stockInLineStatus` 3-way →
+  ok/discrepancy/missing/substitute, `serializeStockInDelivery`). `POST /api/work/inventory/stock-ins`
+  (draft|submitted, lotId auto-number, amount=round(price×실입고), totalAmount), `GET` (list + branches).
+  Degrade. lint+build pass.
+- Next: Phase 4-2 — stock-in form UI (`StockInDashboard`): table 품목/발주/영수증/실입고/단가/특이사항,
+  3-way discrepancy highlight, 거래처·입고일 header, draft/submit. Then Phase 4-3 (거래명세서 OCR prefill,
+  Vision via `lib/agents/openaiClient.js`, degrade if no key). Then Phase 6 (metrics). Phase 5
+  (sheet sync + import) human-gated — build code, STOP before live connection/import.
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 
