@@ -25,3 +25,7 @@
 - (발견사항 없음) — 980/981 상호배타(갭/오버랩 없음), ≤980 단일열+오프캔버스(빈 열 없음), ≥981 3열 in-flow 사이드바. 드로어 polish는 transition/box-shadow/배경만 덮고 position/transform 유지 → 슬라이드·클릭닫기 무손상. 토큰 전부 정의.
 - S3 발견사항(768~980 빈 열): [해결] (iter 4).
 - (S7 메모) POS≈880px는 현재 모바일 드로어 범위 — 레일 노출 필요 시 S7에서 경계 조정.
+
+### iter 5 — S5 (컴포넌트 정합/셸 통합) 리뷰
+- [열림] (S5) `.workspace-root .main-header { padding:12px 20px }`가 무조건부라 globals `@media(max-width:980) .main-header{padding:12px 14px}`(모바일 좌우 14px 의도)를 특이도로 덮음 → 모바일 헤더 좌우 20px. 수정: 이 패딩을 `@media(min-width:981px)`로 스코프해 모바일 14px 보존.
+- (확인됨) main-area min-height:0 스크롤 컨테인 정상(붕괴 위험 없음), --surface-page 정의·의도 톤, 모듈 대시보드는 .work-* 자체 클래스라 무회귀.
