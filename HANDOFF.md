@@ -35,10 +35,15 @@ loop driven by `ralph/PROMPT.md`. One bounded step per iteration on `feature/pur
   (`app/api/work/crm/reservations/route.js`) — branchId/status/from/to filters → reservations
   with customerName + branchName, plus a `branches` list for the filter UI. Auth + brand guard
   + degrade. Lint + build pass.
-- Next: `/work/reservations` screen (list + pickup calendar + branch filter + HQ rollup),
-  consuming the list API (branch names already resolved server-side). Then the reservation form
-  (submit → Customer upsert + Reservation create via a POST API), then customer manual entry,
-  then metrics.
+- Iteration 6 (done): `/work/reservations` screen (`modules/crm/ui/ReservationsDashboard.jsx`,
+  client component) — branch + status filters, summary metrics (count / total amount),
+  pickup-date-sorted reservation table consuming the list API. Added `.work-filter-row` CSS.
+  Lint + build pass. (Pickup calendar view split out as a later step.)
+- Next: reservation form ("새 예약" on `/work/reservations` + `@예약`) with typed-field
+  validation, customer-lookup autofill, submit → Customer upsert + Reservation create via a
+  POST API. Then customer manual entry, pickup calendar view, then metrics.
+- NOTE: all CRM data screens stay empty until migration `20260615103000_add_crm_module` is
+  applied to Boro prod (deferred, needs approval) and reservations are entered.
 - Pending human action: apply `20260615103000_add_crm_module` to Boro prod when the CRM
   feature is ready to ship (and decide branchId attribution for the 20-month sheet import).
 

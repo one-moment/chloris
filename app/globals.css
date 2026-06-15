@@ -2126,6 +2126,20 @@ button:disabled {
   font-weight: 700;
 }
 
+.work-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.work-filter-row label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
 .work-table {
   width: 100%;
   border-collapse: collapse;
