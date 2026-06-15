@@ -6,3 +6,9 @@
 
 ## 발견사항
 (이터레이션마다 추가)
+
+### iter 1 — S1 (Lucide 인프라) 리뷰
+- [열림] (S1) 알 수 없는 name이면 Icon이 조용히 null 반환 → dev에서 `console.warn` 또는 가시 폴백 추가.
+- [열림] (S1) 사이즈 미스매치: borough.css는 `i[data-lucide]{width/height/stroke-width}`(레일21·icon-button17·badge13 등 18규칙)로 아이콘 크기를 제어하는데 lucide-react는 `<svg class="lucide">`를 렌더 → 셀렉터 불일치. S3에서 CSS 기반 사이징이 안 먹음. 해결: 렌더 svg에 `data-lucide={name}` 부여 + borough.css 적용 시 `i[data-lucide]`를 `[data-lucide]`로 완화(또는 호출부마다 size/strokeWidth 명시).
+- [열림] (S1) 디자인 HTML이 쓰는 아이콘 누락: alert-triangle, layout-dashboard, ruler, square-dashed, smartphone, git-commit-horizontal → 레지스트리에 추가(AlertTriangle/LayoutDashboard/Ruler/SquareDashed/Smartphone/GitCommitHorizontal).
+- [열림] (S1) 래퍼가 추가 props(onClick/style/data-*)를 버림 → `...rest`를 `<Glyph>`로 spread 권장.
