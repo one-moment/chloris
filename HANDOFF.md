@@ -26,6 +26,24 @@ deps/`.env`(sqlite 더미)/prisma client 셋업 완료, baseline lint 통과. OB
   href 없는 항목 제외; `modules`는 이미 brand 게이팅됨). 코어→registry는 기존 허용 패턴(ProjectSidebar의
   `getWorkNavItems`와 동일). 코어는 modules/를 import하지 않고 데이터만 읽음. **소비처 아직 없음 → 무회귀.**
   `npm run lint`(모듈 경계 ok) + `next build`(라우트 변화 없음) 통과. 다음: A-2(MentionInput 확장).
+- iter 2 (done, **Part B** 예약→구글시트 연동, 코드+라이브 자격증명 검증):
+  - `lib/googleSheets.js` (공용 SA Sheets 헬퍼): 자격증명 해석 = `GOOGLE_APPLICATION_CREDENTIALS`(JSON 파일경로)
+    우선, 없으면 인라인 `GOOGLE_SA_CLIENT_EMAIL`+`GOOGLE_SA_PRIVATE_KEY`(Vercel용). `getAccessToken`(JWT RS256)/
+    `appendSheetRows`/`getSpreadsheetMeta`. `lib/crmReservationSheetSync.js`: `isReservationSheetConfigured`
+    (`CRM_RESERVATION_SHEET_ID`+자격증명 있어야 활성), `reservationSheetRow`(12열 순수 매핑), `syncReservation`
+    (미설정 시 no-op). `POST /api/work/crm/reservations`에 try/catch 비치명적 배선(실패해도 201; branch.name select 추가).
+  - **사용자 제공 ops 자격증명 검증(읽기전용, 쓰기 없음)**: SA 키(`boro-reservation@boro-reservation.iam.gserviceaccount.com`)
+    + 시트ID로 token 200 + `spreadsheets.get` 200 → 키 유효 + SA가 시트에 공유됨 확인. 시트 제목 "[보로] CRM 예약 관리",
+    현재 탭 = "시트1"(코드 기본 탭 "예약" — 불일치). `lint`+`build` 통과. 키는 레포에 저장 안 함(`.env`는 키 **경로**만,
+    gitignored; 키 파일은 Downloads). **커밋에 키/시트값 미포함.**
+  - 남은 사람 작업: ① **라이브 append 테스트 승인**(운영 시트에 실제 1행) ② 탭 정리("시트1"→"예약" 또는
+    `CRM_RESERVATION_SHEET_TAB=시트1`)+헤더행 ③ **키 회전 권장**(대화에 평문 공유됨) ④ 운영(Vercel) env 주입
+    (`CRM_RESERVATION_SHEET_ID` + 인라인 `GOOGLE_SA_*`)+redeploy. 다음 코드 단계: A-2(MentionInput 확장).
+
+> ⚠️ 루프 운영 주의(검증됨): **새 턴마다 Bash 셸 cwd가 메인 레포(`…/mattermost`, `feature/purchase-bot-mvp`)로
+> 초기화**된다(EnterWorktree no-op 이후/턴 경계). 워크트리 작업은 매 Bash 명령에서 `cd .claude/worktrees/crm-phase3`
+> (또는 `git -C`/절대경로) 필수. 메인 `.env`=운영 Postgres / 워크트리 `.env`=sqlite 더미. 워크트리에서 DB 쓰기 안전,
+> 메인에서는 절대 DB 쓰기/커밋 금지. A-1·B 작업은 모두 워크트리(`feature/crm-phase3`)에 커밋됨(메인 clean 확인).
 
 ## 2026-06-16: CRM ↔ 인벤토리 병합 + 운영 배포 (회귀 해소)
 

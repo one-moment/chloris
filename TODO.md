@@ -13,12 +13,20 @@ OBJECTIVE: `ralph/PROMPT.md`. 병합된 배포 라인(인벤토리 + CRM Phase 2
     후보 노출, 선택 시 텍스트 삽입 대신 onAction 호출. @유저 멘션 IME-safety/방향키·Enter·Tab·전송 회귀 금지.
   - [ ] (A-3) 채널 작성기(`components/MessagesView.jsx`) 배선: registry에서 mentionActions(채널 branchId로 필터)
     전달 + onAction → router.push 딥링크. v1 "예약" 버튼은 v2 검증까지 유지.
-- [ ] **Part B — 예약 → 구글시트 append** (코드만, env 미설정 시 no-op):
-  - [ ] (B-1) Sheets 헬퍼(SA JWT + values:append) — `lib/inventorySheetSync.js` 패턴 재사용/공유.
-  - [ ] (B-2) `POST /api/work/crm/reservations` 최종제출 시 새 시트에 한 줄 append(베스트-에포트, 실패해도 예약 성공).
-    env(`CRM_RESERVATION_SHEET_ID` 등) 미설정 시 degrade. 키 커밋 금지, 운영 연결은 사용자 ops.
+- [~] **Part B — 예약 → 구글시트 append** (코드만, env 미설정 시 no-op):
+  - [x] (B-1, iter 2) Sheets 공용 헬퍼 `lib/googleSheets.js`(자격증명 해석 GOOGLE_APPLICATION_CREDENTIALS 파일경로
+    | 인라인 GOOGLE_SA_*; JWT→token; appendSheetRows; getSpreadsheetMeta) + `lib/crmReservationSheetSync.js`
+    (`isReservationSheetConfigured`, `reservationSheetRow` 순수 매핑 12열, `syncReservation` no-op 기본). lint+build pass.
+  - [x] (B-2, iter 2) `POST /api/work/crm/reservations`에 `syncReservation` 비치명적 배선(try/catch, 실패해도
+    201 유지; branch.name select 추가; PII 로그 금지). env 미설정 시 no-op. lint+build pass.
+  - [x] **라이브 자격증명 검증(읽기전용)**: 사용자 제공 SA 키 + 시트ID로 token 200 + spreadsheets.get 200 확인 →
+    키 유효 + SA(`boro-reservation@…`) 시트 공유됨. 시트 제목 "[보로] CRM 예약 관리", 현재 탭 "시트1"(코드 기본 탭 "예약").
+  - [ ] (남음) **라이브 append 테스트**: 사용자 사전 승인 필요(운영 시트에 실제 한 줄 기록). 탭명 정리("시트1"→"예약"
+    또는 `CRM_RESERVATION_SHEET_TAB=시트1`) + 헤더행. **키 회전 권장**(평문 공유됨).
+  - [ ] (남음) 운영(Vercel) env 주입은 사용자 ops: `CRM_RESERVATION_SHEET_ID` + 인라인 `GOOGLE_SA_CLIENT_EMAIL`/
+    `GOOGLE_SA_PRIVATE_KEY`(Vercel은 파일경로 대신 인라인 권장) + redeploy.
 
-완료 조건: Part A·B 코드 존재 + lint+build 통과 + 추적 문서 갱신 + 커밋. 라이브 시트 연결은 사람 게이트(여기선 env 미설정).
+완료 조건: Part A·B 코드 존재 + lint+build 통과 + 추적 문서 갱신 + 커밋. 라이브 시트 연결은 사람 게이트(append 테스트·운영 env는 승인 후).
 
 ## Inventory (입고·폐기) module — Ralph loop (2026-06-15)
 
