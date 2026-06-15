@@ -14,7 +14,11 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
     stockin→/work/stock-in) + registry + brand gating + route pages + stub dashboards. lint+build pass.
   - [x] (2b, iter 4) lookup/validation APIs + `lib/inventory.js` constants. `items` (autocomplete+exactMatch),
     `reasons` (fixed categories+causes), `lots` (4-day same-item suggestion). Auth+brand+degrade. lint+build pass.
-  - [ ] (2c) admin master screens (FlowerItem/DisposalCause edit) + `NewItemRequest` approval.
+  - [~] (2c) admin master management + `NewItemRequest` approval:
+    - [x] (2c-1, iter 5) master CRUD APIs: `admin/items` (GET/POST) + `[itemId]` (PATCH), `admin/causes`
+      (GET/POST) + `[causeId]` (PATCH). Admin-gated, name dup-check, degrade. lint+build pass.
+    - [ ] (2c-2) `NewItemRequest` API (member create / admin list / approve→upsert FlowerItem / reject).
+    - [ ] (2c-3) admin master UI screen (items + causes + pending requests).
 - [ ] **Phase 3 — disposal form**: table, Enter/Tab nav (IME-safe), item combobox, category+cause dropdowns,
   lot picker, save-time validation gate, 임시저장/최종제출 + submit API.
 - [ ] **Phase 4 — stock-in + 거래명세서 OCR**: inbound table, 발주/영수증/실입고 3-way, lotId auto-numbering,

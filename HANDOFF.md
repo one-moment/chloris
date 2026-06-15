@@ -43,8 +43,11 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
   (autocomplete + `exactMatch` for save-gate), `/reasons` (fixed categories + active causes),
   `/lots?item=&date=&window=` (same-item lots in [date-N, date], newest first — 4-day auto-mapping).
   Auth + brand guard + missing-table degrade-to-empty. `npm run lint` + `next build` pass (3 routes register).
-- Next: Phase 2c — admin master screens (FlowerItem/DisposalCause CRUD write APIs + UI) +
-  `NewItemRequest` approval. Then Phase 3 (disposal form).
+- Iteration 5 (done, Phase 2c-1): master CRUD write APIs (admin-gated, `user.role==="admin"`).
+  `GET/POST /api/work/inventory/admin/items` + `PATCH .../items/[itemId]` (name dup-check, 활성여부);
+  `GET/POST .../admin/causes` + `PATCH .../causes/[causeId]`. Auth+admin+degrade. lint+build pass.
+- Next: Phase 2c-2 — `NewItemRequest` API (member POST create from form, admin GET list + PATCH
+  approve→upsert FlowerItem / reject). Then admin master UI screen. Then Phase 3 (disposal form).
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 
