@@ -93,6 +93,7 @@ const report = {
   samples: []
 };
 const phones = new Set();
+const records = [];
 
 monthTabs.forEach((tab, i) => {
   const info = parseTabName(tab);
@@ -142,8 +143,95 @@ monthTabs.forEach((tab, i) => {
     if (report.samples.length < 5) {
       report.samples.push({ branch: branchName, name, phone, reservedAt, pickupAt, product: r?.[4], amount, source: r?.[6], receiveMethod: r?.[7] || null, note: r?.[8] || null });
     }
+    records.push({
+      branchName, name, phone, reservedAt, pickupAt,
+      product: String(r?.[4] ?? "").trim(),
+      amount,
+      source: String(r?.[6] ?? "").trim(),
+      receiveMethod: String(r?.[7] ?? "").trim(),
+      note: String(r?.[8] ?? "").trim() || null
+    });
   }
 });
 report.distinctCustomers = phones.size;
 
 console.log(JSON.stringify(report, null, 2));
+
+// ── --apply: 실제 DB 적용 (Customer upsert + Reservation 생성, 멱등) ───────────────
+// 결정적 id + createMany(skipDuplicates)로 재실행해도 중복 없음. 운영 적용은 사용자 승인 후에만.
+function sha1(str) {
+  return crypto.createHash("sha1").update(str).digest("hex").slice(0, 16);
+}
+
+async function applyImport(rows) {
+  const { PrismaClient } = await import("@prisma/client");
+  const prisma = new PrismaClient();
+  // skipDuplicates는 SQLite 미지원 → 스테이징(sqlite)은 옵션 없이(빈 DB라 충돌 없음), 운영(postgres)은 멱등.
+  const createOpts = (process.env.DATABASE_URL || "").startsWith("file:") ? {} : { skipDuplicates: true };
+  try {
+    const branches = await prisma.branch.findMany({ select: { id: true, name: true } });
+    const branchId = Object.fromEntries(branches.map((b) => [b.name, b.id]));
+    for (const n of Object.values(BRANCH_BY_HO)) {
+      if (!branchId[n]) throw new Error(`지점을 DB에서 찾을 수 없음: ${n} (브랜치 시드 확인)`);
+    }
+
+    // 1) 고객 upsert (전화 dedup)
+    const byPhone = new Map();
+    for (const r of rows) if (!byPhone.has(r.phone)) byPhone.set(r.phone, r);
+    const customerData = [...byPhone.values()].map((r) => ({
+      id: `cust-imp-${sha1(r.phone)}`,
+      name: r.name || "(미상)",
+      phone: r.phone,
+      homeBranchId: branchId[r.branchName] ?? null
+    }));
+    let custCreated = 0;
+    for (let i = 0; i < customerData.length; i += 500) {
+      const res = await prisma.customer.createMany({ data: customerData.slice(i, i + 500), ...createOpts });
+      custCreated += res.count;
+    }
+
+    // 2) phone -> customerId 매핑(기존 + 신규)
+    const custRows = await prisma.customer.findMany({ where: { phone: { in: [...byPhone.keys()] } }, select: { id: true, phone: true } });
+    const custId = Object.fromEntries(custRows.map((c) => [c.phone, c.id]));
+
+    // 3) 예약 생성 (결정적 id → 멱등)
+    const reservationData = rows.map((r) => {
+      const reservedIso = r.reservedAt || r.pickupAt;
+      const pickupIso = r.pickupAt || r.reservedAt;
+      const bId = branchId[r.branchName];
+      const id = `resv-imp-${sha1([bId, r.phone, r.reservedAt ?? "", r.pickupAt ?? "", r.product, r.amount ?? ""].join("|"))}`;
+      return {
+        id,
+        customerId: custId[r.phone],
+        branchId: bId,
+        reservedAt: new Date(reservedIso),
+        pickupAt: new Date(pickupIso),
+        product: r.product || "(미상)",
+        amount: r.amount ?? 0,
+        source: r.source || "미상",
+        receiveMethod: r.receiveMethod || "방문수령",
+        status: "픽업완료",
+        note: r.note
+      };
+    });
+    // import 내 중복(동일 지점·전화·날짜·상품·금액) 합치기 → 같은 결정적 id는 1건. (양 provider 안전)
+    const byId = new Map();
+    for (const rec of reservationData) if (!byId.has(rec.id)) byId.set(rec.id, rec);
+    const reservationDeduped = [...byId.values()];
+    const collapsedDuplicates = reservationData.length - reservationDeduped.length;
+    let resvCreated = 0;
+    for (let i = 0; i < reservationDeduped.length; i += 500) {
+      const res = await prisma.reservation.createMany({ data: reservationDeduped.slice(i, i + 500), ...createOpts });
+      resvCreated += res.count;
+    }
+
+    const target = (process.env.DATABASE_URL || "").match(/@([^:/?]+)/)?.[1] ?? "(local sqlite)";
+    console.log("APPLIED:", JSON.stringify({ target, customersInput: customerData.length, customersCreated: custCreated, reservationsInput: reservationData.length, collapsedDuplicates, reservationsCreated: resvCreated }, null, 2));
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+if (process.argv.includes("--apply")) {
+  await applyImport(records);
+}
