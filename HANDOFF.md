@@ -81,9 +81,13 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
   client 3-way preview (`rowStatus` mirrors server) → row highlight + 상태 chip (일치/불일치/미입고/대체);
   지점·거래처·입고일 header; 입고 등록(POST submitted → lotId auto-number); 엑셀 복사; 입고가액 합계.
   lint+build pass.
-- Next: Phase 4-3 — 거래명세서 Vision OCR prefill (`lib/agents/openaiClient.js`, degrade if no key) →
-  fills the stock-in table from an attached statement photo. Then Phase 6 (metrics). Phase 5
-  (sheet sync + import) human-gated — build code, STOP before live connection/import.
+- Iteration 14 (done, Phase 4-3a): 거래명세서 OCR backend. `extractStatementLineItems({imageUrl})` in
+  `lib/agents/openaiClient.js` (Vision via OpenAI Responses API input_image; `OPENAI_VISION_MODEL`/
+  `OPENAI_AGENT_MODEL`; returns skipped/parseError/result). `POST /api/work/inventory/stock-ins/ocr`
+  → normalized `{ degraded, supplier, statementDate, lines }`. No key / API error / parse fail →
+  `degraded:true` + empty lines (form falls back to manual). lint+build pass.
+- Next: Phase 4-3b — wire OCR into the stock-in form (attach 명세서 photo → upload → `/ocr` → prefill
+  rows + supplier/date). Then Phase 6 (metrics). Phase 5 (sheet sync + import) human-gated.
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 

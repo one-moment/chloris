@@ -35,7 +35,10 @@ Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/
     YYYYMMDD_품목_거래처_NNNN, 3중대조 상태, 입고가액)/GET. `buildLotId`/`stockInLineStatus`/serialize. lint+build.
   - [x] (4-2, iter 13) stock-in form UI: 품목/발주/영수증/실입고/단가/특이사항 표, 품목 combobox, 키보드 이동,
     클라 3중대조 미리보기(행 하이라이트+상태칩), 거래처·입고일, 입고 등록(lotId 자동발번), 엑셀 복사. lint+build.
-  - [ ] (4-3) 거래명세서 Vision OCR → 표 prefill (`lib/agents/openaiClient.js`, 키 없으면 degrade).
+  - [~] (4-3) 거래명세서 Vision OCR → 표 prefill:
+    - [x] (4-3a, iter 14) OCR backend: `extractStatementLineItems` (openaiClient Vision) + `stock-ins/ocr`
+      POST → `{degraded, supplier, statementDate, lines}`. 키 없음/실패 시 degraded. lint+build.
+    - [ ] (4-3b) 폼 연동: 명세서 사진 업로드 → `/ocr` → 표 prefill + 거래처/입고일 채움.
 - [ ] **Phase 5 — sheet sync + import** (human-gated for live connection): NEW Google Sheet, one-way append;
   import past lots+disposals (link past disposals to past lots) into new sheet + DB. Existing sheet untouched.
 - [ ] **Phase 6 — metrics**: 폐기율·폐기가액·사유 비중·입고 불일치율, byBranch (metrics registry).
