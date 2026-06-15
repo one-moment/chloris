@@ -18,7 +18,8 @@ CRM core shipped+deployed. This worktree (base `6bcc162`) is separate from the i
   - [x] (v1-1) 예약 폼 분리: `modules/crm/ui/ReservationForm.jsx`(props: branches/fixedBranchId/channelId/onSubmitted/onCancel); `/work/reservations`가 사용. 무동작-변경. lint+build pass.
   - [x] (v1-2) `/work/reservations` 딥링크: page가 `?new=1&channel=&branch=` 읽어(async searchParams) ReservationsDashboard에 initialNew/initialChannelId/initialBranchId 전달 → 폼 자동 오픈(지점 고정+channelId). Lint+build pass(라우트 dynamic).
   - [x] (v1-3) 코어 "예약" 버튼: `components/Topbar.jsx` 채널 헤더에 branchId 연결 채널 + 예약 모듈 활성 시 `next/link` → `/work/reservations?new=1&channel=&branch=`. 코어→모듈 import 없음(lib/brand만). 모듈 경계 lint + build pass.
-  - [ ] (v1-4) 제출 후 #지점방 요약 카드(선택, 켬) → v1 완료 시 RALPH-DONE. — next
+  - [x] (v1-4) 제출 후 #지점방 요약 카드: 채널 진입(channelId) 예약 제출 시 `POST /api/channels/[id]/messages`(bot:true → 에이전트/봇 재처리 안 함)로 요약 게시. 베스트-에포트(실패해도 예약 생성됨). 모듈→코어 HTTP 호출(경계 안전). Lint+build pass.
+  - **@예약 v1 OBJECTIVE 완료** (2026-06-16, 4 iterations): 폼 분리 → 딥링크 → 코어 버튼 → 요약카드. lint+build green. 미배포(코드만, 새 마이그레이션 없음). v2 멘션은 별도.
 - 보류(입력 필요): 20개월 시트 import — 지점 매핑은 받음(1호점/2호점/3호점 → 강남1/강남2/잠실, 23년7월~ 월별 탭). 남은 것: 시트 접근수단(Sheets API 키 or CSV) + 운영 import 승인. (사용자: 시트키 전달 예정)
 
 ## Multi-company split & branding (2026-06-11, night)

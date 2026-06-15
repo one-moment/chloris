@@ -21,6 +21,13 @@ function emptyForm(branchId) {
   };
 }
 
+function formatPickup(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
 // 재사용 예약 입력 폼. /work/reservations "새 예약"과 (후속) #지점방 @예약 진입이 공유한다.
 // fixedBranchId 주면 지점 고정(현장 진입), 없으면 지점 선택(매니저 진입). channelId는 예약-채널 연결용.
 export default function ReservationForm({ branches = [], fixedBranchId = "", channelId = null, onSubmitted, onCancel }) {
@@ -80,6 +87,19 @@ export default function ReservationForm({ branches = [], fixedBranchId = "", cha
           channelId: channelId || undefined
         })
       });
+      if (channelId) {
+        // #지점방 진입(@예약 v1): 제출 후 채널에 요약 카드 게시. bot:true → 에이전트/봇 재처리 안 함.
+        // 베스트-에포트: 게시 실패해도 예약은 이미 생성됨.
+        const summary = `📋 예약 접수 — ${form.name} · ${form.product} · 픽업 ${formatPickup(form.pickupAt)} · ₩${Number(form.amount).toLocaleString("ko-KR")}`;
+        try {
+          await requestJson(`/api/channels/${channelId}/messages`, {
+            method: "POST",
+            body: JSON.stringify({ body: summary, bot: true })
+          });
+        } catch {
+          /* 요약 게시 실패 무시 */
+        }
+      }
       setForm(emptyForm(fixedBranchId));
       setMatches([]);
       onSubmitted?.(data.reservation);

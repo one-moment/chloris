@@ -26,10 +26,16 @@ button (route-navigation, boundary-safe). Decisions: 모달 / branchId 채널만
   branch-linked channels when the reservations module is enabled; `next/link` to
   `/work/reservations?new=1&channel=&branch=`. Boundary-safe (core imports only `next/link` +
   `lib/brand`, never `modules/`). Module-boundary lint + build pass.
-- Next (v1-4, last): after a reservation is created via the channel flow (channelId present),
-  post a short summary card/message to that #지점방. Then v1 OBJECTIVE complete → RALPH-DONE.
-  (Open: the summary post needs a server-side hook — the create API could post to the channel,
-  or the client posts after; pick the lower-risk path that respects module boundaries.)
+- Iteration 4 (done): channel summary card. On submit via the channel flow (channelId set),
+  `ReservationForm` posts a summary to `POST /api/channels/[id]/messages` with `bot:true` (skips
+  agent/bot re-processing). Best-effort (reservation already created if the post fails). Module→core
+  over HTTP only — boundary-safe. Lint + build pass.
+
+**@예약 v1 OBJECTIVE complete (2026-06-16, 4 iterations).** Form extraction → deep-link open →
+core "예약" button (Topbar) → channel summary card. All lint + build green; commits pushed to
+`feature/crm-followups`. No new migration. NOT deployed (same standalone-deploy/merge caveat as
+Phase 2: Phase-2 + @예약 v1 live only on this branch). v2 `@예약` action-mention deferred to the
+agent-platform work; 20-month sheet import waiting on the sheet key.
 
 ## Done — CRM Phase 2 follow-ups (isolated worktree `feature/crm-followups`, 2026-06-15)
 
