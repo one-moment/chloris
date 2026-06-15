@@ -2,6 +2,7 @@
 @import "./ds/colors.css";
 @import "./ds/typography.css";
 @import "./ds/spacing.css";
+@import "./borough-shell.css";
 
 .status-select {
   height: 28px;

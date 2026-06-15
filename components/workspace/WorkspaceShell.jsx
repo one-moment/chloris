@@ -2,10 +2,12 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import AuthScreen from "../AuthScreen";
 import ProjectSidebar from "../ProjectSidebar";
 import SearchDialog from "../SearchDialog";
 import TemplateManagerDialog from "../TemplateManagerDialog";
+import Icon from "../Icon";
 import { getPostStatuses } from "../../lib/constants";
 import { requestJson as apiRequestJson } from "../../lib/core/apiClient";
 import { maybeCompressImage } from "../../lib/imageCompress";
@@ -1105,6 +1107,15 @@ export default function WorkspaceShell({ children }) {
       ) : (
         <div className="workspace-root" data-theme="forest" data-sidebar="dark" data-cards="comfortable" data-chips="soft">
         <main className="app-shell">
+          <nav className="rail" aria-label="워크스페이스">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <Link className="rail-logo" href="/" aria-label="홈"><img src="/brand/logo-mark-gold.png" alt="" /></Link>
+            <button className="rail-button" type="button" onClick={() => setShowSearchDialog(true)} aria-label="검색">
+              <Icon name="search" size={21} />
+            </button>
+            <div className="rail-spacer" />
+            <div className="rail-avatar" aria-hidden="true">{(currentUser?.name ?? "?").trim().slice(0, 1).toUpperCase()}</div>
+          </nav>
           <ProjectSidebar
             projects={state.projects}
             selectedProjectId={state.selectedProjectId}

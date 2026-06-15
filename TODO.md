@@ -263,7 +263,7 @@ Notes:
 
 - [x] S1. Lucide 아이콘 인프라: `lucide-react` 의존성 + `components/Icon.jsx` 래퍼(name→icon). UI 변화 없음, 빌드 통과. (iter 1)
 - [x] S2. DS 토큰 정비 + `.workspace-root` 래퍼: DS 토큰을 `app/ds/{colors,typography,spacing}.css`로 들여와 globals에서 import(앱 `--accent`=그린/`--warning` 충돌 2개는 제외해 회귀 방지). WorkspaceShell 인증 셸을 `.workspace-root`(theme=forest/sidebar=dark/cards=comfortable/chips=soft)로 래핑. 시각 변화 없음(borough.css는 S3). lint+build 통과. (iter 2) — S1 리뷰 4건 선수정 포함.
-- [ ] S3. borough.css 도입 + 데스크톱 그린 레일: `borough.css`를 `.workspace-root` 스코프로 적용 + `.rail` 요소(로고·네비·아바타, Lucide) 추가. 데스크톱 3열(레일+사이드바+메인).
+- [x] S3. 셸+레일 레이어 도입 + 데스크톱 그린 레일: borough.css의 셸/레일 레이어를 `app/borough-shell.css`로 `.workspace-root` 스코프 도입(특이도 우위로 기존 chrome 이김). `.rail` 마크업(로고 Link·검색 버튼 Lucide·아바타) 추가. 데스크톱(≥768px) 3열(레일64+사이드바292+메인), 모바일은 기존 유지(S4에서 드로어 전환). `--accent`는 레일에서만 골드로 스코프(다크 위 대비). 컴포넌트 전면 정합은 S5. lint+build 통과. (iter 3) — full borough.css 컴포넌트 규칙은 globals와 충돌해 S5에서 점진 정합.
 - [ ] S4. 모바일 오프캔버스 드로어: `.app-shell[data-drawer]` open/close + 백드롭 + 햄버거 토글(기존 `.sidebar.mobile-open` 대체). 모바일 드로어 동작.
 - [ ] S5. 컴포넌트 정합: Topbar/IdeasView/MessagesView/템플릿/구매 등 마크업을 borough.css 클래스 기대에 맞춤(탭 배지·상태 칩 클래스·post-card-header 등). 신규 컴포넌트 안 깨지게.
 - [ ] S6. Lucide UI 적용: 텍스트 글리프(햄버거·+·×·탭·전송·첨부 등)를 Lucide로 교체.

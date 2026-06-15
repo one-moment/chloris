@@ -1,0 +1,80 @@
+/* Borough 구조형 셸 + 그린 레일 (S3)
+   정본: docs/design/borough/borough.css 의 레일/셸 레이어를 .workspace-root 스코프로 도입
+   (스코프로 특이도를 높여 앱의 기존 bare-class chrome를 이김).
+   모바일 사이드바 드로어 전환은 S4, 컴포넌트 전면 정합은 S5. 여기선 데스크톱 레일+3열만.
+   반응형은 실제 앱이 뷰포트를 채우므로 컨테이너 쿼리 대신 미디어 쿼리로(동등). */
+
+.workspace-root {
+  --rail-w: 64px;
+  --side-w: 292px;
+  min-height: 100vh;
+}
+
+/* 그린 레일 — 모바일 숨김, 데스크톱 표시 */
+.workspace-root .rail {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-2);
+  background: var(--surface-darker);
+  border-right: 1px solid var(--border-on-dark);
+  --accent: var(--gold-400); /* 다크 위 액티브/아바타는 골드 */
+}
+.workspace-root .rail-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: var(--space-3);
+  box-shadow: var(--shadow-sm);
+  display: block;
+}
+.workspace-root .rail-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.workspace-root .rail-button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-on-dark-muted);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.workspace-root .rail-button:hover {
+  background: rgba(245, 242, 225, 0.10);
+  color: var(--text-on-dark);
+}
+.workspace-root .rail-button.active {
+  background: rgba(213, 205, 140, 0.18);
+  color: var(--accent);
+}
+.workspace-root .rail-spacer {
+  margin-top: auto;
+}
+.workspace-root .rail-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-circle);
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-body-sm);
+}
+
+@media (min-width: 768px) {
+  .workspace-root .app-shell {
+    grid-template-columns: var(--rail-w) var(--side-w) minmax(0, 1fr);
+  }
+  .workspace-root .rail {
+    display: flex;
+  }
+}
