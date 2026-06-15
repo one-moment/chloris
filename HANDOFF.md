@@ -18,9 +18,13 @@ button (route-navigation, boundary-safe). Decisions: 모달 / branchId 채널만
 - Iteration 1 (done): extracted the 새 예약 form into `modules/crm/ui/ReservationForm.jsx`
   (props branches/fixedBranchId/channelId/onSubmitted/onCancel); `/work/reservations` uses it.
   No behavior change. Lint + build pass.
-- Next: (v1-2) `/work/reservations` deep-link `?new=1&channel=&branch=` opens the form modal
-  (branch fixed + channelId); (v1-3) core channel-view "예약" button (next/link only, no module
-  import); (v1-4) post-submit channel summary card.
+- Iteration 2 (done): `/work/reservations` deep-link. Page reads `?new=1&channel=&branch=`
+  (async `searchParams`) → passes `initialNew/initialChannelId/initialBranchId` to
+  `ReservationsDashboard` → form auto-opens with branch fixed + channelId. Route now dynamic.
+  Lint + build pass.
+- Next: (v1-3) core channel-view "예약" button — for channels with a `branchId`, a `next/link`
+  to `/work/reservations?new=1&channel=<id>&branch=<branchId>` (core must NOT import the module);
+  (v1-4) post-submit channel summary card.
 
 ## Done — CRM Phase 2 follow-ups (isolated worktree `feature/crm-followups`, 2026-06-15)
 

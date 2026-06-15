@@ -6,7 +6,14 @@ export const metadata = {
   title: "예약 관리 | Chloris"
 };
 
-export default function ReservationsWorkPage() {
+export default async function ReservationsWorkPage({ searchParams }) {
   if (!isModuleEnabled("reservations")) notFound();
-  return <ReservationsDashboard />;
+  const params = (await searchParams) ?? {};
+  return (
+    <ReservationsDashboard
+      initialNew={params.new === "1"}
+      initialChannelId={typeof params.channel === "string" ? params.channel : null}
+      initialBranchId={typeof params.branch === "string" ? params.branch : ""}
+    />
+  );
 }

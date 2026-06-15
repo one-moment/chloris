@@ -168,7 +168,7 @@ function InsightsPanel() {
   );
 }
 
-export default function ReservationsDashboard() {
+export default function ReservationsDashboard({ initialNew = false, initialChannelId = null, initialBranchId = "" }) {
   const [reservations, setReservations] = useState([]);
   const [branches, setBranches] = useState([]);
   const [branchId, setBranchId] = useState("");
@@ -178,7 +178,7 @@ export default function ReservationsDashboard() {
   const [view, setView] = useState("list");
   const [calMonth, setCalMonth] = useState(() => new Date());
 
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(initialNew);
 
   const loadReservations = useCallback(async () => {
     const params = new URLSearchParams();
@@ -231,6 +231,8 @@ export default function ReservationsDashboard() {
       {showForm && (
         <ReservationForm
           branches={branches}
+          fixedBranchId={initialBranchId}
+          channelId={initialChannelId}
           onSubmitted={() => {
             setShowForm(false);
             loadReservations();
