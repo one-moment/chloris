@@ -20,11 +20,25 @@ function todayStr() {
 let rowSeq = 0;
 function emptyRow() {
   rowSeq += 1;
-  return { key: `r${rowSeq}`, itemName: "", quantity: "", category: "", cause: "", note: "", sourceLotId: null };
+  return { key: `r${rowSeq}`, itemName: "", quantity: "", category: "", cause: "", note: "", sourceLotId: null, unitPrice: null, lotLabel: null };
 }
 
 function isFilled(row) {
   return row.itemName.trim() !== "" || String(row.quantity).trim() !== "" || row.cause !== "";
+}
+
+function lotShortLabel(lot) {
+  const date = new Date(lot.stockInDate);
+  const md = Number.isNaN(date.getTime()) ? "" : `${date.getMonth() + 1}/${date.getDate()}`;
+  return `${md} ${lot.supplier ?? ""}`.trim();
+}
+
+function lotDDay(lot, refDateStr) {
+  const date = new Date(lot.stockInDate);
+  const ref = new Date(refDateStr);
+  if (Number.isNaN(date.getTime()) || Number.isNaN(ref.getTime())) return "";
+  const diff = Math.round((ref.getTime() - date.getTime()) / 86400000);
+  return diff <= 0 ? "당일" : `D-${diff}`;
 }
 
 export default function DisposalDashboard() {
@@ -40,6 +54,7 @@ export default function DisposalDashboard() {
   const [busy, setBusy] = useState(false);
   const [draftBatchId, setDraftBatchId] = useState(null);
   const [itemSuggest, setItemSuggest] = useState({ row: -1, items: [] });
+  const [lotPicker, setLotPicker] = useState({ row: -1, lots: [], loading: false });
 
   const cellRefs = useRef({});
   const pendingFocus = useRef(null);
@@ -109,7 +124,8 @@ export default function DisposalDashboard() {
   }
 
   function onItemChange(rowIndex, value) {
-    updateCell(rowIndex, "itemName", value);
+    // 품목명이 바뀌면 기존 lot 매핑은 무효 → 초기화
+    setRows((prev) => prev.map((row, i) => (i === rowIndex ? { ...row, itemName: value, sourceLotId: null, unitPrice: null, lotLabel: null } : row)));
     setItemSuggest({ row: rowIndex, items: [] });
     if (suggestTimer.current) clearTimeout(suggestTimer.current);
     const q = value.trim();
@@ -124,10 +140,49 @@ export default function DisposalDashboard() {
     }, 250);
   }
 
-  function pickItem(rowIndex, item) {
-    updateCell(rowIndex, "itemName", item.name);
+  async function pickItem(rowIndex, item) {
+    setRows((prev) => prev.map((row, i) => (i === rowIndex ? { ...row, itemName: item.name, sourceLotId: null, unitPrice: null, lotLabel: null } : row)));
     setItemSuggest({ row: -1, items: [] });
     focusCell(rowIndex, 1);
+    // 4일 이내 최근 입고 lot을 자동 추천(기본=최신). 관리자는 출처(lot) 칸에서 변경 가능.
+    try {
+      const data = await requestJson(`/api/work/inventory/lots?item=${encodeURIComponent(item.name)}&date=${encodeURIComponent(disposalDate)}`);
+      const newest = (data.lots ?? [])[0];
+      if (newest) {
+        setRows((prev) => prev.map((row, i) => (i === rowIndex
+          ? { ...row, sourceLotId: newest.lotId, unitPrice: newest.unitPrice, lotLabel: lotShortLabel(newest) }
+          : row)));
+      }
+    } catch {
+      /* lot 추천 실패는 무시 — 출처(lot) 칸에서 수동 매핑 가능 */
+    }
+  }
+
+  async function openLotPicker(rowIndex) {
+    if (lotPicker.row === rowIndex) {
+      setLotPicker({ row: -1, lots: [], loading: false });
+      return;
+    }
+    const item = rows[rowIndex].itemName.trim();
+    if (!item) {
+      setError("먼저 품목명을 입력하세요.");
+      return;
+    }
+    setLotPicker({ row: rowIndex, lots: [], loading: true });
+    try {
+      const data = await requestJson(`/api/work/inventory/lots?item=${encodeURIComponent(item)}&date=${encodeURIComponent(disposalDate)}`);
+      setLotPicker({ row: rowIndex, lots: data.lots ?? [], loading: false });
+    } catch (pickerError) {
+      setLotPicker({ row: -1, lots: [], loading: false });
+      setError(pickerError.message);
+    }
+  }
+
+  function applyLot(rowIndex, lot) {
+    setRows((prev) => prev.map((row, i) => (i === rowIndex
+      ? { ...row, sourceLotId: lot ? lot.lotId : null, unitPrice: lot ? lot.unitPrice : null, lotLabel: lot ? lotShortLabel(lot) : null }
+      : row)));
+    setLotPicker({ row: -1, lots: [], loading: false });
   }
 
   async function save(status) {
@@ -235,6 +290,7 @@ export default function DisposalDashboard() {
               <th style={{ width: "20%" }}>구분</th>
               <th style={{ width: "20%" }}>폐기원인</th>
               <th>비고</th>
+              <th style={{ width: "16%" }}>출처(lot)</th>
               <th aria-label="삭제" />
             </tr>
           </thead>
@@ -309,6 +365,33 @@ export default function DisposalDashboard() {
                       onKeyDown={(event) => onCellKeyDown(event, rowIndex, 4)}
                       aria-label={`비고 ${rowIndex + 1}행`}
                     />
+                  </td>
+                  <td style={{ position: "relative" }}>
+                    {row.sourceLotId ? (
+                      <span title={row.sourceLotId} style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px" }}>
+                        {row.unitPrice != null ? `${row.unitPrice.toLocaleString("ko-KR")}원` : "매핑됨"}
+                        <button type="button" onClick={() => openLotPicker(rowIndex)} style={{ border: 0, background: "transparent", cursor: "pointer", color: "var(--muted)" }} aria-label="출처 변경">변경</button>
+                        <button type="button" onClick={() => applyLot(rowIndex, null)} style={{ border: 0, background: "transparent", cursor: "pointer", color: "var(--muted)" }} aria-label="출처 해제">×</button>
+                      </span>
+                    ) : (
+                      <button type="button" className="ghost-button" onClick={() => openLotPicker(rowIndex)}>자동</button>
+                    )}
+                    {lotPicker.row === rowIndex && (
+                      <ul className="work-suggest">
+                        {lotPicker.loading && <li><span style={{ display: "block", padding: "6px 8px" }}>불러오는 중...</span></li>}
+                        {!lotPicker.loading && lotPicker.lots.length === 0 && <li><span style={{ display: "block", padding: "6px 8px" }}>4일 이내 입고 lot 없음</span></li>}
+                        {lotPicker.lots.map((lot, lotIndex) => (
+                          <li key={lot.lotId}>
+                            <button type="button" onMouseDown={(event) => { event.preventDefault(); applyLot(rowIndex, lot); }}>
+                              {lotShortLabel(lot)} · {lot.unitPrice.toLocaleString("ko-KR")}원 · {lotDDay(lot, disposalDate)}{lotIndex === 0 ? " · 추천" : ""}
+                            </button>
+                          </li>
+                        ))}
+                        <li>
+                          <button type="button" onMouseDown={(event) => { event.preventDefault(); applyLot(rowIndex, null); }}>출처 없음</button>
+                        </li>
+                      </ul>
+                    )}
                   </td>
                   <td>
                     <button type="button" className="ghost-button" onClick={() => removeRow(rowIndex)} aria-label={`${rowIndex + 1}행 삭제`}>×</button>

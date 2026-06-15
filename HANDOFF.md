@@ -66,8 +66,14 @@ Google Sheet (existing sheet untouched); import past lots+disposals so past disp
   (branches from `disposals` GET); 임시저장(POST draft → keeps batchId)/최종제출(PATCH submitted);
   server 422 errors shown per-row (red) + list; 엑셀 복사(TSV clipboard). `apiClient` now attaches
   `.status`+`.data` to thrown errors (for 422 body); `.work-suggest`/cell-input CSS added. lint+build pass.
-- Next: Phase 3-3 — lot picker in the form (per-row `/lots?item=&date=` 4-day suggestion → sets
-  sourceLotId, shows unitPrice). Then Phase 4 (stock-in + 거래명세서 OCR).
+- Iteration 11 (done, Phase 3-3): lot picker in the disposal form. Picking an item from the combobox
+  auto-fetches `/lots?item=&date=` and preselects the newest lot (4-day auto-mapping); 출처(lot) column
+  shows unitPrice + 변경/해제, popover lists candidates (날짜·거래처·단가·D-n, newest=추천) + 출처 없음.
+  Lot mapping clears when item text changes. unitPrice flows to server → 폐기가액 snapshot. **Phase 3 DONE.**
+  lint+build pass.
+- Next: Phase 4 — stock-in form + lotId auto-numbering + 발주/영수증/실입고 3-way + 거래명세서 OCR
+  (Vision via `lib/agents/openaiClient.js`, degrade if no key). Then Phase 6 (metrics). Phase 5
+  (sheet sync + import) is human-gated — build code, STOP before live connection/import.
 - Pending human decisions (do NOT guess): branchId attribution for imported past rows; live Google
   Sheets connection + historical import run (approval-gated); 4-day window default.
 
