@@ -1068,3 +1068,149 @@ button:disabled {
     width: 32px;
   }
 }
+
+/* 채널 멤버십 */
+.header-channel-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header-channel-actions p {
+  margin-top: 0;
+}
+
+.channel-members-button {
+  flex: none;
+  white-space: nowrap;
+}
+
+.members-panel {
+  width: min(460px, calc(100vw - 32px));
+  max-height: min(80vh, 720px);
+  overflow-y: auto;
+}
+
+.members-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.members-panel-head h2 {
+  margin: 0;
+}
+
+.members-close {
+  flex: none;
+  line-height: 1;
+  padding: 4px 10px;
+  font-size: 18px;
+}
+
+.members-section {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.members-section h3 {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted, #6b7280);
+}
+
+.members-self,
+.members-self-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.members-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted, #6b7280);
+}
+
+.members-error {
+  margin: 0;
+  font-size: 13px;
+  color: #b91c1c;
+}
+
+.members-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted, #9ca3af);
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 8px 10px;
+}
+
+.member-id {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.member-id strong {
+  font-size: 14px;
+}
+
+.member-id span {
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+}
+
+.member-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.member-tag {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: var(--surface-muted, #f3f4f6);
+  color: var(--text);
+}
+
+.member-tag.owner {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.member-tag.invited {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.members-btn-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.members-invite-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 9px 10px;
+  color: var(--text);
+}

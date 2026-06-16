@@ -1,5 +1,6 @@
 import { requireCurrentUser } from "../../../lib/auth";
 import { badRequest, createProjectRecord, readState } from "../../../lib/serverState";
+import { addOwnerMembership } from "../../../lib/channelMembers";
 import { prisma } from "../../../lib/prisma";
 
 export async function GET() {
@@ -43,6 +44,9 @@ export async function POST(request) {
       }
     }
   });
+
+  // 프로젝트 생성자를 첫 채널의 owner 로 등록한다.
+  await addOwnerMembership(prisma, project.channels[0]?.id, user.id);
 
   return Response.json(project, { status: 201 });
 }
