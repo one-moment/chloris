@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AuthScreen from "../components/AuthScreen";
 import AutomationPanel from "../components/AutomationPanel";
+import ChannelMembersPanel from "../components/ChannelMembersPanel";
 import FilesView from "../components/FilesView";
 import IdeasView from "../components/IdeasView";
 import MessagesView from "../components/MessagesView";
@@ -35,6 +36,7 @@ export default function Home() {
   const [channelDraft, setChannelDraft] = useState({ name: "", type: "general" });
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [showChannelDialog, setShowChannelDialog] = useState(false);
+  const [showMembersDialog, setShowMembersDialog] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -776,6 +778,7 @@ export default function Home() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onToggleSidebar={() => setIsSidebarOpen(true)}
+          onOpenMembers={() => setShowMembersDialog(true)}
         />
 
         <div className="work-surface">
@@ -839,6 +842,14 @@ export default function Home() {
             </div>
           </form>
         </div>
+      )}
+
+      {showMembersDialog && (
+        <ChannelMembersPanel
+          channel={channel}
+          apiRequest={requestJson}
+          onClose={() => setShowMembersDialog(false)}
+        />
       )}
 
       {showChannelDialog && (
