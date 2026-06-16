@@ -44,6 +44,20 @@ deps/`.env`(sqlite 더미)/prisma client 셋업 완료, baseline lint 통과. OB
 > 초기화**된다(EnterWorktree no-op 이후/턴 경계). 워크트리 작업은 매 Bash 명령에서 `cd .claude/worktrees/crm-phase3`
 > (또는 `git -C`/절대경로) 필수. 메인 `.env`=운영 Postgres / 워크트리 `.env`=sqlite 더미. 워크트리에서 DB 쓰기 안전,
 > 메인에서는 절대 DB 쓰기/커밋 금지. A-1·B 작업은 모두 워크트리(`feature/crm-phase3`)에 커밋됨(메인 clean 확인).
+- iter 3 (done, **Part A-2** 코어 MentionInput 확장, 커밋 `39f3bd8`): `mentionActions` prop + `onAction(action)` 콜백,
+  `filterMentionActions` + 통합 `items`(액션 상단→유저)로 방향키/Enter/Tab 내비, 액션 선택 시 텍스트 삽입 대신
+  `clearActiveMention`+`onAction` 위임. 기존 호출부 무회귀, IME 가드 불변, `.mention-action` CSS. lint+build pass.
+- iter 4 (done, **Part A-3** 채널 작성기 배선, OBJECTIVE 완료): `components/MessagesView.jsx`에 `useRouter` +
+  `getMentionActions(currentUser, channel)`(registry 경유 — 코어→모듈 import 아님) → 메시지 작성기 `MentionInput`에
+  `mentionActions` 전달 + `onAction=(action)=>router.push(action.href)`. 채널 `branchId` 없으면 액션 미노출
+  (`requiresBranch` 필터). v1 "예약" 진입(=`components/Topbar.jsx`의 링크)은 그대로 유지. @유저 멘션 무회귀.
+  `npm run lint`(모듈 경계 ok)+`next build`+`agent-gateway:test`+`purchase-bot:test` 통과.
+
+> **✅ CRM Phase 3 OBJECTIVE 완료 (2026-06-16, Ralph loop 4 iter, `feature/crm-phase3`).** Part A(@예약 v2
+> 액션-멘션) + Part B(예약→구글시트 연동 코드 + 라이브 자격증명 읽기전용 검증) 모두 구현·커밋·green.
+> **미배포** — 머지/배포는 사람. 남은 사람 작업: ① 배포 라인(`feature/purchase-bot-mvp`) 머지 + 배포 ② 라이브
+> append 테스트 승인 ③ 시트 탭 "시트1"→"예약" 정리 + 헤더행 ④ Vercel env(인라인 `GOOGLE_SA_*` + `CRM_RESERVATION_SHEET_ID`)
+> ⑤ **SA 키 회전**(대화에 평문 공유됨). 커밋: A-1 `f22c580` / B `d864ee0` / A-2 `39f3bd8` / A-3 (이번 커밋).
 - iter 3 (done, **Part A-2** 코어 MentionInput 액션-멘션 지원): `components/MentionInput.jsx`에 `mentionActions`
   prop + `onAction(action)` 콜백 추가. `filterMentionActions`(유저 멘션과 동일 매칭: 빈쿼리→전체/부분일치) +
   통합 `items` 리스트(액션 상단→유저)로 방향키/Enter/Tab 내비; 액션 선택 시 `clearActiveMention`(잔여 @토큰 제거)

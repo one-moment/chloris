@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { EmptyState } from "./common";
 import AttachmentList from "./AttachmentList";
 import ChatDateDivider from "./ChatDateDivider";
@@ -6,6 +7,8 @@ import MentionInput from "./MentionInput";
 import RichText from "./RichText";
 import Timestamp from "./Timestamp";
 import { isSameKoreanDate } from "../lib/time";
+// 코어 작성기 → 모듈 액션 멘션(@예약 등) 데이터만 읽는다(모듈 import 아님 — registry 경유, 경계 안전).
+import { getMentionActions } from "../modules/registry";
 
 function getInitial(author) {
   return String(author || "?").trim().slice(0, 1).toUpperCase();
@@ -127,7 +130,14 @@ export default function MessagesView({
     [purchaseOrderDrafts]
   );
   const listRef = useRef(null);
+  const router = useRouter();
   const [draftBody, setDraftBody] = useState("");
+  // @예약 등 모듈 선언 액션 멘션. registry가 brand·role·requiresBranch(채널 branchId)로 필터하므로,
+  // branchId 없는 채널이면 빈 배열 → 액션 멘션 미노출(@유저 멘션은 그대로).
+  const mentionActions = useMemo(
+    () => getMentionActions(currentUser, channel),
+    [currentUser, channel]
+  );
   const mentionUsers = useMemo(() => {
     const channelUserIds = new Set([
       currentUser?.id,
@@ -342,6 +352,8 @@ export default function MessagesView({
           value={draftBody}
           onChange={setDraftBody}
           users={mentionUsers}
+          mentionActions={mentionActions}
+          onAction={(action) => router.push(action.href)}
           onKeyDown={handleKeyDown}
           placeholder={`${channel.name}에 메시지 보내기 (@멘션, **굵게**)`}
         />
