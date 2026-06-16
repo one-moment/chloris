@@ -21,6 +21,33 @@ function StatCard({ label, value, hint }) {
   );
 }
 
+// 월별 폐기율 추이 — 의존성 없는 인라인 SVG 라인 차트. data=[{month, wasteRate}].
+function TrendChart({ data = [] }) {
+  if (data.length === 0) return <p className="work-empty">집계할 기록이 없습니다.</p>;
+  const width = 640;
+  const height = 180;
+  const padX = 36;
+  const padY = 24;
+  const max = Math.max(10, ...data.map((row) => row.wasteRate));
+  const stepX = data.length > 1 ? (width - padX * 2) / (data.length - 1) : 0;
+  const x = (index) => padX + stepX * index;
+  const y = (value) => height - padY - (value / max) * (height - padY * 2);
+  const points = data.map((row, index) => `${x(index)},${y(row.wasteRate)}`).join(" ");
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="월별 폐기율 추이" style={{ width: "100%", maxWidth: `${width}px`, height: "auto" }}>
+      <line x1={padX} y1={height - padY} x2={width - padX} y2={height - padY} stroke="var(--line, #dfe4e8)" />
+      {data.length > 1 && <polyline fill="none" stroke="var(--accent, #0f766e)" strokeWidth="2" points={points} />}
+      {data.map((row, index) => (
+        <g key={row.month}>
+          <circle cx={x(index)} cy={y(row.wasteRate)} r="3" fill="var(--accent, #0f766e)" />
+          <text x={x(index)} y={y(row.wasteRate) - 7} textAnchor="middle" fontSize="10" fill="var(--text, #1f2933)">{row.wasteRate}%</text>
+          <text x={x(index)} y={height - padY + 14} textAnchor="middle" fontSize="10" fill="var(--muted)">{row.month.length >= 7 ? row.month.slice(2) : row.month}</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 export default function InventoryInsightsDashboard() {
   const [branches, setBranches] = useState([]);
   const [branchId, setBranchId] = useState("");
@@ -135,6 +162,53 @@ export default function InventoryInsightsDashboard() {
                       <td>{won(row.stockInAmount)}</td>
                       <td>{row.wasteRate}%</td>
                       <td>{row.discrepancyCount}건</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+
+          <section className="work-section">
+            <h2>폐기율 추이 (월별)</h2>
+            <TrendChart data={metrics.byMonth ?? []} />
+          </section>
+
+          <section className="work-section">
+            <h2>월별 입고·폐기가액</h2>
+            {(metrics.byMonth ?? []).length === 0 ? (
+              <p className="work-empty">집계할 기록이 없습니다.</p>
+            ) : (
+              <table className="work-table">
+                <thead><tr><th>월</th><th>입고가액</th><th>폐기가액</th><th>폐기율</th></tr></thead>
+                <tbody>
+                  {metrics.byMonth.map((row) => (
+                    <tr key={row.month}>
+                      <td>{row.month}</td>
+                      <td>{won(row.stockInAmount)}</td>
+                      <td>{won(row.disposalAmount)}</td>
+                      <td>{row.wasteRate}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+
+          <section className="work-section">
+            <h2>품목별 폐기</h2>
+            {(metrics.disposal.byItem ?? []).length === 0 ? (
+              <p className="work-empty">집계할 폐기 기록이 없습니다.</p>
+            ) : (
+              <table className="work-table">
+                <thead><tr><th>품목</th><th>건수</th><th>폐기량</th><th>폐기가액</th></tr></thead>
+                <tbody>
+                  {metrics.disposal.byItem.map((row) => (
+                    <tr key={row.itemName}>
+                      <td>{row.itemName}</td>
+                      <td>{row.count}</td>
+                      <td>{row.quantity}</td>
+                      <td>{won(row.amount)}</td>
                     </tr>
                   ))}
                 </tbody>

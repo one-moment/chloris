@@ -55,6 +55,11 @@ export default function DisposalDashboard() {
   const [draftBatchId, setDraftBatchId] = useState(null);
   const [itemSuggest, setItemSuggest] = useState({ row: -1, items: [] });
   const [lotPicker, setLotPicker] = useState({ row: -1, lots: [], loading: false });
+  const [managers, setManagers] = useState([]);
+  const [reviewerId, setReviewerId] = useState("");
+  const [reviewBatches, setReviewBatches] = useState([]);
+  const [rejectReasons, setRejectReasons] = useState({});
+  const [reviewBusy, setReviewBusy] = useState("");
 
   const cellRefs = useRef({});
   const pendingFocus = useRef(null);
@@ -72,8 +77,15 @@ export default function DisposalDashboard() {
         const branchList = disposalsRes.branches ?? [];
         setBranches(branchList);
         setBranchId(branchList[0]?.id ?? "");
+        setManagers(disposalsRes.managers ?? []);
         setCategories(reasonsRes.categories ?? []);
         setCauses(reasonsRes.causes ?? []);
+        try {
+          const reviewRes = await requestJson("/api/work/inventory/disposals?status=review");
+          if (!cancelled) setReviewBatches(reviewRes.batches ?? []);
+        } catch {
+          /* 검수 목록 실패는 무시 */
+        }
       } catch (loadError) {
         if (!cancelled) setError(loadError.message);
       }
@@ -82,6 +94,38 @@ export default function DisposalDashboard() {
       cancelled = true;
     };
   }, []);
+
+  // 선택 지점이 바뀌면 그 지점 담당 매니저 후보로 초기화.
+  useEffect(() => {
+    const forBranch = managers.filter((manager) => manager.branchId === branchId);
+    setReviewerId((prev) => (forBranch.some((manager) => manager.id === prev) ? prev : (forBranch[0]?.id ?? "")));
+  }, [branchId, managers]);
+
+  async function loadReviews() {
+    try {
+      const data = await requestJson("/api/work/inventory/disposals?status=review");
+      setReviewBatches(data.batches ?? []);
+    } catch {
+      /* 검수 목록 새로고침 실패는 무시 */
+    }
+  }
+
+  async function decideReview(batchId, action) {
+    setError("");
+    setReviewBusy(batchId);
+    try {
+      const payload = action === "reject"
+        ? { action: "reject", rejectReason: rejectReasons[batchId] || "" }
+        : { action: "approve" };
+      await requestJson(`/api/work/inventory/disposals/${batchId}`, { method: "PATCH", body: JSON.stringify(payload) });
+      setMessage(action === "approve" ? "승인 완료 — 시트 연동 활성 시 폐기대장에 기록됩니다." : "반려 처리되었습니다.");
+      await loadReviews();
+    } catch (decisionError) {
+      setError(decisionError.message);
+    } finally {
+      setReviewBusy("");
+    }
+  }
 
   useEffect(() => {
     if (!pendingFocus.current) return;
@@ -193,6 +237,10 @@ export default function DisposalDashboard() {
       setError("지점을 선택하세요.");
       return;
     }
+    if (status === "review" && !reviewerId) {
+      setError("담당 매니저를 선택하세요.");
+      return;
+    }
     const filled = rows.filter(isFilled);
     if (filled.length === 0) {
       setError("폐기 품목을 한 개 이상 입력하세요.");
@@ -209,20 +257,29 @@ export default function DisposalDashboard() {
       sourceLotId: row.sourceLotId || null
     }));
 
+    const reviewer = managers.find((manager) => manager.id === reviewerId);
     setBusy(true);
     try {
-      const body = JSON.stringify({ status, lines, disposalDate, branchId });
+      const body = JSON.stringify({
+        status,
+        lines,
+        disposalDate,
+        branchId,
+        reviewerId: status === "review" ? reviewerId : undefined,
+        reviewerName: status === "review" ? (reviewer?.name ?? null) : undefined
+      });
       const result = draftBatchId
         ? await requestJson(`/api/work/inventory/disposals/${draftBatchId}`, { method: "PATCH", body })
         : await requestJson("/api/work/inventory/disposals", { method: "POST", body });
 
-      if (status === "submitted") {
-        setMessage(`최종제출 완료 · ${result.lineCount}건${result.totalAmount ? ` · 폐기가액 ${result.totalAmount.toLocaleString("ko-KR")}원` : ""}`);
+      if (status === "review") {
+        setMessage(`검수 요청 완료 · ${result.lineCount}건 — 담당 매니저 승인 후 폐기대장에 반영됩니다.`);
         setRows([emptyRow()]);
         setDraftBatchId(null);
+        await loadReviews();
       } else {
         setDraftBatchId(result.id);
-        setMessage("임시저장되었습니다. 이어서 작성하거나 최종제출하세요.");
+        setMessage("임시저장되었습니다. 이어서 작성하거나 검수 요청하세요.");
       }
     } catch (saveError) {
       const lineErrors = saveError.data?.errors;
@@ -258,7 +315,7 @@ export default function DisposalDashboard() {
       <header className="work-page-header">
         <div>
           <h1>폐기 입력</h1>
-          <p>표로 빠르게 입력하고 최종제출하면 검증 후 집계됩니다. Enter로 다음 칸, 마지막 칸에서 Enter로 새 행.</p>
+          <p>표로 빠르게 입력하고 담당 매니저를 지정해 검수 요청하면, 매니저 승인 후 폐기대장에 반영·집계됩니다. Enter로 다음 칸, 마지막 칸에서 Enter로 새 행.</p>
         </div>
         <Link className="ghost-button" href="/">← 채팅으로</Link>
       </header>
@@ -274,6 +331,15 @@ export default function DisposalDashboard() {
         <label>
           폐기일{" "}
           <input type="date" value={disposalDate} onChange={(event) => setDisposalDate(event.target.value)} aria-label="폐기일" />
+        </label>
+        <label>
+          담당 매니저{" "}
+          <select value={reviewerId} onChange={(event) => setReviewerId(event.target.value)} aria-label="담당 매니저">
+            <option value="">선택</option>
+            {managers.filter((manager) => manager.branchId === branchId).map((manager) => (
+              <option key={manager.id} value={manager.id}>{manager.name}</option>
+            ))}
+          </select>
         </label>
         {draftBatchId && <span className="work-badge">임시저장됨</span>}
       </section>
@@ -411,9 +477,54 @@ export default function DisposalDashboard() {
         <div className="work-filter-row" style={{ marginTop: "0.75rem" }}>
           <button type="button" className="ghost-button" onClick={addRow} disabled={busy}>＋ 행 추가</button>
           <button type="button" className="ghost-button" onClick={() => save("draft")} disabled={busy}>임시저장</button>
-          <button type="button" className="primary-button" onClick={() => save("submitted")} disabled={busy}>최종제출</button>
+          <button type="button" className="primary-button" onClick={() => save("review")} disabled={busy}>검수 요청</button>
           <button type="button" className="ghost-button" onClick={copyForExcel} disabled={busy}>엑셀로 복사</button>
         </div>
+      </section>
+
+      <section className="work-section">
+        <h2>검수 대기 (매니저)</h2>
+        <p className="work-empty" style={{ marginTop: 0 }}>담당 매니저(또는 관리자)가 승인하면 폐기대장에 기록됩니다. 반려 시 작성자가 수정해 다시 요청할 수 있습니다.</p>
+        {reviewBatches.length === 0 ? (
+          <p className="work-empty">검수 대기 중인 폐기 기록이 없습니다.</p>
+        ) : (
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+            {reviewBatches.map((batch) => {
+              const branchName = branches.find((branch) => branch.id === batch.branchId)?.name ?? batch.branchId;
+              const dateStr = batch.disposalDate ? String(batch.disposalDate).slice(0, 10) : "";
+              return (
+                <li key={batch.id} style={{ border: "1px solid var(--line, #dfe4e8)", borderRadius: "8px", padding: "12px 14px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
+                    <strong>{branchName} · {dateStr}</strong>
+                    <span className="work-badge">검수대기</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: "var(--muted)", margin: "4px 0" }}>
+                    {batch.lineCount}건{batch.totalAmount ? ` · 폐기가액 ${batch.totalAmount.toLocaleString("ko-KR")}원` : ""}
+                    {batch.reviewerName ? ` · 담당 ${batch.reviewerName}` : ""}
+                  </div>
+                  <ul style={{ margin: "4px 0", paddingLeft: "18px", fontSize: "13px" }}>
+                    {batch.lines.map((line) => (
+                      <li key={line.id}>
+                        {line.itemName} {line.quantity}{line.unit} / {line.cause}{" "}
+                        <span style={{ color: "var(--muted)" }}>({line.category})</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="work-filter-row" style={{ marginTop: "6px" }}>
+                    <input
+                      value={rejectReasons[batch.id] ?? ""}
+                      onChange={(event) => setRejectReasons((prev) => ({ ...prev, [batch.id]: event.target.value }))}
+                      placeholder="반려 사유(반려 시)"
+                      aria-label="반려 사유"
+                    />
+                    <button type="button" className="primary-button" disabled={reviewBusy === batch.id} onClick={() => decideReview(batch.id, "approve")}>승인</button>
+                    <button type="button" className="ghost-button" disabled={reviewBusy === batch.id} onClick={() => decideReview(batch.id, "reject")}>반려</button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
     </div>
   );
