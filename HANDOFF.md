@@ -10,7 +10,12 @@
 ## 0. 한 줄 요약
 
 DELL에는 **Node/npm이 없어 빌드·배포가 불가**합니다. 그래서 DELL에서는 **코드 정리 + git 로컬 커밋까지만** 했습니다.
-**원격 푸시·DB 마이그레이션·Vercel 배포는 Mac에서** 진행해야 합니다.
+**원격 푸시·DB 마이그레이션·Vercel 배포는 Mac에서** 진행합니다. (리더 확정 사항)
+
+**리더 결정 (2026-06-16):**
+- 푸시 위치: **Mac** (DELL은 인증이 없어 커밋까지만).
+- 원격 저장소: **`https://github.com/one-moment/chloris`**.
+- DELL의 이 스냅샷은 `chloris-snapshot.bundle`(git 번들)로 동봉 — Mac에서 원격과 **비교용**으로 사용.
 
 ---
 
@@ -44,11 +49,10 @@ DELL에는 **Node/npm이 없어 빌드·배포가 불가**합니다. 그래서 D
 **절대 force push 하지 말고**, Mac에서 먼저 원격을 `git fetch`해서 이 스냅샷과의 관계를 비교하세요.
 (이 zip이 더 최신인지, 원격이 더 최신인지부터 판단해야 합니다.)
 
-### B. 푸시 대상 저장소가 문서마다 다릅니다
-- 작업지시서: `https://github.com/one-moment/chloris`
-- README / `push-to-github.sh` / `GITHUB_UPLOAD.md`: `https://github.com/one-moment/mattermost`
-
-➡️ **어느 저장소·어느 브랜치에 올릴지 리더에게 확인**한 뒤 remote를 설정하세요. (DELL에서는 remote 미설정 상태로 둠.)
+### B. 푸시 대상 저장소 — 확정됨: `one-moment/chloris`
+- ✅ **확정:** `https://github.com/one-moment/chloris` (리더 결정).
+- 참고로 README / `push-to-github.sh` / `GITHUB_UPLOAD.md`에는 옛 주소 `one-moment/mattermost`가 남아있음 → 무시.
+- 브랜치는 원격 상태 확인 후 결정(작업지시서 기준 `feature/purchase-bot-mvp`). **이 스냅샷을 main 등에 그대로 덮어쓰지 말 것**(아래 A).
 
 ### C. 기본 `.env`가 운영 DB를 가리킬 위험
 작업지시서 주의사항대로, DB에 쓰는 작업/테스트는 **대상 `DATABASE_URL`이 의도한 DB가 맞는지 반드시 먼저 확인**.
@@ -87,14 +91,26 @@ DELL에는 **Node/npm이 없어 빌드·배포가 불가**합니다. 그래서 D
 
 ## 3. Mac에서 할 일 (배포 절차)
 
-### 3-1. 코드 가져오기 (위 A/B 확인 후)
-원격 관계를 먼저 비교한 뒤, 리더가 정한 저장소/브랜치에 맞춰 진행:
+### 3-1. 코드 가져오기 / 원격 비교 (★먼저)
+원격은 `one-moment/chloris`로 확정. **이 스냅샷을 올리기 전에 원격이 더 최신인지부터 비교**하세요.
+
+이 인계물에는 DELL 스냅샷이 `chloris-snapshot.bundle`로 동봉되어 있습니다(Slack 전달). 비교 절차:
 ```bash
-# 예시 — 실제 저장소/브랜치는 리더 확인 후 결정
-git remote add origin https://github.com/one-moment/<repo>.git
-git fetch origin
-# 원격과 이 스냅샷 비교 후, 회귀 없는 방식으로 통합 (force push 금지)
+# 1) 원격 최신본 확보
+git clone https://github.com/one-moment/chloris.git
+cd chloris
+git fetch --all
+
+# 2) DELL 스냅샷(번들)을 비교용 remote로 추가
+git remote add dell /path/to/chloris-snapshot.bundle
+git fetch dell
+
+# 3) 원격 최신 브랜치 vs DELL 스냅샷 비교 (어느 쪽이 최신인지 판단)
+git log --oneline origin/feature/purchase-bot-mvp -10
+git log --oneline dell/main -10
+git diff origin/feature/purchase-bot-mvp dell/main --stat
 ```
+➡️ 원격이 더 최신이면(거의 확실) **이 스냅샷은 참고만** 하고 원격 기준으로 작업. `--force` push 금지.
 
 ### 3-2. 로컬 실행 확인
 ```bash
@@ -148,7 +164,8 @@ npm run build
 
 ## 6. 미해결 / 리더 확인 필요
 
-- [ ] **A.** 이 스냅샷 vs 원격 최신본 관계 — 어느 쪽이 최신? (회귀 방지)
-- [ ] **B.** 푸시 대상 저장소/브랜치 확정 (`chloris` vs `mattermost`, `main` vs `feature/purchase-bot-mvp`)
-- [ ] **C.** 보로 디자인 반영 / 템플릿 마이그레이션 / 멘션 내비 배치 — 이 코드 기준으로 새로 할지, 최신 브랜치를 받아서 할지
+- [x] **B.** 푸시 대상 = `one-moment/chloris`, 푸시 위치 = Mac. (리더 확정 2026-06-16)
+- [ ] **A.** 이 스냅샷 vs 원격 최신본 관계 — 어느 쪽이 최신? (회귀 방지 / 3-1 절차로 비교)
+- [ ] **C.** 브랜치 확정 (작업지시서 기준 `feature/purchase-bot-mvp`) — 원격 확인 후
+- [ ] **D.** 보로 디자인 반영 / 템플릿 마이그레이션 / 멘션 내비 배치 — 이 코드 기준으로 새로 할지, 최신 브랜치를 받아서 할지
 - [ ] 대상 운영 DB(`DATABASE_URL`)가 의도한 회사(보로) DB가 맞는지

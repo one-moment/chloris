@@ -24,3 +24,5 @@ pnpm-debug.log*
 .claude/
 # Stray export artifacts
 mattermost-project-mvp.zip
+# Git bundle handed off via Slack (transfer artifact, not source)
+*.bundle
