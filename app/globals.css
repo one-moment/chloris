@@ -744,6 +744,13 @@
   align-items: center;
 }
 
+/* 게시글 작성자 강조: 작성자(강조) · 작성시간(보조)으로 위계 분리 */
+.post-card-header .post-author {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
 .post-header-actions,
 .message-actions {
   display: flex;

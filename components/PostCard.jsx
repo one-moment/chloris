@@ -81,7 +81,7 @@ export default function PostCard({
           ) : (
             <strong>{post.title}</strong>
           )}
-          <span className="post-meta">{post.author} · <Timestamp createdAt={post.createdAtIso ?? post.createdAt} updatedAt={post.updatedAtIso} isEdited={post.isEdited} /></span>
+          <span className="post-meta"><span className="post-author">{post.author}</span> · <Timestamp createdAt={post.createdAtIso ?? post.createdAt} updatedAt={post.updatedAtIso} isEdited={post.isEdited} /></span>
         </div>
         <div className="post-header-actions">
           {canEditRecord(post, currentUser) && !isEditingPost && (
