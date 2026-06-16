@@ -1,6 +1,32 @@
 # DECISIONS.md
 
-## 2026-06-15: CRM module data model (Ralph loop, iteration 1)
+## 2026-06-16: 예약 → 구글시트 연동 자격증명/env 설계 (CRM Phase 3 Part B)
+
+- 공용 Sheets 헬퍼 `lib/googleSheets.js`를 두고 CRM이 사용한다(인벤토리 `lib/inventorySheetSync.js`는
+  당장 리팩터하지 않음 — 범위 최소화; 추후 공용 헬퍼로 통합 가능). PROMPT의 "small shared Sheets helper" 충족.
+- 자격증명 해석 우선순위: **① `GOOGLE_APPLICATION_CREDENTIALS`(서비스계정 JSON 파일 경로, 로컬/표준)**,
+  없으면 **② 인라인 `GOOGLE_SA_CLIENT_EMAIL`+`GOOGLE_SA_PRIVATE_KEY`(Vercel 등 파일 없는 환경)**. 둘 다 없으면
+  no-op. 운영(Vercel)은 파일경로가 비현실적이라 인라인 env 권장.
+- 게이트: `isReservationSheetConfigured()` = `CRM_RESERVATION_SHEET_ID` 있고 자격증명 있을 때만 활성. 기본 비활성.
+- 시트 탭 기본 "예약"(`CRM_RESERVATION_SHEET_TAB`로 변경 가능). 실제 사용자 시트는 현재 탭 "시트1" → 사람이 정리.
+- 베스트-에포트: 예약 POST에서 시트 append는 try/catch로 감싸 실패해도 201 유지. 에러 로그에 PII 미기록.
+- **보안**: 키는 레포에 저장/커밋 금지(`.gitignore`가 `boro-reservation-*.json`·`.env` 이미 차단). `.env`에는 키
+  **경로**만(내용 아님). 대화로 평문 공유된 키는 검증 후 **회전 권장**.
+
+## 2026-06-16: `mentionActions` 매니페스트 컨트랙트 (CRM Phase 3, @예약 v2)
+
+- 코어 작성기에서 `@예약` 같은 **액션형 멘션**을 트리거하되 동작은 모듈이 소유하도록, 모듈 매니페스트에
+  `mentionActions: [{ token, label, minRole?, requiresBranch?, hrefFor(channel) }]` 컨트랙트를 둔다
+  (`docs/crm-reservation-mention.md` 해법 A, 2026-06-15 사용자 확정).
+- 코어는 `modules/registry.js`의 `getMentionActions(currentUser, channel)`로 **데이터만** 읽고, 선택 시
+  텍스트 삽입 대신 `href` 딥링크로 라우팅한다. 코어는 `modules/`를 직접 import하지 않는다(경계 유지).
+  코어→registry import는 기존 허용 패턴(`ProjectSidebar`의 `getWorkNavItems`).
+- AGENTS.md "매니페스트 컨트랙트 필드는 2개 이상 모듈이 필요할 때만 추가" 가이드와의 긴장: 지금은
+  reservations 모듈만 사용하지만, 이 필드는 reservations 전용이 아니라 **에이전트-멘션 오픈 플랫폼**
+  (`docs/platform-architecture.md` 9·12절)의 범용 확장점으로 설계됐다(향후 @구매/@입고 등 에이전트 멘션이
+  동일 컨트랙트 사용). OBJECTIVE(`ralph/PROMPT.md`)가 이 컨트랙트를 명시 지시하므로 채택.
+
+
 
 - `Customer` and `Reservation` modeled per `docs/templates-and-crm.md`. Loosely coupled like
   `PostTemplate`: scalar id fields, **no Prisma `@relation` / no FK constraints**, indexes only.

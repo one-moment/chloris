@@ -5,6 +5,7 @@ import { requireCurrentUser } from "../../../../../lib/auth";
 import { prisma } from "../../../../../lib/prisma";
 import { isModuleEnabled } from "../../../../../lib/brand";
 import { badRequest } from "../../../../../lib/serverState";
+import { syncReservation } from "../../../../../lib/crmReservationSheetSync";
 
 function generateId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -140,7 +141,7 @@ export async function POST(request) {
     reservedAt = parsed;
   }
 
-  const branch = await prisma.branch.findUnique({ where: { id: branchId }, select: { id: true } });
+  const branch = await prisma.branch.findUnique({ where: { id: branchId }, select: { id: true, name: true } });
   if (!branch) return badRequest("존재하지 않는 지점입니다.");
 
   try {
@@ -174,6 +175,30 @@ export async function POST(request) {
         createdById: user.id
       }
     });
+
+    // 예약 → 구글시트 append (Part B). 베스트-에포트: env 미설정 시 no-op, 실패해도 예약 생성은 성공.
+    // 고객 데이터는 시트(운영 기록)로만 나가고 에러 로그에는 PII를 남기지 않는다(AGENTS.md).
+    try {
+      await syncReservation(
+        {
+          id: reservation.id,
+          reservedAt: reservation.reservedAt,
+          pickupAt: reservation.pickupAt,
+          branchId,
+          customerName: customer.name,
+          customerPhone: customer.phone,
+          product: reservation.product,
+          amount: reservation.amount,
+          source: reservation.source,
+          receiveMethod: reservation.receiveMethod,
+          status: reservation.status,
+          note: reservation.note
+        },
+        { branchName: branch.name }
+      );
+    } catch (sheetError) {
+      console.error("[crm] reservation sheet sync failed:", sheetError?.message ?? "unknown");
+    }
 
     return Response.json(
       {

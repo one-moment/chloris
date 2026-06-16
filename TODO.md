@@ -1,5 +1,42 @@
 # TODO.md
 
+## CRM Phase 3 — Ralph loop (2026-06-16, worktree: feature/crm-phase3)
+
+OBJECTIVE: `ralph/PROMPT.md`. 병합된 배포 라인(인벤토리 + CRM Phase 2 라이브) 위에서 두 파트. 새 마이그레이션 불필요.
+한 이터레이션 = 한 관심사. 매 단계 `npm run lint`+`next build` 통과 + 추적 문서 갱신 + `feature/crm-phase3` 커밋.
+
+- [x] **Part A — `@예약` v2 (액션-멘션)** (`docs/crm-reservation-mention.md` 해법 A) — **완료**:
+  - [x] (A-1, iter 1) 매니페스트 컨트랙트: `reservationsModule.mentionActions`(token 예약, requiresBranch,
+    hrefFor→`/work/reservations?new=1&channel=&branch=`) + `modules/registry.js` `getMentionActions(user, channel)`
+    셀렉터(role/branch 필터, brand 게이팅 자동). 코어가 데이터만 읽음(모듈 import 금지). 소비처 아직 없음(무회귀). lint+build pass.
+  - [x] (A-2, iter 3) 코어 `components/MentionInput.jsx` 확장: `mentionActions` prop + `onAction(action)` 콜백.
+    `filterMentionActions`(유저와 동일 매칭) + 통합 `items`(액션 상단→유저) 기준 방향키/Enter/Tab 내비, 액션 선택 시
+    텍스트 삽입 대신 `clearActiveMention`+`onAction` 위임. **기존 호출부(IdeasView/PostCard/MessagesView)는 새 prop
+    미전달 → items=유저후보로 동일 동작(무회귀)**. IME 가드 불변. `.mention-action` 액센트 CSS. lint+build pass.
+  - [x] (A-3, iter 4) 채널 작성기(`components/MessagesView.jsx`) 배선: `useRouter` + `getMentionActions(currentUser,
+    channel)`(registry 경유, 코어→모듈 import 아님) → `MentionInput`에 `mentionActions` 전달 + `onAction=(action)=>
+    router.push(action.href)`. 채널 branchId 없으면 액션 미노출(requiresBranch 필터). v1 "예약" 버튼(`Topbar.jsx`)
+    그대로 유지. 기존 호출부 무회귀. lint(모듈 경계 ok)+build+agent-gateway+purchase-bot test 통과.
+- [~] **Part B — 예약 → 구글시트 append** (코드만, env 미설정 시 no-op):
+  - [x] (B-1, iter 2) Sheets 공용 헬퍼 `lib/googleSheets.js`(자격증명 해석 GOOGLE_APPLICATION_CREDENTIALS 파일경로
+    | 인라인 GOOGLE_SA_*; JWT→token; appendSheetRows; getSpreadsheetMeta) + `lib/crmReservationSheetSync.js`
+    (`isReservationSheetConfigured`, `reservationSheetRow` 순수 매핑 12열, `syncReservation` no-op 기본). lint+build pass.
+  - [x] (B-2, iter 2) `POST /api/work/crm/reservations`에 `syncReservation` 비치명적 배선(try/catch, 실패해도
+    201 유지; branch.name select 추가; PII 로그 금지). env 미설정 시 no-op. lint+build pass.
+  - [x] **라이브 자격증명 검증(읽기전용)**: 사용자 제공 SA 키 + 시트ID로 token 200 + spreadsheets.get 200 확인 →
+    키 유효 + SA(`boro-reservation@…`) 시트 공유됨. 시트 제목 "[보로] CRM 예약 관리", 현재 탭 "시트1"(코드 기본 탭 "예약").
+  - [ ] (남음) **라이브 append 테스트**: 사용자 사전 승인 필요(운영 시트에 실제 한 줄 기록). 탭명 정리("시트1"→"예약"
+    또는 `CRM_RESERVATION_SHEET_TAB=시트1`) + 헤더행. **키 회전 권장**(평문 공유됨).
+  - [ ] (남음) 운영(Vercel) env 주입은 사용자 ops: `CRM_RESERVATION_SHEET_ID` + 인라인 `GOOGLE_SA_CLIENT_EMAIL`/
+    `GOOGLE_SA_PRIVATE_KEY`(Vercel은 파일경로 대신 인라인 권장) + redeploy.
+
+완료 조건: Part A·B 코드 존재 + lint+build 통과 + 추적 문서 갱신 + 커밋. 라이브 시트 연결은 사람 게이트(append 테스트·운영 env는 승인 후).
+
+**✅ CRM Phase 3 OBJECTIVE 완료 (2026-06-16, 4 iterations).** Part A(@예약 v2 액션-멘션: 컨트랙트→코어 MentionInput→
+MessagesView 배선) + Part B(예약→구글시트 연동 코드, 라이브 자격증명 읽기전용 검증) 모두 `feature/crm-phase3`에 커밋.
+최종 `npm run lint`(모듈 경계 ok)+`next build`+`agent-gateway:test`+`purchase-bot:test` 통과. 미배포(머지·배포는 사람).
+남은 사람 작업: 라이브 append 테스트 승인 / 시트 탭 정리 / Vercel env(인라인 SA) 주입 / **키 회전** / 배포 라인 머지.
+
 ## Inventory (입고·폐기) module — Ralph loop (2026-06-15)
 
 Spec: `docs/inventory-stockin-disposal.md` (confirmed 2026-06-15). New `modules/inventory` (Borough-only),
