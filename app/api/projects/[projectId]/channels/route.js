@@ -1,5 +1,6 @@
 import { requireCurrentUser } from "../../../../../lib/auth";
 import { badRequest, createChannelRecord, findProject, notFound, readState } from "../../../../../lib/serverState";
+import { addOwnerMembership } from "../../../../../lib/channelMembers";
 import { prisma } from "../../../../../lib/prisma";
 
 export async function GET(_request, { params }) {
@@ -44,6 +45,9 @@ export async function POST(request, { params }) {
       }
     }
   });
+
+  // 채널 생성자를 owner 로 등록한다.
+  await addOwnerMembership(prisma, channel.id, user.id);
 
   return Response.json(channel, { status: 201 });
 }

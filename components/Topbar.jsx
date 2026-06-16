@@ -1,7 +1,7 @@
 import { CHANNEL_TYPES, TABS } from "../lib/constants";
 import { Badge } from "./common";
 
-export default function Topbar({ project, channel, activeTab, onTabChange, onToggleSidebar }) {
+export default function Topbar({ project, channel, activeTab, onTabChange, onToggleSidebar, onOpenMembers }) {
   const type = CHANNEL_TYPES[channel.type];
 
   return (
@@ -26,7 +26,14 @@ export default function Topbar({ project, channel, activeTab, onTabChange, onTog
           <h1>{channel.name}</h1>
           <Badge tone={type?.tone}>{type?.label}</Badge>
         </div>
-        <p>{project.description}</p>
+        <div className="header-channel-actions">
+          <p>{project.description}</p>
+          {onOpenMembers && (
+            <button className="ghost-button channel-members-button" type="button" onClick={onOpenMembers}>
+              멤버
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );
