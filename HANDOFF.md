@@ -1,21 +1,25 @@
 # HANDOFF.md
 
-## ▶ CRM Phase 3 — 배포 라인 머지 완료 (2026-06-16)
+## ▶ CRM Phase 3 — 운영 배포 완료·검증 (2026-06-17)
 
-**상태: 코드 완료 + 배포 라인 머지·푸시됨.** `feature/crm-phase3`(A-1 `f22c580` / B `d864ee0` / A-2 `39f3bd8`
-/ A-3 `48b4552`) → `feature/purchase-bot-mvp` 머지(`7d8c483`, --no-ff) → origin 푸시(`b859630..7d8c483`).
-새 마이그레이션 없음. lint(모듈 경계 ok)+build+agent-gateway+purchase-bot test 통과.
+**상태: ✅ 운영 배포 + end-to-end 검증 완료.** `@예약` v2 액션-멘션 + 예약→구글시트 연동이 보로 운영에 라이브.
 
-구글시트 준비 완료(현재 키로): 탭 `시트1`→`예약` 리네임, 헤더행(예약일·픽업일시·지점·고객명·연락처·상품·금액·경로·
-수령방법·상태·비고·예약ID) 기록, **라이브 append 테스트 1행(A2, 가짜데이터 "삭제 가능")** 성공 → 쓰기 경로 검증됨.
+- 코드: `feature/crm-phase3`(A-1 `f22c580` / B `d864ee0` / A-2 `39f3bd8` / A-3 `48b4552`) →
+  `feature/purchase-bot-mvp` 머지(`7d8c483`, --no-ff) → 배포 기록(`2d4ebbd`) → origin 푸시. **새 마이그레이션 없음.**
+- 배포: `2d4ebbd` 빌드가 운영(`mattermost-project-mvp.vercel.app`)으로 승격됨. health ok / database ok.
+  **라이브 번들에서 Phase 3 마커(`mentionActions`/`requiresBranch`/`이 지점방에서 새 예약`/`예약 등록`) 확인.**
+  (초기에 옛 빌드가 운영에 떠 있어 `@예약` 무반응이었음 → 올바른 빌드 승격으로 해소.)
+- Vercel env(운영): `CRM_RESERVATION_SHEET_ID` + 인라인 `GOOGLE_SA_CLIENT_EMAIL`/`GOOGLE_SA_PRIVATE_KEY` 설정 →
+  시트 연동 활성. 시트 `[보로] CRM 예약 관리` 탭 `예약`(헤더 12열).
+- ⚠️→✅ **SA 키 회전 완료**: 노출됐던 키(`35b7bbab…`)는 폐기됨(이제 `invalid_grant`로 거부 확인). 운영은 새 키 사용.
+- 검증: 사용자 end-to-end 테스트 완료(#지점방 `@예약` → 예약 등록 → 시트 자동 append). v1 "예약" 버튼도 유지.
+- 잔여(선택): 시트 테스트행(A2 "삭제 가능") 정리는 사용자 재량. `feature/crm-phase3` 워크트리/브랜치는 머지 완료 → 정리(삭제) 가능.
 
-**남은 사람 작업(ops):**
-- **배포**: 코드는 푸시됨. Vercel CLI 미설치 → 대시보드/CLI로 prod 배포 트리거·헬스 확인 필요.
-- **Vercel env(prod)**: `CRM_RESERVATION_SHEET_ID=1iP-4du5-e-MGsAgjah1aQhVWwt4mAmn6G05eE4zs2IA`,
-  `CRM_RESERVATION_SHEET_TAB=예약`, 인라인 `GOOGLE_SA_CLIENT_EMAIL`/`GOOGLE_SA_PRIVATE_KEY`(파일경로 아님) → redeploy.
-- ⚠️ **SA 키 회전**: 대화에 평문 공유된 키(`35b7bbab…`) 폐기 + 새 키 발급 → 새 키로 Vercel env 설정(시트 공유는
-  SA 이메일 동일이라 재공유 불필요). 회전 먼저 → 새 키로 env, 권장.
-- 시트 테스트행(A2) 삭제는 사용자 재량.
+---
+
+### (참고) 배포 전 경위 — 머지·시트 준비 (2026-06-16)
+머지 `7d8c483`, 시트 탭 `시트1`→`예약` 리네임 + 헤더 + 라이브 append 테스트(A2) 성공. lint+build+agent-gateway+
+purchase-bot test 통과. 배포·env·키회전은 사용자 ops로 진행되어 위와 같이 완료됨.
 
 ---
 
