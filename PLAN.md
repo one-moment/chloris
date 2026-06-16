@@ -1,0 +1,200 @@
+# 개발계획
+
+## 1. MVP 범위
+
+현재 MVP의 핵심은 “프로젝트 안에 여러 채널을 만들고, 각 채널에서 Messages / Ideas / Files를 함께 쓰는 업무 공간”입니다. 구매요청은 여러 채널 목적 중 하나이며, 일반 소통 채널과 입고/출고/재고관리 채널도 같은 구조 안에서 동작합니다.
+
+포함 기능:
+
+- 프로젝트 생성 및 선택
+- 사용자 계정 생성, 로그인, 로그아웃
+- 프로젝트별 채널 생성
+- 채널별 Messages, Ideas, Files 데이터 분리
+- 채널 유형: 일반 소통, 구매요청, 입고, 출고, 재고관리
+- Ideas 게시글 작성, 댓글, 멘션, 상태 변경
+- Files 메타데이터 추가
+- Codex, Claude Code 자동화봇 연결 개념
+- 자동화봇 실행 로그와 payload 확인
+- 구매요청 채널의 Mac mini 구매봇 원격 브라우저 자동화 개념
+- 구매봇은 장바구니/결제 검토 단계까지만 진행하고, 최종 결제는 담당자 승인 후 진행
+- 입고/출고/재고관리 채널은 Ideas 내용을 스프레드시트에 반영하는 자동화 payload 생성
+- 로그인 사용자 기준 메시지/게시글/댓글 작성자 및 봇 실행 요청자 기록
+- 운영 PostgreSQL, S3 첨부 저장, HTTPS 프록시, 백업 스크립트, 초대 코드 기반 가입 정책
+- Vercel + Supabase 기반 첫 MVP 배포 프로파일
+
+제외 기능:
+
+- Kanban board
+- 실제 Mattermost 서버 연동
+- 실제 파일 업로드
+- 실제 봇 실행 서버 호출
+- 조직/채널 단위 세부 권한, SSO
+- 실제 결제 자동 실행
+
+## 2. 현재 프론트엔드 구조
+
+```text
+app/page.jsx
+- Next.js 앱의 상태 관리와 액션 orchestration
+
+components/
+- ProjectSidebar: 프로젝트/채널 선택
+- Topbar: 채널 제목, 채널 타입, 탭
+- MessagesView: 채팅
+- IdeasView: 게시판
+- PostCard: 게시글/댓글
+- FilesView: 파일 목록
+- AutomationPanel: 채널별 자동화 실행
+- BotRunList: 실행 이력, payload, 승인/반려
+
+lib/
+- constants: 채널 타입, 탭, 게시글 상태
+- initialData: 샘플 데이터와 생성 함수
+- automation: 자동화 payload, 실행 상태 전환
+```
+
+## 3. 권장 데이터 모델 초안
+
+```text
+projects
+- id
+- name
+- description
+- created_by
+- created_at
+
+channels
+- id
+- project_id
+- name
+- type
+- mattermost_channel_id
+- created_at
+
+messages
+- id
+- channel_id
+- body
+- author_id
+- bot_id
+- created_at
+
+posts
+- id
+- channel_id
+- title
+- body
+- status
+- author_id
+- created_at
+- updated_at
+
+comments
+- id
+- post_id
+- body
+- author_id
+- created_at
+
+files
+- id
+- channel_id
+- post_id
+- name
+- storage_url
+- source
+- created_at
+
+bots
+- id
+- name
+- provider
+- command
+- channel_types
+- webhook_url
+- enabled
+
+bot_runs
+- id
+- bot_id
+- channel_id
+- input_payload
+- output_payload
+- status
+- approval_status
+- created_by
+- created_at
+
+users
+- id
+- email
+- name
+- handle
+- password_hash
+- role
+- created_at
+
+sessions
+- id
+- user_id
+- token_hash
+- expires_at
+- created_at
+```
+
+## 4. 다음 구현 단계
+
+### Phase 1: 프론트엔드 정리
+
+- Next.js 앱에 최신 채널 중심 모델 반영 완료
+- 컴포넌트 분리 완료
+- 샘플 데이터와 자동화 payload 로직을 `lib`로 분리 완료
+- 다음 작업: 타입 정의 또는 TypeScript 전환, 테스트 가능한 순수 함수 확대
+
+### Phase 2: 백엔드 API
+
+- 완료: 로컬 JSON 저장소 기반 `GET/PUT/DELETE /api/state`
+- 완료: 프로젝트 생성/목록 API
+- 완료: 채널 생성/목록 API
+- 완료: 메시지, 게시글, 댓글, 파일 생성 API
+- 완료: 봇 실행 생성 및 실행 상태 변경 API
+- 완료: 프론트 프로젝트/채널/메시지/Ideas/댓글/파일/봇 실행 액션을 개별 mutation API에 연결
+- 완료: Prisma + SQLite 기반 실제 DB 스키마 도입 및 로컬 JSON 저장소 교체
+- 완료: 메시지와 Ideas 게시글에 사진/파일 첨부 MVP 추가
+- 완료: 사용자 계정 생성/로그인/로그아웃, httpOnly 세션 쿠키, 비밀번호 해시 도입
+- 완료: 메시지/게시글/댓글/봇 실행 요청자를 로그인 사용자 기준으로 기록
+- 완료: `/api/health`, Dockerfile, docker compose 기반 MVP 실행 구성 추가
+- 완료: 첫 관리자 생성 후 공개 가입을 막을 수 있는 `ALLOW_PUBLIC_SIGNUP` 옵션 추가
+- 완료: 운영 PostgreSQL용 Prisma 스키마와 `docker-compose.prod.yml` 추가
+- 완료: S3 presigned upload 기반 첨부 저장 옵션 추가
+- 완료: 관리자 초대 코드 API와 초대 코드 가입 정책 추가
+- 완료: PostgreSQL/SQLite 백업 스크립트 추가
+- 완료: Vercel 빌드 설정과 Supabase Postgres/Storage 환경 예시 추가
+- 다음 작업: 봇 등록 CRUD, 입력 검증 강화, 채널별 권한 모델 준비
+
+### Phase 3: Mattermost 연동
+
+- 프로젝트 생성 시 Mattermost 팀/채널 생성
+- 채널 멤버 관리
+- 게시글/댓글/봇 실행 결과를 Mattermost 메시지로 알림
+- Mattermost 멘션과 앱 멘션 매핑
+
+### Phase 4: 자동화봇 연동
+
+- Mac mini 구매봇 실행 서버 연결
+- 구매봇 원격 브라우저 세션 상태 표시
+- 결제 직전 승인/반려 워크플로우
+- 입고/출고/재고관리 스프레드시트 API 연결
+- 봇 실행 권한, 감사 로그, 재시도 기능
+
+### Phase 5: 사내 배포
+
+- 배포 DB(PostgreSQL) 연결 완료
+- HTTPS 도메인 Caddy reverse proxy 구성 완료
+- S3 파일 저장소 옵션 완료
+- 기본 백업 스크립트 완료
+- 초대 코드 기반 가입 정책 완료
+- 권한 모델 고도화
+- SSO 또는 Mattermost 계정 연동
+- Docker 배포 구성 고도화
+- 운영 모니터링

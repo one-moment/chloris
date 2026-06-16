@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mattermost Project MVP</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="rail" aria-label="Primary navigation">
+        <button class="rail-button active" title="Channels" aria-label="Channels"><span class="icon">#</span></button>
+        <button class="rail-button" title="Mentions" aria-label="Mentions"><span class="icon">@</span></button>
+        <button class="rail-button" title="Files" aria-label="Files"><span class="icon">F</span></button>
+        <button class="rail-button rail-bottom" title="Settings" aria-label="Settings"><span class="icon">S</span></button>
+      </aside>
+
+      <aside class="sidebar">
+        <header class="workspace-header">
+          <div>
+            <strong>onemoment</strong>
+            <span>captain@1moment.co.kr</span>
+          </div>
+          <button class="icon-button" title="워크스페이스 메뉴" aria-label="워크스페이스 메뉴">⌄</button>
+        </header>
+
+        <section class="project-switcher">
+          <label for="projectSelect">프로젝트</label>
+          <select id="projectSelect"></select>
+          <button id="newProjectBtn" class="icon-button" title="프로젝트 생성" aria-label="프로젝트 생성">＋</button>
+        </section>
+
+        <nav class="channel-list" aria-label="Project channels">
+          <div class="list-heading with-action">
+            <span>Channels</span>
+            <button id="newChannelBtn" class="mini-action" title="채널 생성" aria-label="채널 생성">＋</button>
+          </div>
+          <div id="channelList"></div>
+        </nav>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <h1><span id="channelTitle">구매요청</span> <span>⌄</span> <mark>★</mark></h1>
+            <nav class="tabs" aria-label="Project tabs">
+              <button data-tab="messages">Messages</button>
+              <button data-tab="ideas" class="active">Ideas</button>
+              <button data-tab="files">Files</button>
+            </nav>
+          </div>
+          <div class="top-actions">
+            <button class="icon-button" title="검색" aria-label="검색">⌕</button>
+            <button class="icon-button" title="알림" aria-label="알림">!</button>
+            <button class="profile-dot" title="내 프로필" aria-label="내 프로필">박</button>
+          </div>
+        </header>
+
+        <section id="messagesView" class="view content-grid hidden">
+          <section class="feed">
+            <div class="message-stream" id="messageList"></div>
+            <form id="messageForm" class="message-composer" autocomplete="off">
+              <input id="messageInput" placeholder="메시지를 입력하세요. 예: /codex 구매요청 요약">
+              <button class="primary-button" type="submit">전송</button>
+            </form>
+          </section>
+
+          <aside class="inspector">
+            <section class="panel">
+              <div class="panel-title">
+                <h2>자동화봇</h2>
+                <span class="chip blue">Beta</span>
+              </div>
+              <p>Claude Code나 Codex로 만든 봇을 채널 명령어 또는 Webhook으로 연결합니다.</p>
+              <div id="botList" class="bot-list"></div>
+            </section>
+
+            <section class="panel">
+              <h2>봇 등록</h2>
+              <form id="botForm" class="bot-form" autocomplete="off">
+                <input id="botName" placeholder="봇 이름">
+                <select id="botProvider" aria-label="봇 종류">
+                  <option value="Codex">Codex</option>
+                  <option value="Claude Code">Claude Code</option>
+                  <option value="Custom Webhook">Custom Webhook</option>
+                </select>
+                <input id="botCommand" placeholder="명령어 예: /codex">
+                <input id="botWebhook" placeholder="Webhook URL 또는 실행 엔드포인트">
+                <button class="primary-button" type="submit">봇 추가</button>
+              </form>
+            </section>
+
+            <section class="panel">
+              <h2>실행 로그</h2>
+              <div id="botRunList" class="run-list"></div>
+            </section>
+          </aside>
+        </section>
+
+        <section id="ideasView" class="view content-grid">
+          <section class="feed">
+            <form id="postForm" class="composer" autocomplete="off">
+              <input id="postTitle" class="title-input" placeholder="제목을 입력하세요" maxlength="80">
+              <div class="body-field">
+                <textarea id="postBody" placeholder="구매요청, 아이디어, 공지사항을 공유하세요" rows="4"></textarea>
+                <div id="mentionMenu" class="mention-menu hidden"></div>
+              </div>
+              <div class="composer-tools">
+                <div class="tool-group" aria-label="Composer tools">
+                  <button type="button" class="tool-button" title="첨부">＋</button>
+                  <button type="button" class="tool-button" title="서식">Aa</button>
+                  <button type="button" id="mentionBtn" class="tool-button" title="멘션">@</button>
+                  <button type="button" class="tool-button" title="이모지">☺</button>
+                </div>
+                <div class="status-actions">
+                  <select id="postStatus" aria-label="게시글 상태">
+                    <option value="검토중">검토중</option>
+                    <option value="진행중">진행중</option>
+                    <option value="완료">완료</option>
+                  </select>
+                  <button type="button" id="cancelPost" class="secondary-button">취소</button>
+                  <button class="primary-button" type="submit">게시</button>
+                </div>
+              </div>
+            </form>
+
+            <div class="feed-header">
+              <div>
+                <h2>Ideas</h2>
+                <p>게시글, 댓글, 멘션으로 업무 요청을 추적합니다.</p>
+              </div>
+              <div class="segmented" role="group" aria-label="Feed filter">
+                <button data-filter="all" class="active">전체</button>
+                <button data-filter="mentions">내 멘션</button>
+                <button data-filter="open">미완료</button>
+              </div>
+            </div>
+
+            <div id="postList" class="post-list"></div>
+          </section>
+
+          <aside class="inspector">
+            <section class="panel">
+              <div class="panel-title">
+                <h2>공지</h2>
+                <span class="chip amber">고정</span>
+              </div>
+              <p>구매요청은 품목, 수량, 납기일, 담당자를 포함해 등록해주세요.</p>
+            </section>
+
+            <section class="panel">
+              <h2>요약</h2>
+              <div class="metric-row"><span>검토중</span><strong id="reviewCount">0</strong></div>
+              <div class="metric-row"><span>진행중</span><strong id="progressCount">0</strong></div>
+              <div class="metric-row"><span>완료</span><strong id="doneCount">0</strong></div>
+            </section>
+
+            <section class="panel">
+              <h2 id="automationPanelTitle">자동화 실행</h2>
+              <p id="automationPanelDescription">채널 유형에 맞는 자동화봇을 실행합니다.</p>
+              <div id="ideaBotActions" class="bot-list"></div>
+            </section>
+
+            <section class="panel">
+              <h2>최근 봇 실행</h2>
+              <div id="ideaRunList" class="run-list"></div>
+            </section>
+
+            <section class="panel">
+              <h2>내 멘션</h2>
+              <div id="mentionList" class="mention-list"></div>
+            </section>
+          </aside>
+        </section>
+
+        <section id="filesView" class="view content-grid hidden">
+          <section class="feed">
+            <div class="feed-header">
+              <div>
+                <h2>Files</h2>
+                <p>게시글, 댓글, 봇 실행 결과에 연결된 파일을 모아봅니다.</p>
+              </div>
+              <button id="addFileBtn" class="primary-button" type="button">파일 추가</button>
+            </div>
+            <div id="fileList" class="file-list"></div>
+          </section>
+
+          <aside class="inspector">
+            <section class="panel">
+              <h2>파일 연동</h2>
+              <p>MVP에서는 파일 메타데이터를 관리합니다. 실제 저장소는 Mattermost 파일 API, Google Drive, S3 중 하나로 연결할 수 있습니다.</p>
+            </section>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="projectDialog">
+      <form method="dialog" id="projectForm" class="dialog-card">
+        <h2>프로젝트 생성</h2>
+        <label>
+          프로젝트명
+          <input id="newProjectName" placeholder="예: 신규 매장 오픈" maxlength="40">
+        </label>
+        <menu>
+          <button type="button" id="closeProjectDialog" class="secondary-button">취소</button>
+          <button value="default" class="primary-button">생성</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <dialog id="fileDialog">
+      <form method="dialog" id="fileForm" class="dialog-card">
+        <h2>파일 추가</h2>
+        <label>
+          파일명
+          <input id="newFileName" placeholder="예: purchase-summary.md" maxlength="80">
+        </label>
+        <label>
+          출처
+          <input id="newFileSource" placeholder="예: Ideas 첨부" maxlength="40">
+        </label>
+        <menu>
+          <button type="button" id="closeFileDialog" class="secondary-button">취소</button>
+          <button value="default" class="primary-button">추가</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <dialog id="channelDialog">
+      <form method="dialog" id="channelForm" class="dialog-card">
+        <h2>채널 생성</h2>
+        <label>
+          채널명
+          <input id="newChannelName" placeholder="예: 입고 관리" maxlength="40">
+        </label>
+        <label>
+          채널 유형
+          <select id="newChannelType">
+            <option value="general">일반 소통</option>
+            <option value="purchase">구매요청</option>
+            <option value="inbound">입고</option>
+            <option value="outbound">출고</option>
+            <option value="inventory">재고관리</option>
+          </select>
+        </label>
+        <menu>
+          <button type="button" id="closeChannelDialog" class="secondary-button">취소</button>
+          <button value="default" class="primary-button">생성</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>

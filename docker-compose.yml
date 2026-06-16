@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "file:/data/prod.db"
+      ALLOW_PUBLIC_SIGNUP: "true"
+    volumes:
+      - mattermost_data:/data
+    restart: unless-stopped
+
+volumes:
+  mattermost_data:

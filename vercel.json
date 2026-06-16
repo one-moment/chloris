@@ -1,0 +1,10 @@
+{
+  "regions": ["icn1"],
+  "buildCommand": "npm run vercel-build",
+  "framework": "nextjs",
+  "functions": {
+    "app/api/**/*.js": {
+      "maxDuration": 30
+    }
+  }
+}
