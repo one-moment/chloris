@@ -75,6 +75,12 @@ DELL에는 **Node/npm이 없어 빌드·배포가 불가**합니다. 그래서 D
 
 > 검증: 스테이징에 `.env`, `.env.production`, `.claude/`, `node_modules/`, `prisma/dev.db` **포함 안 됨** 확인 완료.
 
+### 추가 작업 — 게시글 작성자명 가독성 개선 (커밋 `63046f6`)
+- `components/PostCard.jsx`: 게시글 작성자명을 `<span class="post-author">`로 분리.
+- `app/globals.css`: `.post-author` = 14px(12→14 한 단계 위)·Bold(700)·`--text` 색 → "작성자(강조) · 작성시간(12px muted)" 위계 분리. 제목/레이아웃/정렬 미변경.
+- DELL 검증: `next build` 성공 + `npm run lint` 통과.
+- ⚠️ **Mac에서 할 것:** 이 스냅샷엔 tsconfig가 없어 `npx tsc --noEmit`을 못 돌렸음. 실제 TS 프로젝트(`one-moment/chloris`)에서 `npx tsc --noEmit` 최종 확인 필요.
+
 ---
 
 ## 2. DELL 환경 상태
