@@ -14,7 +14,8 @@ import {
   validateDisposalForSubmit,
   isMissingInventoryTableError,
   postDisposalReviewRequest,
-  allBranchManagers
+  allBranchManagers,
+  branchManagers
 } from "../../../../../lib/inventoryServer";
 
 export const runtime = "nodejs";
@@ -73,6 +74,13 @@ export async function POST(request) {
 
   try {
     if (status === "review") {
+      // 담당 매니저로 지정한 사용자는 해당 지점의 매니저여야 한다(멘션 대상 무결성).
+      if (body.reviewerId) {
+        const managers = await branchManagers(branchId);
+        if (!managers.some((manager) => manager.id === body.reviewerId)) {
+          return badRequest("담당 매니저는 해당 지점의 매니저여야 합니다.");
+        }
+      }
       const errors = await validateDisposalForSubmit(lines);
       if (errors.length) {
         return Response.json({ error: "검증 오류로 검수 요청할 수 없습니다.", errors }, { status: 422 });

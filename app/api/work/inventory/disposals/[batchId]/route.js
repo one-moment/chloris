@@ -6,7 +6,7 @@ import { requireCurrentUser } from "../../../../../../lib/auth";
 import { badRequest } from "../../../../../../lib/serverState";
 import { prisma } from "../../../../../../lib/prisma";
 import { isModuleEnabled } from "../../../../../../lib/brand";
-import { normalizeAuthorStatus } from "../../../../../../lib/inventory";
+import { normalizeAuthorStatus, canTransitionDisposal } from "../../../../../../lib/inventory";
 import {
   serializeDisposalBatch,
   resolveLotPrices,
@@ -14,6 +14,7 @@ import {
   validateDisposalForSubmit,
   isMissingInventoryTableError,
   canApproveDisposal,
+  branchManagers,
   postDisposalReviewRequest,
   postDisposalDecision
 } from "../../../../../../lib/inventoryServer";
@@ -56,23 +57,31 @@ export async function PATCH(request, { params }) {
   try {
     // ── 매니저 검수 액션: 승인(approve) / 반려(reject) ──────────────────────
     if (action === "approve" || action === "reject") {
-      if (existing.status !== "review") return badRequest("검수대기 상태의 폐기 기록만 승인/반려할 수 있습니다.");
+      const targetStatus = action === "approve" ? "submitted" : "rejected";
+      if (!canTransitionDisposal(existing.status, targetStatus)) {
+        return badRequest("검수대기 상태의 폐기 기록만 승인/반려할 수 있습니다.");
+      }
       const allowed = await canApproveDisposal(user, existing.branchId);
       if (!allowed) return Response.json({ error: "이 지점의 담당 매니저만 검수할 수 있습니다." }, { status: 403 });
 
       if (action === "reject") {
-        const rejected = await prisma.disposalBatch.update({
+        // 상태 가드를 update 조건(where status:"review")에 넣어 동시 승인/반려 경쟁을 차단한다.
+        const rejectResult = await prisma.disposalBatch.updateMany({
+          where: { id: batchId, status: "review" },
+          data: { status: "rejected", rejectReason: typeof body.rejectReason === "string" ? body.rejectReason : null }
+        });
+        if (rejectResult.count === 0) return badRequest("이미 처리된(검수대기가 아닌) 폐기 기록입니다.");
+        const rejected = await prisma.disposalBatch.findUnique({
           where: { id: batchId },
-          data: { status: "rejected", rejectReason: typeof body.rejectReason === "string" ? body.rejectReason : null },
           include: { lines: { orderBy: { lineIndex: "asc" } } }
         });
         await postDisposalDecision(rejected, { actorName: user.name, decision: "rejected", reason: rejected.rejectReason });
         return Response.json(serializeDisposalBatch(rejected));
       }
 
-      // approve → submitted(승인·시트반영 종착). metrics·시트 동기화 기준은 submitted 그대로 유지.
-      let approved = await prisma.disposalBatch.update({
-        where: { id: batchId },
+      // approve → submitted(승인·시트반영 종착). 상태 가드를 update 조건에 넣어 동시 처리 경쟁을 차단한다.
+      const approveResult = await prisma.disposalBatch.updateMany({
+        where: { id: batchId, status: "review" },
         data: {
           status: "submitted",
           approvedById: user.id,
@@ -80,7 +89,11 @@ export async function PATCH(request, { params }) {
           approvedAt: new Date(),
           submittedAt: new Date(),
           rejectReason: null
-        },
+        }
+      });
+      if (approveResult.count === 0) return badRequest("이미 처리된(검수대기가 아닌) 폐기 기록입니다.");
+      let approved = await prisma.disposalBatch.findUnique({
+        where: { id: batchId },
         include: { lines: { orderBy: { lineIndex: "asc" } } }
       });
 
@@ -106,19 +119,25 @@ export async function PATCH(request, { params }) {
       return Response.json(serializeDisposalBatch(approved));
     }
 
-    // ── 작성자 편집/검수요청: draft 또는 rejected 상태에서만 ──────────────────
-    if (existing.status !== "draft" && existing.status !== "rejected") {
-      return badRequest("검수중이거나 승인된 기록은 수정할 수 없습니다.");
-    }
-
+    // ── 작성자 편집/검수요청: 전이 테이블이 허용할 때만(draft/rejected → draft/review) ──────
     const replaceLines = Array.isArray(body.lines) ? body.lines : null;
     const nextStatus = normalizeAuthorStatus(body.status);
+    if (!canTransitionDisposal(existing.status, nextStatus)) {
+      return badRequest("검수중이거나 승인된 기록은 수정할 수 없습니다.");
+    }
 
     const effectiveLines = replaceLines
       ?? (await prisma.disposalLine.findMany({ where: { batchId }, orderBy: { lineIndex: "asc" } }));
 
     if (nextStatus === "review") {
       if (effectiveLines.length === 0) return badRequest("폐기 품목이 한 개 이상 필요합니다.");
+      // 담당 매니저로 지정한 사용자는 해당 지점의 매니저여야 한다(멘션 대상 무결성).
+      if (body.reviewerId) {
+        const managers = await branchManagers(existing.branchId);
+        if (!managers.some((manager) => manager.id === body.reviewerId)) {
+          return badRequest("담당 매니저는 해당 지점의 매니저여야 합니다.");
+        }
+      }
       const errors = await validateDisposalForSubmit(effectiveLines);
       if (errors.length) {
         return Response.json({ error: "검증 오류로 검수 요청할 수 없습니다.", errors }, { status: 422 });
