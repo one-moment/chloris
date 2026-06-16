@@ -1,9 +1,25 @@
 # HANDOFF.md
 
-## ▶ RESUME HERE — CRM Phase 3 (새 대화에서 이어가기)
+## ▶ CRM Phase 3 — 배포 라인 머지 완료 (2026-06-16)
 
-격리 워크트리 `feature/crm-phase3` (배포 라인 `feature/purchase-bot-mvp` @ `b859630` 기준, 푸시됨).
-deps/`.env`(sqlite 더미)/prisma client 셋업 완료, baseline lint 통과. OBJECTIVE는 `ralph/PROMPT.md`:
+**상태: 코드 완료 + 배포 라인 머지·푸시됨.** `feature/crm-phase3`(A-1 `f22c580` / B `d864ee0` / A-2 `39f3bd8`
+/ A-3 `48b4552`) → `feature/purchase-bot-mvp` 머지(`7d8c483`, --no-ff) → origin 푸시(`b859630..7d8c483`).
+새 마이그레이션 없음. lint(모듈 경계 ok)+build+agent-gateway+purchase-bot test 통과.
+
+구글시트 준비 완료(현재 키로): 탭 `시트1`→`예약` 리네임, 헤더행(예약일·픽업일시·지점·고객명·연락처·상품·금액·경로·
+수령방법·상태·비고·예약ID) 기록, **라이브 append 테스트 1행(A2, 가짜데이터 "삭제 가능")** 성공 → 쓰기 경로 검증됨.
+
+**남은 사람 작업(ops):**
+- **배포**: 코드는 푸시됨. Vercel CLI 미설치 → 대시보드/CLI로 prod 배포 트리거·헬스 확인 필요.
+- **Vercel env(prod)**: `CRM_RESERVATION_SHEET_ID=1iP-4du5-e-MGsAgjah1aQhVWwt4mAmn6G05eE4zs2IA`,
+  `CRM_RESERVATION_SHEET_TAB=예약`, 인라인 `GOOGLE_SA_CLIENT_EMAIL`/`GOOGLE_SA_PRIVATE_KEY`(파일경로 아님) → redeploy.
+- ⚠️ **SA 키 회전**: 대화에 평문 공유된 키(`35b7bbab…`) 폐기 + 새 키 발급 → 새 키로 Vercel env 설정(시트 공유는
+  SA 이메일 동일이라 재공유 불필요). 회전 먼저 → 새 키로 env, 권장.
+- 시트 테스트행(A2) 삭제는 사용자 재량.
+
+---
+
+### (참고) 원래 OBJECTIVE — `ralph/PROMPT.md`:
 - **Part A — `@예약` v2 액션-멘션**: 코어 `components/MentionInput.jsx`를 모듈 선언 액션-멘션으로 확장
   (매니페스트 컨트랙트, 코어→모듈 import 금지). 선택 시 텍스트 삽입 대신 `/work/reservations?new=1&channel=&branch=`
   딥링크. @유저 멘션 회귀 금지. 설계 = `docs/crm-reservation-mention.md` 해법 A. v1 버튼은 검증 전까지 유지.
