@@ -1168,6 +1168,12 @@
   font-weight: 900;
 }
 
+.message-link {
+  color: var(--blue);
+  text-decoration: underline;
+  word-break: break-all;
+}
+
 .automation-panel {
   display: flex;
   flex-direction: column;
