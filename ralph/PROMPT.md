@@ -6,57 +6,87 @@ Each iteration, make **one bounded, safe step** toward the OBJECTIVE, leave the 
 green (build/lint passing), record what you did, then stop. The loop will re-invoke
 you to continue.
 
-## OBJECTIVE (헤르메스 1단계 — 게이트웨이 분배 + 안내 응답)
+## OBJECTIVE (헤르메스 2단계 — 두뇌 스위치 + "이건 ○○ 업무" 분류·안내)
 
-승인된 상세 스펙: 저장소의 `HERMES_STAGE1_PLAN.md`. **그 문서가 정본이다. 그 파일 목록과
-코드 형태를 정확히 따르고, 그 범위를 절대 벗어나지 마라.** 추가 참고: `docs/agent-bot-framework.md`,
-`lib/agents/purchaseAgent/prompts.js`, `lib/agents/purchaseAgent/service.js`(패턴 미러링용).
+정본 방향: 헤르메스 = 단일 안내데스크 에이전트(A안). 2단계는 직원이 `@헤르메스 ...`로 평소 말을 적으면
+**발주/예약/입고/폐기/기타 중 무엇인지 한 번 분류**해서 → **해당 화면 바로가기를 안내**하는 것까지.
+**실제 업무 실행(발주·예약 생성 등)·승인(ApprovalRequest)·업무데이터 변경은 없다 — 그건 3단계.** 읽기·분류·안내만.
 
-목표: 단일 안내데스크 에이전트 "헤르메스"의 뼈대를 세우고, 채팅 게이트웨이가 `@헤르메스`
-멘션을 헤르메스로 분배하게 한다. **이번 단계는 안내 메시지 + AgentRun 기록만** 한다 —
-두뇌(LLM)·도구·승인·업무 데이터 변경은 없다.
+두뇌는 **공급사 교체 가능한 얇은 '스위치'**로 만들되, **시작 공급사는 OpenAI**(기존 `lib/agents/openaiClient.js` 재사용)로 한다.
+키가 없거나 **어떤 이유로든 실패하면 1단계 안내(HERMES_HELP_LINES)로 안전하게 degrade**한다(아래 #3 보강 참조).
 
-이번에 만들/고칠 파일은 정확히 다음 6개뿐이다 (그 외 파일 수정 금지):
+참고(패턴): `lib/agents/openaiClient.js`(classifyAgentIntent 시그니처 + extractStatementLineItems의 "JSON만 지시→파싱" 패턴),
+`lib/agents/hermes/{prompts,service}.js`(1단계 결과), `lib/brand.js`(`isModuleEnabled` — 브랜드 게이팅).
+⚠️ **헤르메스는 `lib/`에 있고 `modules/`·`modules/registry.js`를 import하지 않는다**(현재 lib는 modules를 전혀 import하지 않음 = core/modules 분리 관행). 라우팅은 아래 내부 맵으로, 브랜드 게이팅은 `lib/brand`의 `isModuleEnabled`로만 한다.
 
-1. (신규) `lib/agents/hermes/prompts.js`
-   - `HERMES_AGENT_SLUG="hermes-agent"`, `HERMES_AGENT_MENTIONS=["@헤르메스","@hermes","@Hermes"]`,
-     `isHermesAgentCommand(body)`, `stripHermesAgentMention(body)`(2단계 대비), `HERMES_HELP_LINES`.
-   - `lib/agents/purchaseAgent/prompts.js` 구조 미러링.
-2. (신규) `lib/agents/hermes/service.js`
-   - `getHermesInstallation(channelId)` + `runHermesAgent({body,channelId,messageId,requester})`:
-     멘션 확인 → 설치 확인 → AgentRun(running) 생성(agentAppId는 설치 레코드에서) →
-     안내 메시지 게시(author "헤르메스", bot:true) → AgentRun completed. 실패 시 AgentRun failed.
-   - `purchaseAgent/service.js` 패턴 미러링하되 **도구·승인·업무데이터 없음**. prisma import는 `../../prisma`.
-3. (수정) `lib/agentGateway/service.js` — 기존 try 안, `runPurchaseAgent` 호출 **앞**에 분기 1곳만:
-   `if (isHermesAgentCommand(body)) { const r = await runHermesAgent({body,channelId,messageId,requester}); if (r.handled) return r; }`
-   missing-table degrade(catch) 그대로 유지. **구매 경로 동작 불변.**
-4. (수정) `scripts/test-agent-gateway.mjs` — 상단에
-   `import { isHermesAgentCommand, stripHermesAgentMention } from "../lib/agents/hermes/prompts.js";` 추가 +
-   멘션 감지/회귀(`isPurchaseAgentCommand("@헤르메스 안녕")===false`) 단위 assert 추가.
-   (이 파일은 DB를 쓰지 않는 순수 단위 테스트다.)
-5. (수정) `scripts/test-agent-layer.mjs` — `seedAgentLayer()`에 `hermes-agent` AgentApp upsert +
-   시험 채널 `enableChannelAgent({channelId, agentId:"hermes-agent", config:{}, actor:admin})` +
-   헤르메스 검증 블록(handled/action/AgentRun completed/안내 메시지) 추가. 정리(finally)는 기존
-   requesterId/channelId 기준이 헤르메스 레코드까지 덮으므로 추가 정리 불필요.
-   **이 테스트 코드는 작성만 하고, 이 루프에서 실행하지는 마라(아래 추가 가드레일).**
-6. (수정) `DECISIONS.md` — 헤르메스 1단계 결정 항목 1개 추가(`HERMES_STAGE1_PLAN.md`의 초안 사용).
+이번에 만들/고칠 파일은 정확히 다음 7개뿐이다(그 외 수정 금지):
 
-범위 밖(이번에 절대 안 함): 두뇌/LLM, 업무 실제 실행, 딥링크 안내, 운영 배포, DB 마이그레이션,
-구매 관련 코드 수정, 독립 구매 에이전트 껍데기 정리, package.json/설정 변경.
+1. (신규) `lib/agents/llm/index.js` — 공급사 스위치(제너릭 분류기)
+   - `classifyJson({ messages })`를 내보낸다. `process.env.AGENT_LLM_PROVIDER`(기본 "openai")로 분기.
+   - provider "openai": `classifyAgentIntent({ messages })`(`../openaiClient`) 호출(스키마 미사용 — 프롬프트로 "JSON만" 지시).
+     결과가 `{ skipped:true }`면 그대로 반환. 아니면 OpenAI Responses 응답에서 출력 텍스트를 뽑아
+     (`payload.output_text` 또는 `payload.output[].content[].text`를 모은 것; 추출 헬퍼는 이 파일에 작게 구현 —
+     openaiClient의 pickResponsesOutputText는 export 안 됨, openaiClient는 수정 금지),
+     코드펜스 제거 후 `JSON.parse` → `{ ok:true, data }`. 파싱 실패 → `{ error:"parse" }`. (HTTP 오류 throw는 상위(#3)에서 잡음.)
+   - 알 수 없는 provider → `{ skipped:true, reason:"unknown_provider" }`.
+   - **OpenAI만 구현한다. 다른 공급사 어댑터는 이번에 추가하지 않는다(스위치 자리만 만든다).**
+
+2. (수정) `lib/agents/hermes/prompts.js` — 분류 프롬프트 + 라우팅 맵 추가(기존 `HERMES_HELP_LINES`는 fallback으로 유지)
+   - `buildWorkIntentMessages(text)` → OpenAI Responses `input` 배열을 만든다:
+     `[{ role:"user", content:[{ type:"input_text", text: "<지시문>\n\n직원 메시지: <text>" }] }]`.
+     지시문: "다음 직원 메시지를 purchase(발주)/reservation(예약)/stockin(입고)/disposal(폐기)/other(기타) 중 하나로 분류하라.
+     설명 없이 JSON만 출력: {\"area\":\"...\"}."
+   - `WORK_ROUTES`: area → { moduleSlug, label, href }
+     - purchase → { moduleSlug:"purchase",     label:"발주(구매 관리)", href:"/work/purchase" }
+     - reservation → { moduleSlug:"reservations", label:"예약 관리",       href:"/work/reservations" }
+     - stockin → { moduleSlug:"stockin",      label:"입고 관리",       href:"/work/stock-in" }
+     - disposal → { moduleSlug:"disposal",     label:"폐기 관리",       href:"/work/disposal" }
+   - `buildRouteMessageLines({ label, href })` → 안내 라인(예: `이건 ${label} 업무로 보여요.`, `여기서 처리하실 수 있어요: ${href}`).
+
+3. (수정) `lib/agents/hermes/service.js` — `runHermesAgent` 확장(1단계 골격 유지)
+   - 멘션 확인 → 설치 확인 → AgentRun(running) 생성: 기존과 동일.
+   - `import { isModuleEnabled } from "../../brand";` 추가. `import { classifyJson } from "../llm";` 추가.
+     `buildWorkIntentMessages`, `WORK_ROUTES`, `buildRouteMessageLines`, `stripHermesAgentMention`는 `./prompts`에서 가져온다.
+   - **분류는 자체 try/catch로 감싼다(보강 — 어떤 실패든 안전 degrade)**:
+     `let area=null; try { const cls = await classifyJson({ messages: buildWorkIntentMessages(stripHermesAgentMention(body)) }); area = cls?.ok ? (cls.data?.area ?? null) : null; } catch { area = null; }`
+     → 키없음·파싱실패·API/네트워크 throw 등 **모든 실패에서 area=null**(run은 계속 진행, failed로 떨어뜨리지 않는다).
+   - 답변 결정:
+     - `route = area ? WORK_ROUTES[area] : null`.
+     - `route`가 없거나 `area === "other"`이거나 `!isModuleEnabled(route.moduleSlug)` → **fallback: `HERMES_HELP_LINES` 안내**, `action="help"`.
+     - 그 외 → `buildRouteMessageLines(route)` 안내, `action="route"`.
+   - 안내 메시지 게시(author "헤르메스", bot:true) → AgentRun completed, `outputJson = { action, area: area ?? null, href: route?.href ?? null }`. (메시지 게시·DB 오류만 기존 catch로 failed.)
+   - **업무데이터 변경·도구·승인 없음. 메시지 게시만.**
+
+4. (수정) `scripts/test-agent-gateway.mjs` — 순수 단위(DB·네트워크 없음)
+   - `WORK_ROUTES` 매핑/`buildRouteMessageLines` 출력 assert.
+   - 브랜드 게이팅: 보로(기본 brand)에서 4개 area의 모듈이 `isModuleEnabled`로 true인지 assert.
+   - `classifyJson`의 degrade: `OPENAI_API_KEY`가 없으면 `{ skipped:true }`를 반환하는지 assert(실제 OpenAI 호출 금지).
+     **단, 키를 지울 땐 반드시 백업→복원(또는 격리)하여 다른 검사·환경에 영향 주지 마라**
+     (예: `const k = process.env.OPENAI_API_KEY; delete process.env.OPENAI_API_KEY; /* assert */ if (k !== undefined) process.env.OPENAI_API_KEY = k;`).
+
+5. (수정) `scripts/test-agent-layer.mjs` — DB 통합(루프에서 실행 안 함; `node --check` 문법만)
+   - 테스트 환경엔 `OPENAI_API_KEY`가 없으므로 분류가 skip → **헤르메스가 1단계 안내로 degrade**한다.
+     기존 헤르메스 검증(안내 응답/AgentRun completed/구매 회귀/미설치 회귀)이 그대로 통과하도록 유지(필요하면 문구 매칭만 조정).
+
+6. (수정) `.env.example` — `AGENT_LLM_PROVIDER="openai"` 추가 + 주석:
+   "헤르메스 분류 두뇌의 공급사 스위치. OPENAI_API_KEY가 설정되면 분류·안내가 켜지고, 없으면 1단계 안내로 동작."
+   **키 값은 쓰지 않는다.**
+
+7. (수정) `DECISIONS.md`/`TODO.md`/`HANDOFF.md` — 2단계 항목 추가.
 
 ### 이 OBJECTIVE 전용 추가 가드레일 (절대)
-- **`agent-layer:test`(DB에 쓰는 통합 테스트)를 이 루프에서 실행하지 마라.** 사람이 안 보는
-  루프에서는 `DATABASE_URL`이 운영을 가리킬 위험이 있다. 이 루프의 검증은 `npm run lint` +
-  `npm run agent-gateway:test`(둘 다 DB 미사용)로만 한다. `agent-layer:test` 실행과 수동
-  `@헤르메스` 확인은 루프 종료 후 사람의 몫임을 `HANDOFF.md`에 남겨라.
-- **새 브랜치 생성·git 이력 수술 금지.** 이미 사람이 `feature/hermes-stage1`(= 최신
-  `feature/purchase-bot-mvp`에서 분기)을 만들어 그 위에 있다고 가정한다. 다른 브랜치로 커밋하지 마라.
+- **두뇌(OpenAI) 호출은 `@헤르메스` 멘션일 때만** 일어난다(비용·지연 통제). 멘션당 분류 1회.
+- **`agent-layer:test`(DB 통합)를 이 루프에서 실행하지 마라**(무인 루프에서 DATABASE_URL이 운영일 위험).
+  루프 검증은 `npm run lint` + `npm run agent-gateway:test`(둘 다 DB·네트워크 미사용)만. 실제 분류·라우팅 확인은 루프 후 사람이 로컬에서 키를 넣고.
+- **`modules/`·`modules/registry.js` import 금지**(core/modules 분리). 라우팅은 내부 `WORK_ROUTES` + `lib/brand`의 `isModuleEnabled`로만.
+- **`openaiClient.js`·구매 관련 코드·운영 배포·DB 마이그레이션 변경 금지.** 다른 공급사 어댑터는 이번에 추가하지 않는다.
+- **새 브랜치 생성·git 수술 금지.** 이미 사람이 `feature/hermes-stage2`(= 최신 `feature/purchase-bot-mvp`에서 분기) 위에 있다고 가정한다.
 
 ### 이 OBJECTIVE의 완료 조건
-위 6개 변경 완료 + `npm run lint` 통과 + `npm run agent-gateway:test` 통과 +
-`DECISIONS.md`/`TODO.md`/`HANDOFF.md` 갱신 + `feature/hermes-stage1`에 커밋 — 이 모두가 충족될
-때만 완료다. `HANDOFF.md`에 "루프 후 사람 검증 필요: 로컬/연습 DB로 agent-layer:test + dev에서
-@헤르메스 확인 + PR 생성"을 명시해 둘 것.
+위 7개 변경 완료 + `npm run lint` 통과 + `npm run agent-gateway:test` 통과(분류 degrade·라우팅 매핑 단위 포함) +
+`DECISIONS.md`/`TODO.md`/`HANDOFF.md` 갱신 + `feature/hermes-stage2` 커밋 — 이 모두가 충족될 때만 완료다.
+`HANDOFF.md`에 "루프 후 사람 검증 필요: ① 로컬/연습 DB `agent-layer:test`(DATABASE_URL 운영 아닌지 먼저 확인)
+② 로컬에서 OPENAI_API_KEY 설정 후 dev에서 `@헤르메스 …발주/예약/입고/폐기…` 분류·안내 확인 ③ PR 생성·검토"를 명시할 것.
 
 ## Every iteration, in order
 
