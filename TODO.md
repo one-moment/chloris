@@ -1,5 +1,20 @@
 # TODO.md
 
+## 헤르메스 1단계 — Ralph loop (2026-06-17, worktree: feature/hermes-stage1)
+
+OBJECTIVE: `ralph/PROMPT.md` (정본 스펙 `HERMES_STAGE1_PLAN.md`). 단일 안내데스크 에이전트 "헤르메스" 뼈대 +
+게이트웨이 `@헤르메스` 분배 + 안내 응답만(두뇌·도구·승인·업무데이터 없음). 파일 6개만. 루프 검증 = `npm run lint` +
+`npm run agent-gateway:test`(둘 다 DB 미사용). `agent-layer:test`·수동 확인은 루프 후 사람.
+
+- [x] (iter 1) 헤르메스 모듈 신규 2파일: `lib/agents/hermes/prompts.js`(SLUG/MENTIONS/isHermesAgentCommand/
+  stripHermesAgentMention/HERMES_HELP_LINES) + `lib/agents/hermes/service.js`(getHermesInstallation +
+  runHermesAgent: 멘션·설치 확인 → AgentRun running → 안내메시지(author "헤르메스", bot:true) → completed,
+  실패 시 failed). purchaseAgent 패턴 미러링, 도구·승인 없음. `npm run lint`(모듈 경계 ok) 통과.
+- [ ] (iter 2) 게이트웨이 분기(`lib/agentGateway/service.js`, runPurchaseAgent 앞 1곳) + `scripts/test-agent-gateway.mjs`
+  헤르메스 단위 assert + 회귀. lint + agent-gateway:test.
+- [ ] (iter 3) `scripts/test-agent-layer.mjs` 헤르메스 시드/설치/검증 블록(작성만, 루프에서 실행 금지) + `DECISIONS.md` 항목.
+- [ ] (완료) 6개 변경 + lint + agent-gateway:test 통과 + 문서 갱신 + 커밋. HANDOFF에 "루프 후 사람 검증" 명시.
+
 ## CRM Phase 3 — Ralph loop (2026-06-16, worktree: feature/crm-phase3)
 
 OBJECTIVE: `ralph/PROMPT.md`. 병합된 배포 라인(인벤토리 + CRM Phase 2 라이브) 위에서 두 파트. 새 마이그레이션 불필요.
