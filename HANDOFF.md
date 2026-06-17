@@ -1,6 +1,6 @@
 # HANDOFF.md
 
-## ▶ 헤르메스 3단계 — Ralph loop 진행 중 (2026-06-17, `feature/hermes-stage3`)
+## ▶ 헤르메스 3단계 — 루프 완료 + 사람 검증 통과 (2026-06-17, `feature/hermes-stage3`)
 
 **상태: ✅ 루프 코드 완료(8/8 파일) — OBJECTIVE 충족.** 첫 실행=예약, 방식=(나) 미리채움. `@헤르메스 …예약…` → 비PII 예약정보 추출 →
 예약 양식 미리채운 링크 안내. 실제 생성은 사람이 양식 제출(기존 POST /api/work/crm/reservations). DB 직접 쓰기·승인·마이그레이션 없음.
@@ -10,8 +10,10 @@
 - iter 3: UI props 체인 — page.jsx(prefill 5개 읽기)→ReservationsDashboard(prefill 전달)→ReservationForm(applyPrefill 초기값, name/phone 제외, 순수 추가). lint+agent-gateway:test 통과.
 - iter 4: test-agent-gateway.mjs(buildReservationPrefillQuery 비PII·no name/phone 단위) + test-agent-layer.mjs(예약 degrade, 작성만 `node --check`) + DECISIONS.md. **8/8 완료.** lint+agent-gateway:test 통과.
 - ⚠️ **PII**: 성함·연락처는 URL/추출 금지(미리채움은 상품·금액·픽업·수령·경로만). ⚠️ **가드레일**: 헤르메스 DB 직접쓰기 없음, agent-layer:test·실 OpenAI 루프 미실행, modules import 금지.
-- **루프 후 사람 검증 필요**: ① 로컬/연습 DB `agent-layer:test`(DATABASE_URL 운영 아닌지 먼저) ② 로컬 `OPENAI_API_KEY` 후 dev(`scripts/seed-hermes-dev.mjs` 재사용)에서
-  `@헤르메스 내일 오후 3시 장미 부케 5만원 방문수령 예약` → 미리채운 양식(상품·금액·픽업·수령), **성함/연락처 빈칸**, 제출 시 정상 생성; `@헤르메스 예약하고 싶어`→일반 링크 degrade ③ PR 생성·검토.
+- 추가 수정: dev 실LLM 검증에서 "5만원"→amount=1 버그 발견 → prompts.js에 한국어 금액 KRW 변환 규칙 추가(`230e1a7`). 재검증 amount=50000 ✅. (BUG_LOG.md)
+- **사람 검증(§4) 통과 (2026-06-17, 로컬)**: ① `agent-layer:test`(로컬 SQLite, 운영 아님 확인) 통과 — degrade + 구매 회귀. ② dev에서
+  `@헤르메스 내일 오후 3시 장미 부케 5만원 방문수령 예약` → 미리채움 링크(product=장미 부케·amount=50000·pickup=2026-06-19T15:00·receive=방문수령, **name/phone 없음**), 양식 SSR 렌더 확인,
+  사람이 성함·연락처 채워 제출 → 예약 정상 생성. `@헤르메스 예약하고 싶어` → 일반 링크 degrade. ③ PR 생성 진행.
 
 ---
 
