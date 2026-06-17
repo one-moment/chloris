@@ -98,6 +98,22 @@ async function seedAgentLayer() {
     }
   });
 
+  await prisma.agentApp.upsert({
+    where: { slug: "hermes-agent" },
+    create: {
+      id: "agentapp-hermes-agent",
+      slug: "hermes-agent",
+      name: "헤르메스",
+      role: "concierge",
+      status: "active",
+      description: "발주·예약·입고·폐기를 채팅으로 안내·라우팅하는 업무지원 비서(1단계: 안내만).",
+      configJson: JSON.stringify({ mentions: ["@헤르메스", "@hermes", "@Hermes"] })
+    },
+    update: {
+      status: "active"
+    }
+  });
+
   return { agent, purchaseBot };
 }
 
@@ -160,6 +176,8 @@ async function main() {
     },
     actor: admin
   });
+
+  await enableChannelAgent({ channelId, agentId: "hermes-agent", config: {}, actor: admin });
 
   const result = await handleMessageWithAgentGateway({
     body: "@구매에이전트 에이전트테스트소모품 3개 주문",
@@ -326,6 +344,35 @@ https://link.coupang.com/a/dU8MJL4A5A
   assert.ok(queuedPurchaseRequest);
   assert.equal(queuedPurchaseRequest.status, PURCHASE_REQUEST_STATUS.QUEUED);
   assert.equal(queuedPurchaseRequest.workerTask.status, "queued");
+
+  // 헤르메스 1단계: @헤르메스 → 안내 응답 + AgentRun completed
+  const hermesResult = await handleMessageWithAgentGateway({
+    body: "@헤르메스 안녕",
+    channelId,
+    messageId: `${runId}-hermes-message`,
+    requester
+  });
+  assert.equal(hermesResult.handled, true);
+  assert.equal(hermesResult.action, "help");
+
+  const hermesRun = await prisma.agentRun.findUnique({ where: { id: hermesResult.agentRunId } });
+  assert.equal(hermesRun.status, "completed");
+
+  const hermesMessage = await prisma.message.findFirst({
+    where: { channelId, author: "헤르메스" },
+    orderBy: { createdAt: "desc" }
+  });
+  assert.ok(hermesMessage);
+  assert.match(hermesMessage.body, /업무지원 비서 헤르메스/);
+
+  // 회귀: 헤르메스 미설치 채널에서는 @헤르메스가 헤르메스로 처리되지 않고 통과
+  const hermesDisabledResult = await handleMessageWithAgentGateway({
+    body: "@헤르메스 안녕",
+    channelId: disabledChannelId,
+    messageId: `${runId}-hermes-disabled-message`,
+    requester
+  });
+  assert.equal(hermesDisabledResult.handled, false);
 
   console.log("agent layer tests passed");
 }

@@ -13,8 +13,11 @@ OBJECTIVE: `ralph/PROMPT.md` (정본 스펙 `HERMES_STAGE1_PLAN.md`). 단일 안
 - [x] (iter 2) 게이트웨이 분기(`lib/agentGateway/service.js`, runPurchaseAgent 앞 1곳, `@헤르메스`만 분배·미설치 시 통과,
   missing-table degrade 불변) + `scripts/test-agent-gateway.mjs` 헤르메스 멘션/헬퍼/회귀 단위 assert. `npm run lint` +
   `npm run agent-gateway:test` 통과.
-- [ ] (iter 3) `scripts/test-agent-layer.mjs` 헤르메스 시드/설치/검증 블록(작성만, 루프에서 실행 금지) + `DECISIONS.md` 항목.
-- [ ] (완료) 6개 변경 + lint + agent-gateway:test 통과 + 문서 갱신 + 커밋. HANDOFF에 "루프 후 사람 검증" 명시.
+- [x] (iter 3) `scripts/test-agent-layer.mjs` 헤르메스 시드(`hermes-agent` AgentApp upsert)·`enableChannelAgent` 설치·검증
+  블록(handled/action/AgentRun completed/안내 메시지/미설치 회귀) **작성만**(루프에서 실행 안 함; `node --check`로 문법만 확인) +
+  `DECISIONS.md` 2026-06-17 항목.
+- [x] (완료) 파일 6개 변경 + `npm run lint` + `npm run agent-gateway:test` 통과 + TODO/HANDOFF/DECISIONS 갱신 + `feature/hermes-stage1` 커밋.
+  **루프 후 사람 검증**(로컬/연습 DB `agent-layer:test` + dev `@헤르메스` + PR)은 HANDOFF에 명시.
 
 ## CRM Phase 3 — Ralph loop (2026-06-16, worktree: feature/crm-phase3)
 

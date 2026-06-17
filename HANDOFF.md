@@ -2,13 +2,14 @@
 
 ## ▶ 헤르메스 1단계 — Ralph loop 진행 중 (2026-06-17, `feature/hermes-stage1`)
 
-**상태: 🔄 루프 진행 중(iter 2 완료).** 정본 스펙 `HERMES_STAGE1_PLAN.md`. 단일 안내데스크 에이전트 "헤르메스"
-뼈대 + 게이트웨이 `@헤르메스` 분배 + 안내 응답만. 두뇌·도구·승인·업무데이터·운영배포·마이그레이션 없음.
+**상태: ✅ 루프 코드 완료(파일 6/6) — OBJECTIVE 충족.** 정본 스펙 `HERMES_STAGE1_PLAN.md`. 단일 안내데스크 에이전트
+"헤르메스" 뼈대 + 게이트웨이 `@헤르메스` 분배 + 안내 응답만. 두뇌·도구·승인·업무데이터·운영배포·마이그레이션 없음.
 
-- iter 1: 신규 `lib/agents/hermes/{prompts,service}.js` 작성(purchaseAgent 패턴 미러링, 안내+AgentRun만). `npm run lint` 통과.
+- iter 1: 신규 `lib/agents/hermes/{prompts,service}.js`(purchaseAgent 패턴 미러링, 안내+AgentRun만). `npm run lint` 통과.
 - iter 2: `lib/agentGateway/service.js` 분기(`@헤르메스`만 runHermesAgent, 미설치 시 통과 → 구매 경로 불변, degrade 유지) +
   `scripts/test-agent-gateway.mjs` 단위/회귀 assert. `npm run lint` + `npm run agent-gateway:test` 통과.
-- 남은 루프 단계: `test-agent-layer.mjs` 시드·검증 블록(작성만, 루프 실행 금지) + `DECISIONS.md` 항목.
+- iter 3: `scripts/test-agent-layer.mjs` 헤르메스 시드·설치·검증 블록(**작성만**, 루프 미실행 — `node --check` 문법 확인) +
+  `DECISIONS.md` 2026-06-17 항목. `npm run lint` + `npm run agent-gateway:test` 통과.
 - ⚠️ **루프 가드레일**: 이 루프는 `agent-layer:test`(DB 통합)를 실행하지 않는다(무인 루프에서 `DATABASE_URL`이 운영일 위험).
 - **루프 후 사람 검증 필요**: ① 로컬/연습 DB로 `npm run agent-layer:test`(실행 전 `DATABASE_URL`이 운영(보로)이 아닌지 확인) →
   헤르메스 AgentRun completed + 안내 메시지 + 구매 회귀 ② 로컬 dev 시험 채널에서 `@헤르메스 안녕` 안내 응답 확인

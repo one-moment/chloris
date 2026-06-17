@@ -1,5 +1,16 @@
 # DECISIONS.md
 
+## 2026-06-17: 헤르메스 1단계 — 게이트웨이 분배 + 안내 응답(동작 변경 없음)
+
+- 헤르메스 = 단일 안내데스크 에이전트(A안). `lib/agents/hermes/{prompts,service}.js` 신설(`purchaseAgent` 패턴 미러링).
+- 게이트웨이(`lib/agentGateway/service.js`)는 `@헤르메스`일 때만 `runHermesAgent`로 분배하고, 미설치/비멘션이면
+  `handled:false`로 기존 구매 경로를 그대로 통과한다 → **구매 동작 불변.** missing-table degrade(try/catch) 유지.
+- 1단계는 두뇌(LLM)·도구·승인(ApprovalRequest)·업무데이터 변경이 **없다** — 채널 안내 메시지 게시 +
+  `AgentRun`(running→completed) 기록만. 실패 시 `AgentRun` failed.
+- 등록은 시험 한정(`scripts/test-agent-layer.mjs`의 `seedAgentLayer` upsert + `enableChannelAgent`)이며 운영 자동
+  시드는 없다(구매 에이전트와 동일). 운영 DB 마이그레이션 불필요(기존 `AgentApp`/`AgentRun`/`ChannelAgentInstallation` 재사용).
+- 정본 스펙: `HERMES_STAGE1_PLAN.md`. 독립 구매 에이전트 껍데기·`@구매에이전트` 멘션 정리는 헤르메스 안정화 후 별도 단계.
+
 ## 2026-06-16: 예약 → 구글시트 연동 자격증명/env 설계 (CRM Phase 3 Part B)
 
 - 공용 Sheets 헬퍼 `lib/googleSheets.js`를 두고 CRM이 사용한다(인벤토리 `lib/inventorySheetSync.js`는
