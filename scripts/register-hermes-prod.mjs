@@ -4,7 +4,8 @@
 // ⚠️ 운영 실행 전 준비
 //   1) 포스트그레스 prisma 클라이언트 생성(운영은 postgres):
 //        npx prisma generate --schema prisma/schema.postgres.prisma
-//   2) 로컬 .env를 자동 로드하지 않는다 — 대상 DATABASE_URL을 반드시 인라인으로 명시한다(로컬 dev.db 오타깃 방지).
+//   2) 대상(운영) DATABASE_URL은 .env.ops(gitignore) 파일에 넣거나 인라인으로 지정한다.
+//      ⚠️ 로컬 dev/test용 .env(file:./dev.db)는 읽지 않는다 — 운영 오타깃 방지.
 //
 // 사용법
 //   # (1) dry-run: 대상 DB(가림)·채널 목록·현재 등록상태만 출력, 쓰기 없음
@@ -42,10 +43,20 @@ function redactDbUrl(url) {
   }
 }
 
+// 대상 DB: (1) 인라인 DATABASE_URL 우선, 없으면 (2) .env.ops(gitignore됨)에서 읽는다.
+// 로컬 dev/test용 .env는 의도적으로 읽지 않는다 — 운영 오타깃 방지.
+if (!process.env.DATABASE_URL) {
+  try {
+    const { config } = await import("dotenv");
+    config({ path: ".env.ops" });
+  } catch {}
+}
+
 const DB = process.env.DATABASE_URL;
 if (!DB) {
-  console.error("✗ DATABASE_URL이 없습니다. 대상(운영) DB를 인라인으로 지정해 다시 실행하세요.");
-  console.error('  예: DATABASE_URL="postgres://...운영..." npx tsx scripts/register-hermes-prod.mjs');
+  console.error("✗ DATABASE_URL이 없습니다. 다음 중 하나로 대상(운영) DB를 지정하세요:");
+  console.error('  • .env.ops 파일에:  DATABASE_URL="postgresql://…운영…"');
+  console.error('  • 또는 인라인으로:  DATABASE_URL="postgresql://…운영…" npx tsx scripts/register-hermes-prod.mjs');
   process.exit(1);
 }
 console.log("대상 DB:", redactDbUrl(DB));

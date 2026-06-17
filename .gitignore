@@ -15,6 +15,7 @@ purchase-bot-screenshots/
 .env
 .env.production
 .env*.local
+.env.ops
 
 # Service account / credential keys — NEVER commit (use env var GOOGLE_APPLICATION_CREDENTIALS)
 *-service-account*.json
