@@ -1,5 +1,19 @@
 # TODO.md
 
+## 헤르메스 2단계 — Ralph loop (2026-06-17, worktree: feature/hermes-stage2)
+
+OBJECTIVE: `ralph/PROMPT.md`. `@헤르메스 …평소 말…` → 발주/예약/입고/폐기/기타 1회 분류 → 해당 `/work/*` 바로가기 안내까지.
+두뇌 = 공급사 스위치(시작 OpenAI, 기존 `openaiClient` 재사용), 실패/키없음은 1단계 안내로 degrade. 실행·승인·업무데이터 없음(=3단계).
+파일 7개. 루프 검증 = `npm run lint` + `npm run agent-gateway:test`(DB·네트워크 미사용). `agent-layer:test`·실제 분류는 루프 후 사람.
+
+- [x] (iter 1) 분류 빌딩블록: 신규 `lib/agents/llm/index.js`(`classifyJson` 공급사 스위치, openai만 구현, 출력 텍스트 추출+JSON 파싱,
+  실패→{error:"parse"}/{skipped}) + `lib/agents/hermes/prompts.js` 확장(`buildWorkIntentMessages`, `WORK_ROUTES`(purchase/reservations/
+  stockin/disposal → /work/*), `buildRouteMessageLines`). `npm run lint`(모듈 경계 ok)+`agent-gateway:test` 통과.
+- [ ] (iter 2) `lib/agents/hermes/service.js` `runHermesAgent` 확장: classify(자체 try/catch degrade)+route 결정+isModuleEnabled 게이팅.
+- [ ] (iter 3) `scripts/test-agent-gateway.mjs` 단위(WORK_ROUTES/문구/브랜드 게이팅/classifyJson degrade, 키 백업·복원).
+- [ ] (iter 4) `scripts/test-agent-layer.mjs`(작성만, degrade 유지) + `.env.example`(AGENT_LLM_PROVIDER) + DECISIONS/TODO/HANDOFF.
+- [ ] (완료) 7개 + lint + agent-gateway:test 통과 + 문서 갱신 + 커밋. HANDOFF에 "루프 후 사람 검증"(agent-layer:test + 키 넣고 분류 확인 + PR).
+
 ## 헤르메스 1단계 — Ralph loop (2026-06-17, worktree: feature/hermes-stage1)
 
 OBJECTIVE: `ralph/PROMPT.md` (정본 스펙 `HERMES_STAGE1_PLAN.md`). 단일 안내데스크 에이전트 "헤르메스" 뼈대 +

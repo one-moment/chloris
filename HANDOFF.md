@@ -1,5 +1,19 @@
 # HANDOFF.md
 
+## ▶ 헤르메스 2단계 — Ralph loop 진행 중 (2026-06-17, `feature/hermes-stage2`)
+
+**상태: 🔄 루프 진행 중(iter 1 완료).** `@헤르메스 …말…` → 발주/예약/입고/폐기/기타 분류 → 해당 `/work/*` 바로가기 안내.
+두뇌 = 공급사 스위치(시작 OpenAI), 키없음/실패는 1단계 안내로 degrade. 실제 실행·승인·업무데이터·운영배포·마이그레이션 없음(=3단계).
+
+- iter 1: 신규 `lib/agents/llm/index.js`(classifyJson 스위치) + `lib/agents/hermes/prompts.js` 확장(buildWorkIntentMessages/WORK_ROUTES/
+  buildRouteMessageLines). lint + agent-gateway:test 통과.
+- 남은 루프 단계: service.js 확장 → test-agent-gateway 단위 → test-agent-layer(작성만)+.env.example+DECISIONS.
+- ⚠️ **가드레일**: 두뇌 호출은 `@헤르메스`일 때만; `agent-layer:test`·실 OpenAI 호출 루프 미실행; `modules/` import 금지.
+- **루프 후 사람 검증 필요**: ① 로컬/연습 DB `agent-layer:test`(DATABASE_URL 운영 아닌지 먼저 확인) ② 로컬에 `OPENAI_API_KEY` 넣고
+  dev에서 `@헤르메스 …발주/예약/입고/폐기…` 분류·안내 확인(기존 `scripts/seed-hermes-dev.mjs` 재사용) ③ PR 생성·검토.
+
+---
+
 ## ▶ 헤르메스 1단계 — Ralph loop 진행 중 (2026-06-17, `feature/hermes-stage1`)
 
 **상태: ✅ 루프 코드 완료(파일 6/6) — OBJECTIVE 충족.** 정본 스펙 `HERMES_STAGE1_PLAN.md`. 단일 안내데스크 에이전트
