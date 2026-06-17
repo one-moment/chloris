@@ -9,7 +9,8 @@ OBJECTIVE: `ralph/PROMPT.md`. `@헤르메스 …평소 말…` → 발주/예약
 - [x] (iter 1) 분류 빌딩블록: 신규 `lib/agents/llm/index.js`(`classifyJson` 공급사 스위치, openai만 구현, 출력 텍스트 추출+JSON 파싱,
   실패→{error:"parse"}/{skipped}) + `lib/agents/hermes/prompts.js` 확장(`buildWorkIntentMessages`, `WORK_ROUTES`(purchase/reservations/
   stockin/disposal → /work/*), `buildRouteMessageLines`). `npm run lint`(모듈 경계 ok)+`agent-gateway:test` 통과.
-- [ ] (iter 2) `lib/agents/hermes/service.js` `runHermesAgent` 확장: classify(자체 try/catch degrade)+route 결정+isModuleEnabled 게이팅.
+- [x] (iter 2) `lib/agents/hermes/service.js` `runHermesAgent` 확장: classify(자체 try/catch → 어떤 실패든 area=null degrade)
+  + route 결정 + `isModuleEnabled` 게이팅 + outputJson{action,area,href}. lint + agent-gateway:test 통과(service.js 모듈 로드 확인).
 - [ ] (iter 3) `scripts/test-agent-gateway.mjs` 단위(WORK_ROUTES/문구/브랜드 게이팅/classifyJson degrade, 키 백업·복원).
 - [ ] (iter 4) `scripts/test-agent-layer.mjs`(작성만, degrade 유지) + `.env.example`(AGENT_LLM_PROVIDER) + DECISIONS/TODO/HANDOFF.
 - [ ] (완료) 7개 + lint + agent-gateway:test 통과 + 문서 갱신 + 커밋. HANDOFF에 "루프 후 사람 검증"(agent-layer:test + 키 넣고 분류 확인 + PR).
