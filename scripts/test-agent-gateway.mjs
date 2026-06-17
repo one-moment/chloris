@@ -6,6 +6,7 @@ import {
   validatePurchaseAgentCommand
 } from "../lib/agents/purchaseAgent/prompts.js";
 import { parseBulkPurchaseOrder } from "../lib/agents/purchaseAgent/bulkOrderParser.js";
+import { isHermesAgentCommand, stripHermesAgentMention } from "../lib/agents/hermes/prompts.js";
 
 assert.equal(isPurchaseAgentCommand("@구매에이전트 A4용지 2박스 주문"), true);
 assert.equal(isPurchaseAgentCommand("@구매 에이전트 키친타올 3개 주문"), true);
@@ -77,5 +78,16 @@ assert.equal(metadataBulkOrder.lines.length, 2);
 assert.equal(metadataBulkOrder.lines.some((line) => line.vendor === "unknown"), false);
 assert.equal(metadataBulkOrder.lines.find((line) => line.vendor === "coupang")?.itemName, "키친타올");
 assert.equal(metadataBulkOrder.lines.find((line) => line.vendor === "swadpia")?.itemName, "가로명함");
+
+// 헤르메스 멘션 감지 + 멘션 제거 헬퍼
+assert.equal(isHermesAgentCommand("@헤르메스 안녕"), true);
+assert.equal(isHermesAgentCommand("@hermes hi"), true);
+assert.equal(isHermesAgentCommand("@Hermes 도와줘"), true);
+assert.equal(isHermesAgentCommand("그냥 일반 메시지"), false);
+assert.equal(stripHermesAgentMention("@헤르메스 안녕"), "안녕");
+
+// 회귀: 구매와 헤르메스 멘션이 서로 새지 않음
+assert.equal(isHermesAgentCommand("@구매에이전트 키친타올 3개 주문"), false);
+assert.equal(isPurchaseAgentCommand("@헤르메스 안녕"), false);
 
 console.log("agent gateway tests passed");

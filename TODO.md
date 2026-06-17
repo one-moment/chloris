@@ -10,8 +10,9 @@ OBJECTIVE: `ralph/PROMPT.md` (정본 스펙 `HERMES_STAGE1_PLAN.md`). 단일 안
   stripHermesAgentMention/HERMES_HELP_LINES) + `lib/agents/hermes/service.js`(getHermesInstallation +
   runHermesAgent: 멘션·설치 확인 → AgentRun running → 안내메시지(author "헤르메스", bot:true) → completed,
   실패 시 failed). purchaseAgent 패턴 미러링, 도구·승인 없음. `npm run lint`(모듈 경계 ok) 통과.
-- [ ] (iter 2) 게이트웨이 분기(`lib/agentGateway/service.js`, runPurchaseAgent 앞 1곳) + `scripts/test-agent-gateway.mjs`
-  헤르메스 단위 assert + 회귀. lint + agent-gateway:test.
+- [x] (iter 2) 게이트웨이 분기(`lib/agentGateway/service.js`, runPurchaseAgent 앞 1곳, `@헤르메스`만 분배·미설치 시 통과,
+  missing-table degrade 불변) + `scripts/test-agent-gateway.mjs` 헤르메스 멘션/헬퍼/회귀 단위 assert. `npm run lint` +
+  `npm run agent-gateway:test` 통과.
 - [ ] (iter 3) `scripts/test-agent-layer.mjs` 헤르메스 시드/설치/검증 블록(작성만, 루프에서 실행 금지) + `DECISIONS.md` 항목.
 - [ ] (완료) 6개 변경 + lint + agent-gateway:test 통과 + 문서 갱신 + 커밋. HANDOFF에 "루프 후 사람 검증" 명시.
 
