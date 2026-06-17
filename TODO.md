@@ -11,7 +11,8 @@ OBJECTIVE: `ralph/PROMPT.md`. `@헤르메스 …평소 말…` → 발주/예약
   stockin/disposal → /work/*), `buildRouteMessageLines`). `npm run lint`(모듈 경계 ok)+`agent-gateway:test` 통과.
 - [x] (iter 2) `lib/agents/hermes/service.js` `runHermesAgent` 확장: classify(자체 try/catch → 어떤 실패든 area=null degrade)
   + route 결정 + `isModuleEnabled` 게이팅 + outputJson{action,area,href}. lint + agent-gateway:test 통과(service.js 모듈 로드 확인).
-- [ ] (iter 3) `scripts/test-agent-gateway.mjs` 단위(WORK_ROUTES/문구/브랜드 게이팅/classifyJson degrade, 키 백업·복원).
+- [x] (iter 3) `scripts/test-agent-gateway.mjs` 단위: WORK_ROUTES 매핑/`buildRouteMessageLines` 문구/보로 4개 area `isModuleEnabled`
+  true/`classifyJson` degrade(키없음→skipped, unknown provider→skipped) — `OPENAI_API_KEY`·`AGENT_LLM_PROVIDER` 백업→복원, 실 OpenAI 호출 없음. agent-gateway:test 2회 통과(결정적).
 - [ ] (iter 4) `scripts/test-agent-layer.mjs`(작성만, degrade 유지) + `.env.example`(AGENT_LLM_PROVIDER) + DECISIONS/TODO/HANDOFF.
 - [ ] (완료) 7개 + lint + agent-gateway:test 통과 + 문서 갱신 + 커밋. HANDOFF에 "루프 후 사람 검증"(agent-layer:test + 키 넣고 분류 확인 + PR).
 

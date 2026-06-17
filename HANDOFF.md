@@ -9,7 +9,8 @@
   buildRouteMessageLines). lint + agent-gateway:test 통과.
 - iter 2: `lib/agents/hermes/service.js` `runHermesAgent` 확장(classify 자체 try/catch degrade + route + isModuleEnabled 게이팅 +
   outputJson{action,area,href}). lint + agent-gateway:test 통과.
-- 남은 루프 단계: test-agent-gateway 단위(라우트/문구/브랜드/degrade) → test-agent-layer(작성만)+.env.example+DECISIONS.
+- iter 3: `scripts/test-agent-gateway.mjs` 단위 추가(WORK_ROUTES/문구/브랜드 게이팅/classifyJson degrade, 키·provider 백업→복원). agent-gateway:test 통과.
+- 남은 루프 단계: test-agent-layer(작성만, node --check) + .env.example(AGENT_LLM_PROVIDER) + DECISIONS 항목.
 - ⚠️ **가드레일**: 두뇌 호출은 `@헤르메스`일 때만; `agent-layer:test`·실 OpenAI 호출 루프 미실행; `modules/` import 금지.
 - **루프 후 사람 검증 필요**: ① 로컬/연습 DB `agent-layer:test`(DATABASE_URL 운영 아닌지 먼저 확인) ② 로컬에 `OPENAI_API_KEY` 넣고
   dev에서 `@헤르메스 …발주/예약/입고/폐기…` 분류·안내 확인(기존 `scripts/seed-hermes-dev.mjs` 재사용) ③ PR 생성·검토.
