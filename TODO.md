@@ -1,5 +1,23 @@
 # TODO.md
 
+## 헤르메스 2단계 — Ralph loop (2026-06-17, worktree: feature/hermes-stage2)
+
+OBJECTIVE: `ralph/PROMPT.md`. `@헤르메스 …평소 말…` → 발주/예약/입고/폐기/기타 1회 분류 → 해당 `/work/*` 바로가기 안내까지.
+두뇌 = 공급사 스위치(시작 OpenAI, 기존 `openaiClient` 재사용), 실패/키없음은 1단계 안내로 degrade. 실행·승인·업무데이터 없음(=3단계).
+파일 7개. 루프 검증 = `npm run lint` + `npm run agent-gateway:test`(DB·네트워크 미사용). `agent-layer:test`·실제 분류는 루프 후 사람.
+
+- [x] (iter 1) 분류 빌딩블록: 신규 `lib/agents/llm/index.js`(`classifyJson` 공급사 스위치, openai만 구현, 출력 텍스트 추출+JSON 파싱,
+  실패→{error:"parse"}/{skipped}) + `lib/agents/hermes/prompts.js` 확장(`buildWorkIntentMessages`, `WORK_ROUTES`(purchase/reservations/
+  stockin/disposal → /work/*), `buildRouteMessageLines`). `npm run lint`(모듈 경계 ok)+`agent-gateway:test` 통과.
+- [x] (iter 2) `lib/agents/hermes/service.js` `runHermesAgent` 확장: classify(자체 try/catch → 어떤 실패든 area=null degrade)
+  + route 결정 + `isModuleEnabled` 게이팅 + outputJson{action,area,href}. lint + agent-gateway:test 통과(service.js 모듈 로드 확인).
+- [x] (iter 3) `scripts/test-agent-gateway.mjs` 단위: WORK_ROUTES 매핑/`buildRouteMessageLines` 문구/보로 4개 area `isModuleEnabled`
+  true/`classifyJson` degrade(키없음→skipped, unknown provider→skipped) — `OPENAI_API_KEY`·`AGENT_LLM_PROVIDER` 백업→복원, 실 OpenAI 호출 없음. agent-gateway:test 2회 통과(결정적).
+- [x] (iter 4) `scripts/test-agent-layer.mjs` 헤르메스 블록을 `OPENAI_API_KEY` 강제 unset(백업→복원)으로 감싸 degrade 경로
+  결정화(작성만·`node --check`, 루프 미실행) + `.env.example` `AGENT_LLM_PROVIDER="openai"`(키 값 없음) + `DECISIONS.md` 2단계 항목.
+- [x] (완료) 파일 7개 변경 + `npm run lint` + `npm run agent-gateway:test` 통과 + DECISIONS/TODO/HANDOFF 갱신 + `feature/hermes-stage2` 커밋.
+  **루프 후 사람 검증**(로컬 DB `agent-layer:test` + `OPENAI_API_KEY` 넣고 dev 분류 확인 + PR)은 HANDOFF에 명시.
+
 ## 헤르메스 1단계 — Ralph loop (2026-06-17, worktree: feature/hermes-stage1)
 
 OBJECTIVE: `ralph/PROMPT.md` (정본 스펙 `HERMES_STAGE1_PLAN.md`). 단일 안내데스크 에이전트 "헤르메스" 뼈대 +

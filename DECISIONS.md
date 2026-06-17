@@ -1,5 +1,17 @@
 # DECISIONS.md
 
+## 2026-06-17: 헤르메스 2단계 — 두뇌 스위치 + "이건 ○○ 업무" 분류·안내
+
+- 두뇌(LLM)는 공급사 교체 가능한 얇은 '스위치'(`lib/agents/llm/index.js` `classifyJson`, `AGENT_LLM_PROVIDER`)로 두고
+  **시작 공급사는 OpenAI**(기존 `lib/agents/openaiClient.js` `classifyAgentIntent` 재사용). 다른 어댑터는 자리만(미구현).
+- `@헤르메스 …말…` → purchase/reservation/stockin/disposal/other로 1회 분류 → `WORK_ROUTES`로 해당 `/work/*`
+  바로가기 안내까지. **실제 실행·승인(ApprovalRequest)·업무데이터 변경은 없다(=3단계).** 메시지 게시만.
+- **degrade(확정)**: 키 없음·파싱 실패·OpenAI API/네트워크 오류 등 **어떤 실패든 1단계 안내(HERMES_HELP_LINES)로
+  안전 degrade**하고 AgentRun은 completed 유지(failed로 떨구지 않음). → 키 없이도 병합·테스트·머지 안전.
+- 라우팅 게이팅은 `lib/brand`의 `isModuleEnabled(moduleSlug)`로만. **헤르메스(lib/)는 `modules/`를 import하지 않는다**
+  (core/modules 분리). 슬러그: purchase/reservations/stockin/disposal(보로 전부 enabled).
+- 비용·지연 통제: 두뇌 호출은 `@헤르메스` 멘션일 때만·멘션당 1회. DB 통합/실 OpenAI 호출 검증은 사람 게이트(루프 미실행).
+
 ## 2026-06-17: 헤르메스 1단계 — 게이트웨이 분배 + 안내 응답(동작 변경 없음)
 
 - 헤르메스 = 단일 안내데스크 에이전트(A안). `lib/agents/hermes/{prompts,service}.js` 신설(`purchaseAgent` 패턴 미러링).

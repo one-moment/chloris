@@ -6,7 +6,14 @@ import {
   validatePurchaseAgentCommand
 } from "../lib/agents/purchaseAgent/prompts.js";
 import { parseBulkPurchaseOrder } from "../lib/agents/purchaseAgent/bulkOrderParser.js";
-import { isHermesAgentCommand, stripHermesAgentMention } from "../lib/agents/hermes/prompts.js";
+import {
+  buildRouteMessageLines,
+  isHermesAgentCommand,
+  stripHermesAgentMention,
+  WORK_ROUTES
+} from "../lib/agents/hermes/prompts.js";
+import { isModuleEnabled } from "../lib/brand.js";
+import { classifyJson } from "../lib/agents/llm/index.js";
 
 assert.equal(isPurchaseAgentCommand("@구매에이전트 A4용지 2박스 주문"), true);
 assert.equal(isPurchaseAgentCommand("@구매 에이전트 키친타올 3개 주문"), true);
@@ -89,5 +96,41 @@ assert.equal(stripHermesAgentMention("@헤르메스 안녕"), "안녕");
 // 회귀: 구매와 헤르메스 멘션이 서로 새지 않음
 assert.equal(isHermesAgentCommand("@구매에이전트 키친타올 3개 주문"), false);
 assert.equal(isPurchaseAgentCommand("@헤르메스 안녕"), false);
+
+// 2단계: WORK_ROUTES 매핑 + 라우트 안내 문구
+assert.equal(WORK_ROUTES.purchase.href, "/work/purchase");
+assert.equal(WORK_ROUTES.reservation.href, "/work/reservations");
+assert.equal(WORK_ROUTES.stockin.href, "/work/stock-in");
+assert.equal(WORK_ROUTES.stockin.moduleSlug, "stockin");
+assert.equal(WORK_ROUTES.disposal.href, "/work/disposal");
+const purchaseRouteLines = buildRouteMessageLines(WORK_ROUTES.purchase);
+assert.equal(purchaseRouteLines.length, 2);
+assert.ok(purchaseRouteLines.some((line) => line.includes("발주(구매 관리)")));
+assert.ok(purchaseRouteLines.some((line) => line.includes("/work/purchase")));
+
+// 2단계: 브랜드 게이팅 — 보로(기본 brand)에서 4개 area 모듈이 enabled
+for (const area of ["purchase", "reservation", "stockin", "disposal"]) {
+  assert.equal(isModuleEnabled(WORK_ROUTES[area].moduleSlug), true);
+}
+
+// 2단계: classifyJson degrade — 키 없으면 실제 호출 없이 skipped (OPENAI_API_KEY 백업→복원)
+{
+  const savedKey = process.env.OPENAI_API_KEY;
+  delete process.env.OPENAI_API_KEY;
+  const cls = await classifyJson({ messages: [] });
+  assert.equal(cls.skipped, true);
+  if (savedKey !== undefined) process.env.OPENAI_API_KEY = savedKey;
+}
+
+// 2단계: 알 수 없는 provider → skipped(unknown_provider) (AGENT_LLM_PROVIDER 백업→복원)
+{
+  const savedProvider = process.env.AGENT_LLM_PROVIDER;
+  process.env.AGENT_LLM_PROVIDER = "nonexistent-provider";
+  const cls = await classifyJson({ messages: [] });
+  assert.equal(cls.skipped, true);
+  assert.equal(cls.reason, "unknown_provider");
+  if (savedProvider === undefined) delete process.env.AGENT_LLM_PROVIDER;
+  else process.env.AGENT_LLM_PROVIDER = savedProvider;
+}
 
 console.log("agent gateway tests passed");

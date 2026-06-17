@@ -345,7 +345,12 @@ https://link.coupang.com/a/dU8MJL4A5A
   assert.equal(queuedPurchaseRequest.status, PURCHASE_REQUEST_STATUS.QUEUED);
   assert.equal(queuedPurchaseRequest.workerTask.status, "queued");
 
-  // 헤르메스 1단계: @헤르메스 → 안내 응답 + AgentRun completed
+  // 헤르메스 2단계: 키 없음 → 분류 skip → 1단계 안내로 안전 degrade.
+  // 이 DB 통합 테스트는 degrade 경로를 결정적으로 검증한다 — OPENAI_API_KEY를 강제 unset해 실 OpenAI 호출을 막는다.
+  // (실제 분류·라우팅 확인은 §4.2에서 사람이 키를 넣고 dev에서 한다.)
+  const savedHermesKey = process.env.OPENAI_API_KEY;
+  delete process.env.OPENAI_API_KEY;
+
   const hermesResult = await handleMessageWithAgentGateway({
     body: "@헤르메스 안녕",
     channelId,
@@ -373,6 +378,8 @@ https://link.coupang.com/a/dU8MJL4A5A
     requester
   });
   assert.equal(hermesDisabledResult.handled, false);
+
+  if (savedHermesKey !== undefined) process.env.OPENAI_API_KEY = savedHermesKey;
 
   console.log("agent layer tests passed");
 }
