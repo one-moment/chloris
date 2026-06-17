@@ -6,87 +6,81 @@ Each iteration, make **one bounded, safe step** toward the OBJECTIVE, leave the 
 green (build/lint passing), record what you did, then stop. The loop will re-invoke
 you to continue.
 
-## OBJECTIVE (헤르메스 2단계 — 두뇌 스위치 + "이건 ○○ 업무" 분류·안내)
+## OBJECTIVE (헤르메스 3단계 첫 실행 = 예약: 양식 미리채움 + 사람 제출)
 
-정본 방향: 헤르메스 = 단일 안내데스크 에이전트(A안). 2단계는 직원이 `@헤르메스 ...`로 평소 말을 적으면
-**발주/예약/입고/폐기/기타 중 무엇인지 한 번 분류**해서 → **해당 화면 바로가기를 안내**하는 것까지.
-**실제 업무 실행(발주·예약 생성 등)·승인(ApprovalRequest)·업무데이터 변경은 없다 — 그건 3단계.** 읽기·분류·안내만.
+정본 방향: 헤르메스 = 단일 안내데스크 에이전트(A안). 3단계 첫 실행 = **예약**, 방식 = **(나) 미리채움**.
+직원이 `@헤르메스 …예약…`을 적으면, 헤르메스가 메시지에서 비PII 예약 정보를 뽑아 **예약 양식을 미리 채운 링크**를 안내한다.
+사람이 그 양식에서 **확인·수정·제출**하면 기존 예약 생성 API(`POST /api/work/crm/reservations`)가 실제로 만든다.
+**헤르메스는 DB에 직접 쓰지 않는다. 승인·결제·마이그레이션 없음.** (헤르메스 직접 생성은 이후 단계.)
 
-두뇌는 **공급사 교체 가능한 얇은 '스위치'**로 만들되, **시작 공급사는 OpenAI**(기존 `lib/agents/openaiClient.js` 재사용)로 한다.
-키가 없거나 **어떤 이유로든 실패하면 1단계 안내(HERMES_HELP_LINES)로 안전하게 degrade**한다(아래 #3 보강 참조).
+⚠️ **PII 원칙(중요)**: 고객 **성함·연락처는 절대 링크(URL)에 넣지 않는다**(URL 로그 위험 — AGENTS.md).
+미리채움은 **비PII 항목만**: 상품·금액·픽업일시·수령방법·예약경로. 성함·연락처는 사람이 양식에서 입력.
 
-참고(패턴): `lib/agents/openaiClient.js`(classifyAgentIntent 시그니처 + extractStatementLineItems의 "JSON만 지시→파싱" 패턴),
-`lib/agents/hermes/{prompts,service}.js`(1단계 결과), `lib/brand.js`(`isModuleEnabled` — 브랜드 게이팅).
-⚠️ **헤르메스는 `lib/`에 있고 `modules/`·`modules/registry.js`를 import하지 않는다**(현재 lib는 modules를 전혀 import하지 않음 = core/modules 분리 관행). 라우팅은 아래 내부 맵으로, 브랜드 게이팅은 `lib/brand`의 `isModuleEnabled`로만 한다.
+참고:
+- `modules/crm/ui/ReservationForm.jsx` — 필드: name/phone/branchId/reservedAt/pickupAt/product/amount/source/receiveMethod/note.
+  `pickupAt`은 `<input type="datetime-local">`(형식 `YYYY-MM-DDTHH:mm`, 오프셋 없음).
+  `SOURCE_OPTIONS=["인스타","네이버플레이스","네이버톡톡","네이버검색","매장방문","전화예약","지인"]`, `RECEIVE_OPTIONS=["방문수령","퀵"]`.
+  props: branches/fixedBranchId/channelId/onSubmitted/onCancel. 현재 미리채움 값은 안 받음(prop으로 추가).
+- `app/(workspace)/work/reservations/page.jsx`(서버) — 현재 `?new=1&channel=&branch=`만 읽어 `ReservationsDashboard`에 props로 넘김 → Dashboard가 Form에 전달.
+- `lib/agents/hermes/{prompts,service}.js`(2단계 결과), `lib/agents/llm`(`classifyJson`).
+⚠️ 헤르메스(lib/)는 `modules/`를 import하지 않는다 — **링크 문자열만** 만든다. 예약 양식 수정은 crm 모듈 내부에서.
 
-이번에 만들/고칠 파일은 정확히 다음 7개뿐이다(그 외 수정 금지):
+**[결정·승인됨] 미리채움 전달 = props(useSearchParams 아님)**: 서버 `page.jsx`가 미리채움 파라미터도 읽어
+`ReservationsDashboard` → `ReservationForm`로 prop 전달(기존 channel/branch 흐름과 동일). 따라서 이번에 고칠 파일은 **정확히 다음 8개**다(그 외 수정 금지):
 
-1. (신규) `lib/agents/llm/index.js` — 공급사 스위치(제너릭 분류기)
-   - `classifyJson({ messages })`를 내보낸다. `process.env.AGENT_LLM_PROVIDER`(기본 "openai")로 분기.
-   - provider "openai": `classifyAgentIntent({ messages })`(`../openaiClient`) 호출(스키마 미사용 — 프롬프트로 "JSON만" 지시).
-     결과가 `{ skipped:true }`면 그대로 반환. 아니면 OpenAI Responses 응답에서 출력 텍스트를 뽑아
-     (`payload.output_text` 또는 `payload.output[].content[].text`를 모은 것; 추출 헬퍼는 이 파일에 작게 구현 —
-     openaiClient의 pickResponsesOutputText는 export 안 됨, openaiClient는 수정 금지),
-     코드펜스 제거 후 `JSON.parse` → `{ ok:true, data }`. 파싱 실패 → `{ error:"parse" }`. (HTTP 오류 throw는 상위(#3)에서 잡음.)
-   - 알 수 없는 provider → `{ skipped:true, reason:"unknown_provider" }`.
-   - **OpenAI만 구현한다. 다른 공급사 어댑터는 이번에 추가하지 않는다(스위치 자리만 만든다).**
+1. (수정) `lib/agents/hermes/prompts.js`
+   - 분류 프롬프트 확장: area 분류 + **area=reservation이면 비PII 예약 정보도 함께 추출**.
+     출력 JSON: `{ area, reservation?: { product:string|null, amount:number|null, pickupAt:"YYYY-MM-DDTHH:mm"|null,
+     receiveMethod:"방문수령"|"퀵"|null, source:(SOURCE_OPTIONS 중 하나)|null } }`.
+     상대 날짜("내일 오후 3시") 해석 위해 프롬프트에 **오늘 날짜(Asia/Seoul)** 포함. `pickupAt`은 **오프셋 없는 로컬 `YYYY-MM-DDTHH:mm`**로
+     출력하도록 지시(datetime-local 직결, TZ drift 방지). 모르면 각 필드 null. **성함·연락처는 추출/출력하지 않는다.**
+   - `buildReservationPrefillQuery(reservation)` → 비어있지 않은 **비PII** 필드만 쿼리스트링으로
+     (`product`,`amount`,`pickup`,`receive`,`source`). receive/source는 허용값일 때만 포함. `encodeURIComponent`.
+     **`name`/`phone` 키는 절대 만들지 않는다.**
+   - 기존 `WORK_ROUTES`/`buildRouteMessageLines`/`HERMES_HELP_LINES`/`buildWorkIntentMessages`/mention 헬퍼 유지(확장).
 
-2. (수정) `lib/agents/hermes/prompts.js` — 분류 프롬프트 + 라우팅 맵 추가(기존 `HERMES_HELP_LINES`는 fallback으로 유지)
-   - `buildWorkIntentMessages(text)` → OpenAI Responses `input` 배열을 만든다:
-     `[{ role:"user", content:[{ type:"input_text", text: "<지시문>\n\n직원 메시지: <text>" }] }]`.
-     지시문: "다음 직원 메시지를 purchase(발주)/reservation(예약)/stockin(입고)/disposal(폐기)/other(기타) 중 하나로 분류하라.
-     설명 없이 JSON만 출력: {\"area\":\"...\"}."
-   - `WORK_ROUTES`: area → { moduleSlug, label, href }
-     - purchase → { moduleSlug:"purchase",     label:"발주(구매 관리)", href:"/work/purchase" }
-     - reservation → { moduleSlug:"reservations", label:"예약 관리",       href:"/work/reservations" }
-     - stockin → { moduleSlug:"stockin",      label:"입고 관리",       href:"/work/stock-in" }
-     - disposal → { moduleSlug:"disposal",     label:"폐기 관리",       href:"/work/disposal" }
-   - `buildRouteMessageLines({ label, href })` → 안내 라인(예: `이건 ${label} 업무로 보여요.`, `여기서 처리하실 수 있어요: ${href}`).
+2. (수정) `lib/agents/hermes/service.js` — `runHermesAgent`(2단계 골격·AgentRun running→completed/failed 유지)
+   - 분류(자체 try/catch degrade)에서 `area`와 `reservation`(있으면) 추출.
+   - **area="reservation"이고** 추출된 비PII 필드가 하나라도 있으면: 채널 branchId 조회
+     (`prisma.channel.findUnique({where:{id:channelId},select:{branchId:true}})`)해서
+     `"/work/reservations?new=1&channel=<id>" + (branchId ? "&branch=<branchId>" : "") + "&" + buildReservationPrefillQuery(...)`
+     링크를 만들고 "예약 정보를 채워뒀어요. 확인하고 제출해 주세요: <link>" 안내. `action="reservation_prefill"`.
+   - reservation이지만 추출 필드가 없거나 분류 skip/실패 → **2단계처럼 일반 예약 링크(또는 help)로 degrade**.
+   - 그 외 area는 2단계 동작 유지. AgentRun completed, `outputJson={action, area, href}`. **DB 쓰기·도구·승인 없음. 메시지 게시만.**
 
-3. (수정) `lib/agents/hermes/service.js` — `runHermesAgent` 확장(1단계 골격 유지)
-   - 멘션 확인 → 설치 확인 → AgentRun(running) 생성: 기존과 동일.
-   - `import { isModuleEnabled } from "../../brand";` 추가. `import { classifyJson } from "../llm";` 추가.
-     `buildWorkIntentMessages`, `WORK_ROUTES`, `buildRouteMessageLines`, `stripHermesAgentMention`는 `./prompts`에서 가져온다.
-   - **분류는 자체 try/catch로 감싼다(보강 — 어떤 실패든 안전 degrade)**:
-     `let area=null; try { const cls = await classifyJson({ messages: buildWorkIntentMessages(stripHermesAgentMention(body)) }); area = cls?.ok ? (cls.data?.area ?? null) : null; } catch { area = null; }`
-     → 키없음·파싱실패·API/네트워크 throw 등 **모든 실패에서 area=null**(run은 계속 진행, failed로 떨어뜨리지 않는다).
-   - 답변 결정:
-     - `route = area ? WORK_ROUTES[area] : null`.
-     - `route`가 없거나 `area === "other"`이거나 `!isModuleEnabled(route.moduleSlug)` → **fallback: `HERMES_HELP_LINES` 안내**, `action="help"`.
-     - 그 외 → `buildRouteMessageLines(route)` 안내, `action="route"`.
-   - 안내 메시지 게시(author "헤르메스", bot:true) → AgentRun completed, `outputJson = { action, area: area ?? null, href: route?.href ?? null }`. (메시지 게시·DB 오류만 기존 catch로 failed.)
-   - **업무데이터 변경·도구·승인 없음. 메시지 게시만.**
+3. (수정) `app/(workspace)/work/reservations/page.jsx` — searchParams에서 `product`,`amount`,`pickup`,`receive`,`source`도 읽어
+   `ReservationsDashboard`에 prop으로 전달(기존 new/channel/branch 읽기 패턴 그대로 확장).
 
-4. (수정) `scripts/test-agent-gateway.mjs` — 순수 단위(DB·네트워크 없음)
-   - `WORK_ROUTES` 매핑/`buildRouteMessageLines` 출력 assert.
-   - 브랜드 게이팅: 보로(기본 brand)에서 4개 area의 모듈이 `isModuleEnabled`로 true인지 assert.
-   - `classifyJson`의 degrade: `OPENAI_API_KEY`가 없으면 `{ skipped:true }`를 반환하는지 assert(실제 OpenAI 호출 금지).
-     **단, 키를 지울 땐 반드시 백업→복원(또는 격리)하여 다른 검사·환경에 영향 주지 마라**
-     (예: `const k = process.env.OPENAI_API_KEY; delete process.env.OPENAI_API_KEY; /* assert */ if (k !== undefined) process.env.OPENAI_API_KEY = k;`).
+4. (수정) `modules/crm/ui/ReservationsDashboard.jsx` — 새 미리채움 props를 받아 `ReservationForm`에 그대로 전달.
 
-5. (수정) `scripts/test-agent-layer.mjs` — DB 통합(루프에서 실행 안 함; `node --check` 문법만)
-   - 테스트 환경엔 `OPENAI_API_KEY`가 없으므로 분류가 skip → **헤르메스가 1단계 안내로 degrade**한다.
-     기존 헤르메스 검증(안내 응답/AgentRun completed/구매 회귀/미설치 회귀)이 그대로 통과하도록 유지(필요하면 문구 매칭만 조정).
+5. (수정) `modules/crm/ui/ReservationForm.jsx`
+   - 선택적 미리채움 props(`product`,`amount`,`pickup`,`receive`,`source`)를 받아 **초기 폼 값으로만** 반영(있을 때만).
+     `receive`/`source`는 허용값일 때만 적용. `pickup`은 datetime-local 형식(앞 16자)으로 변환.
+   - **성함·연락처는 미리채우지 않는다.** 기존 동작(수동 입력·고객검색·branch/channel·검증·제출)은 절대 깨지 않는다 — 미리채움은 **순수 추가**.
 
-6. (수정) `.env.example` — `AGENT_LLM_PROVIDER="openai"` 추가 + 주석:
-   "헤르메스 분류 두뇌의 공급사 스위치. OPENAI_API_KEY가 설정되면 분류·안내가 켜지고, 없으면 1단계 안내로 동작."
-   **키 값은 쓰지 않는다.**
+6. (수정) `scripts/test-agent-gateway.mjs` — 순수 단위(DB·네트워크 없음)
+   - `buildReservationPrefillQuery`: 비PII만 담기고 **`name`/`phone` 키가 없는지** assert; 허용값 매핑/빈값 스킵 assert.
+   - `classifyJson` degrade(키없음→skipped) assert. 실 OpenAI 호출 금지(`OPENAI_API_KEY` 백업→복원).
 
-7. (수정) `DECISIONS.md`/`TODO.md`/`HANDOFF.md` — 2단계 항목 추가.
+7. (수정) `scripts/test-agent-layer.mjs` — DB 통합(루프 미실행, `node --check` 문법만)
+   - 키 없음(백업→복원) → 예약 intent가 일반 링크(또는 help)로 degrade. 기존 헤르메스 검증 유지.
+
+8. (수정) `DECISIONS.md`/`TODO.md`/`HANDOFF.md` — 3단계-(나) 항목 + "루프 후 사람 검증"(아래) 명시.
 
 ### 이 OBJECTIVE 전용 추가 가드레일 (절대)
-- **두뇌(OpenAI) 호출은 `@헤르메스` 멘션일 때만** 일어난다(비용·지연 통제). 멘션당 분류 1회.
-- **`agent-layer:test`(DB 통합)를 이 루프에서 실행하지 마라**(무인 루프에서 DATABASE_URL이 운영일 위험).
-  루프 검증은 `npm run lint` + `npm run agent-gateway:test`(둘 다 DB·네트워크 미사용)만. 실제 분류·라우팅 확인은 루프 후 사람이 로컬에서 키를 넣고.
-- **`modules/`·`modules/registry.js` import 금지**(core/modules 분리). 라우팅은 내부 `WORK_ROUTES` + `lib/brand`의 `isModuleEnabled`로만.
-- **`openaiClient.js`·구매 관련 코드·운영 배포·DB 마이그레이션 변경 금지.** 다른 공급사 어댑터는 이번에 추가하지 않는다.
-- **새 브랜치 생성·git 수술 금지.** 이미 사람이 `feature/hermes-stage2`(= 최신 `feature/purchase-bot-mvp`에서 분기) 위에 있다고 가정한다.
+- **헤르메스는 DB에 직접 쓰지 않는다.** 실제 예약 생성은 사람이 양식 제출 → 기존 `POST /api/work/crm/reservations`. 승인/결제/외부주문 없음.
+- **PII(성함·연락처)를 URL/링크에 넣지 않는다.** 미리채움은 비PII 항목만.
+- 두뇌 호출은 `@헤르메스` 멘션일 때만·멘션당 1회(분류+추출 한 번에). 키없음/실패는 2단계 링크(또는 help)로 degrade.
+- `agent-layer:test`(DB 통합) 루프 미실행. 루프 검증은 `npm run lint` + `npm run agent-gateway:test`(DB·네트워크 미사용)만.
+- `modules/` import 금지(헤르메스는 링크 문자열만). `openaiClient.js`·구매 코드·운영 배포·DB 마이그레이션 변경 금지. 다른 공급사 어댑터 추가 금지.
+- **예약 양식 기존 동작 회귀 금지**(미리채움은 순수 추가).
+- 새 브랜치/git 수술 금지. 이미 사람이 `feature/hermes-stage3`(= 최신 `feature/purchase-bot-mvp`에서 분기) 위에 있다고 가정.
 
-### 이 OBJECTIVE의 완료 조건
-위 7개 변경 완료 + `npm run lint` 통과 + `npm run agent-gateway:test` 통과(분류 degrade·라우팅 매핑 단위 포함) +
-`DECISIONS.md`/`TODO.md`/`HANDOFF.md` 갱신 + `feature/hermes-stage2` 커밋 — 이 모두가 충족될 때만 완료다.
+### 완료 조건
+위 8개 변경 완료 + `npm run lint` 통과 + `npm run agent-gateway:test` 통과(prefill 쿼리/비PII/degrade 단위) +
+`DECISIONS.md`/`TODO.md`/`HANDOFF.md` 갱신 + `feature/hermes-stage3` 커밋 — 모두 충족 시에만 완료.
 `HANDOFF.md`에 "루프 후 사람 검증 필요: ① 로컬/연습 DB `agent-layer:test`(DATABASE_URL 운영 아닌지 먼저 확인)
-② 로컬에서 OPENAI_API_KEY 설정 후 dev에서 `@헤르메스 …발주/예약/입고/폐기…` 분류·안내 확인 ③ PR 생성·검토"를 명시할 것.
+② 로컬 `OPENAI_API_KEY` 설정 후 dev에서 `@헤르메스 …예약…` → 미리채워진 양식이 열리고 항목이 맞는지·성함/연락처는 비어 있는지·사람이 제출 시 정상 생성되는지 확인 ③ PR 생성·검토"를 명시할 것.
 
 ## Every iteration, in order
 

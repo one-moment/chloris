@@ -1,5 +1,10 @@
 # BUG_LOG.md
 
+## 2026-06-17: 헤르메스 3단계 — 예약 금액 추출(한국어 "만원") 수정
+- 증상: `@헤르메스 …장미 부케 5만원…` → 미리채움 링크 `amount=1`(50000이어야 함). dev 실LLM 검증(§4.2)에서 발견.
+- 원인: 분류 프롬프트에 amount를 원(KRW) 정수로 변환하는 규칙이 없어 LLM이 한국어 금액("5만원")을 잘못 추출.
+- 수정: `lib/agents/hermes/prompts.js` 지시문에 "amount는 원 정수로 변환('5만원'→50000 등)" 추가. lint+agent-gateway:test 통과, dev 재확인.
+
 ## Open Risks
 
 ### Coupang cart quantity handling

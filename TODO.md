@@ -1,5 +1,21 @@
 # TODO.md
 
+## 헤르메스 3단계 — Ralph loop (2026-06-17, worktree: feature/hermes-stage3)
+
+OBJECTIVE: `ralph/PROMPT.md`. 첫 실행=예약, 방식=(나) 미리채움. `@헤르메스 …예약…` → 비PII 정보 추출 → 예약 양식 미리채운 링크 안내.
+헤르메스는 DB 직접 쓰기 없음(실제 생성은 사람이 양식 제출 → 기존 POST API). PII(성함·연락처)는 URL에 안 넣음. 키없음/실패는 2단계 링크/help degrade.
+파일 8개(미리채움 전달=props page→dashboard→form). 루프 검증 = lint + agent-gateway:test. agent-layer:test·실 분류는 루프 후 사람.
+
+- [x] (iter 1) `lib/agents/hermes/prompts.js`: buildWorkIntentMessages 확장(area+area=reservation 비PII 추출, 오늘 Asia/Seoul,
+  pickupAt 로컬 YYYY-MM-DDTHH:mm, 성함/연락처 추출 금지) + `buildReservationPrefillQuery`(비PII만, name/phone 키 금지) +
+  RESERVATION_SOURCE/RECEIVE_OPTIONS 상수. lint(모듈 경계 ok)+agent-gateway:test 통과.
+- [x] (iter 2) `lib/agents/hermes/service.js`: 분류에서 reservation 추출; area=reservation+비PII 필드 있으면 channel.branchId 조회 →
+  `/work/reservations?new=1&channel=&branch=&<prefill>` 링크(action="reservation_prefill"), 필드 없음/skip/실패는 일반 라우트/help degrade. lint+agent-gateway:test 통과.
+- [x] (iter 3) UI 미리채움 props 체인: page.jsx(product/amount/pickup/receive/source 읽어 initialPrefill) → ReservationsDashboard(prefill 전달) →
+  ReservationForm(applyPrefill로 초기값만, receive/source 허용값 검증·pickup 16자 변환, **name/phone 제외**). prefill 없으면 기존과 동일(순수 추가). lint+agent-gateway:test 통과.
+- [x] (iter 4) test-agent-gateway.mjs(buildReservationPrefillQuery 비PII/no name·phone 단위) + test-agent-layer.mjs(예약 degrade, 작성만 node --check) + DECISIONS.md.
+- [x] **(완료)** 8개 변경 + `npm run lint` + `npm run agent-gateway:test` 통과 + DECISIONS/TODO/HANDOFF 갱신 + feature/hermes-stage3 커밋. HANDOFF에 "루프 후 사람 검증"(agent-layer:test + 키 넣고 미리채움 확인 + PR) 명시 — **OBJECTIVE 충족.**
+
 ## 헤르메스 2단계 — Ralph loop (2026-06-17, worktree: feature/hermes-stage2)
 
 OBJECTIVE: `ralph/PROMPT.md`. `@헤르메스 …평소 말…` → 발주/예약/입고/폐기/기타 1회 분류 → 해당 `/work/*` 바로가기 안내까지.
