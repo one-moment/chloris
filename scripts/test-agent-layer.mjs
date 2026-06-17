@@ -370,6 +370,16 @@ https://link.coupang.com/a/dU8MJL4A5A
   assert.ok(hermesMessage);
   assert.match(hermesMessage.body, /업무지원 비서 헤르메스/);
 
+  // 3단계: 키 없음 → 예약 intent도 분류 skip → 일반 링크/help로 degrade(여기선 help; 미리채움 링크 아님).
+  const hermesReservationResult = await handleMessageWithAgentGateway({
+    body: "@헤르메스 내일 오후 3시 장미 예약",
+    channelId,
+    messageId: `${runId}-hermes-reservation-message`,
+    requester
+  });
+  assert.equal(hermesReservationResult.handled, true);
+  assert.equal(hermesReservationResult.action, "help");
+
   // 회귀: 헤르메스 미설치 채널에서는 @헤르메스가 헤르메스로 처리되지 않고 통과
   const hermesDisabledResult = await handleMessageWithAgentGateway({
     body: "@헤르메스 안녕",

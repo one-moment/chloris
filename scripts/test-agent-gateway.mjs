@@ -7,6 +7,7 @@ import {
 } from "../lib/agents/purchaseAgent/prompts.js";
 import { parseBulkPurchaseOrder } from "../lib/agents/purchaseAgent/bulkOrderParser.js";
 import {
+  buildReservationPrefillQuery,
   buildRouteMessageLines,
   isHermesAgentCommand,
   stripHermesAgentMention,
@@ -132,5 +133,33 @@ for (const area of ["purchase", "reservation", "stockin", "disposal"]) {
   if (savedProvider === undefined) delete process.env.AGENT_LLM_PROVIDER;
   else process.env.AGENT_LLM_PROVIDER = savedProvider;
 }
+
+// 3단계: buildReservationPrefillQuery — 비PII만 담기고 name/phone 키는 절대 없음
+{
+  const query = buildReservationPrefillQuery({
+    product: "장미 부케",
+    amount: 50000,
+    pickupAt: "2026-06-18T15:00",
+    receiveMethod: "방문수령",
+    source: "인스타",
+    name: "홍길동",
+    phone: "010-1234-5678"
+  });
+  const params = new URLSearchParams(query);
+  assert.equal(params.get("product"), "장미 부케");
+  assert.equal(params.get("amount"), "50000");
+  assert.equal(params.get("pickup"), "2026-06-18T15:00");
+  assert.equal(params.get("receive"), "방문수령");
+  assert.equal(params.get("source"), "인스타");
+  assert.equal(params.has("name"), false);
+  assert.equal(params.has("phone"), false);
+}
+
+// 3단계: 허용값 아닌 receive/source·빈 값은 스킵 → 빈 쿼리
+assert.equal(
+  buildReservationPrefillQuery({ product: "", amount: null, pickupAt: null, receiveMethod: "택배", source: "잘못된경로" }),
+  ""
+);
+assert.equal(buildReservationPrefillQuery(null), "");
 
 console.log("agent gateway tests passed");

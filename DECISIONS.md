@@ -1,5 +1,14 @@
 # DECISIONS.md
 
+## 2026-06-17: 헤르메스 3단계 첫 실행 = 예약(방식 (나) 양식 미리채움)
+
+- 첫 실제 업무 = 예약, 방식 = (나) 미리채움. 헤르메스는 `@헤르메스 …예약…`에서 비PII 정보(상품·금액·픽업일시·수령방법·예약경로)를
+  뽑아 예약 양식을 미리 채운 링크만 안내한다. **실제 생성은 사람이 양식 제출 → 기존 `POST /api/work/crm/reservations`.**
+  헤르메스는 DB에 직접 쓰지 않는다(직접 생성은 이후 단계). 승인·결제·마이그레이션 없음.
+- **PII**: 성함·연락처는 절대 URL/링크에 넣지 않고 추출도 안 한다(URL 로그 위험 — AGENTS.md). 미리채움은 비PII만. 성함·연락처는 사람이 양식의 고객검색으로 입력.
+- 미리채움 전달은 **props**(서버 `page.jsx`가 searchParams 읽어 `ReservationsDashboard`→`ReservationForm` 전달; 기존 channel/branch 흐름과 동일, useSearchParams 미사용). 폼은 prefill 없으면 기존 동작 그대로(순수 추가).
+- `pickupAt`은 오프셋 없는 로컬 `YYYY-MM-DDTHH:mm`(datetime-local 직결, TZ drift 방지). 키없음/실패는 2단계 링크(또는 help)로 degrade.
+
 ## 2026-06-17: 헤르메스 2단계 — 두뇌 스위치 + "이건 ○○ 업무" 분류·안내
 
 - 두뇌(LLM)는 공급사 교체 가능한 얇은 '스위치'(`lib/agents/llm/index.js` `classifyJson`, `AGENT_LLM_PROVIDER`)로 두고
