@@ -13,8 +13,10 @@ OBJECTIVE: `ralph/PROMPT.md`. `@헤르메스 …평소 말…` → 발주/예약
   + route 결정 + `isModuleEnabled` 게이팅 + outputJson{action,area,href}. lint + agent-gateway:test 통과(service.js 모듈 로드 확인).
 - [x] (iter 3) `scripts/test-agent-gateway.mjs` 단위: WORK_ROUTES 매핑/`buildRouteMessageLines` 문구/보로 4개 area `isModuleEnabled`
   true/`classifyJson` degrade(키없음→skipped, unknown provider→skipped) — `OPENAI_API_KEY`·`AGENT_LLM_PROVIDER` 백업→복원, 실 OpenAI 호출 없음. agent-gateway:test 2회 통과(결정적).
-- [ ] (iter 4) `scripts/test-agent-layer.mjs`(작성만, degrade 유지) + `.env.example`(AGENT_LLM_PROVIDER) + DECISIONS/TODO/HANDOFF.
-- [ ] (완료) 7개 + lint + agent-gateway:test 통과 + 문서 갱신 + 커밋. HANDOFF에 "루프 후 사람 검증"(agent-layer:test + 키 넣고 분류 확인 + PR).
+- [x] (iter 4) `scripts/test-agent-layer.mjs` 헤르메스 블록을 `OPENAI_API_KEY` 강제 unset(백업→복원)으로 감싸 degrade 경로
+  결정화(작성만·`node --check`, 루프 미실행) + `.env.example` `AGENT_LLM_PROVIDER="openai"`(키 값 없음) + `DECISIONS.md` 2단계 항목.
+- [x] (완료) 파일 7개 변경 + `npm run lint` + `npm run agent-gateway:test` 통과 + DECISIONS/TODO/HANDOFF 갱신 + `feature/hermes-stage2` 커밋.
+  **루프 후 사람 검증**(로컬 DB `agent-layer:test` + `OPENAI_API_KEY` 넣고 dev 분류 확인 + PR)은 HANDOFF에 명시.
 
 ## 헤르메스 1단계 — Ralph loop (2026-06-17, worktree: feature/hermes-stage1)
 

@@ -2,7 +2,7 @@
 
 ## ▶ 헤르메스 2단계 — Ralph loop 진행 중 (2026-06-17, `feature/hermes-stage2`)
 
-**상태: 🔄 루프 진행 중(iter 1 완료).** `@헤르메스 …말…` → 발주/예약/입고/폐기/기타 분류 → 해당 `/work/*` 바로가기 안내.
+**상태: ✅ 루프 코드 완료(파일 7/7) — OBJECTIVE 충족.** `@헤르메스 …말…` → 발주/예약/입고/폐기/기타 분류 → 해당 `/work/*` 바로가기 안내.
 두뇌 = 공급사 스위치(시작 OpenAI), 키없음/실패는 1단계 안내로 degrade. 실제 실행·승인·업무데이터·운영배포·마이그레이션 없음(=3단계).
 
 - iter 1: 신규 `lib/agents/llm/index.js`(classifyJson 스위치) + `lib/agents/hermes/prompts.js` 확장(buildWorkIntentMessages/WORK_ROUTES/
@@ -10,7 +10,8 @@
 - iter 2: `lib/agents/hermes/service.js` `runHermesAgent` 확장(classify 자체 try/catch degrade + route + isModuleEnabled 게이팅 +
   outputJson{action,area,href}). lint + agent-gateway:test 통과.
 - iter 3: `scripts/test-agent-gateway.mjs` 단위 추가(WORK_ROUTES/문구/브랜드 게이팅/classifyJson degrade, 키·provider 백업→복원). agent-gateway:test 통과.
-- 남은 루프 단계: test-agent-layer(작성만, node --check) + .env.example(AGENT_LLM_PROVIDER) + DECISIONS 항목.
+- iter 4: `scripts/test-agent-layer.mjs` 헤르메스 블록을 `OPENAI_API_KEY` 강제 unset(백업→복원)으로 감싸 degrade 결정화
+  (작성만·node --check) + `.env.example` `AGENT_LLM_PROVIDER` + `DECISIONS.md` 2단계 항목. lint + agent-gateway:test 통과.
 - ⚠️ **가드레일**: 두뇌 호출은 `@헤르메스`일 때만; `agent-layer:test`·실 OpenAI 호출 루프 미실행; `modules/` import 금지.
 - **루프 후 사람 검증 필요**: ① 로컬/연습 DB `agent-layer:test`(DATABASE_URL 운영 아닌지 먼저 확인) ② 로컬에 `OPENAI_API_KEY` 넣고
   dev에서 `@헤르메스 …발주/예약/입고/폐기…` 분류·안내 확인(기존 `scripts/seed-hermes-dev.mjs` 재사용) ③ PR 생성·검토.
