@@ -1,5 +1,18 @@
 # HANDOFF.md
 
+## ▶ 헤르메스 3단계 — Ralph loop 진행 중 (2026-06-17, `feature/hermes-stage3`)
+
+**상태: 🔄 루프 진행 중(iter 1 완료).** 첫 실행=예약, 방식=(나) 미리채움. `@헤르메스 …예약…` → 비PII 예약정보 추출 →
+예약 양식 미리채운 링크 안내. 실제 생성은 사람이 양식 제출(기존 POST /api/work/crm/reservations). DB 직접 쓰기·승인·마이그레이션 없음.
+
+- iter 1: `prompts.js` — buildWorkIntentMessages 예약 비PII 추출 확장(오늘 KST, pickupAt 로컬) + buildReservationPrefillQuery(비PII만). lint+agent-gateway:test 통과.
+- 남은 루프: service.js(미리채움 링크) → UI props 체인(page/dashboard/form) → 테스트 단위·작성만 + DECISIONS.
+- ⚠️ **PII**: 성함·연락처는 URL/추출 금지(미리채움은 상품·금액·픽업·수령·경로만). ⚠️ **가드레일**: 헤르메스 DB 직접쓰기 없음, agent-layer:test·실 OpenAI 루프 미실행, modules import 금지.
+- **루프 후 사람 검증 필요**: ① 로컬/연습 DB `agent-layer:test`(DATABASE_URL 운영 아닌지 먼저) ② 로컬 `OPENAI_API_KEY` 후 dev(`scripts/seed-hermes-dev.mjs` 재사용)에서
+  `@헤르메스 내일 오후 3시 장미 부케 5만원 방문수령 예약` → 미리채운 양식(상품·금액·픽업·수령), **성함/연락처 빈칸**, 제출 시 정상 생성; `@헤르메스 예약하고 싶어`→일반 링크 degrade ③ PR 생성·검토.
+
+---
+
 ## ▶ 헤르메스 2단계 — Ralph loop 진행 중 (2026-06-17, `feature/hermes-stage2`)
 
 **상태: ✅ 루프 코드 완료(파일 7/7) — OBJECTIVE 충족.** `@헤르메스 …말…` → 발주/예약/입고/폐기/기타 분류 → 해당 `/work/*` 바로가기 안내.
