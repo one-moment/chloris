@@ -7,7 +7,8 @@
 
 - iter 1: `prompts.js` — buildWorkIntentMessages 예약 비PII 추출 확장(오늘 KST, pickupAt 로컬) + buildReservationPrefillQuery(비PII만). lint+agent-gateway:test 통과.
 - iter 2: `service.js` — runHermesAgent에 예약 미리채움 분기(channel.branchId 조회 → 링크, action="reservation_prefill"); 필드없음/실패는 degrade. lint+agent-gateway:test 통과.
-- 남은 루프: UI props 체인(page.jsx→ReservationsDashboard→ReservationForm 미리채움) → 테스트 단위·작성만 + DECISIONS.
+- iter 3: UI props 체인 — page.jsx(prefill 5개 읽기)→ReservationsDashboard(prefill 전달)→ReservationForm(applyPrefill 초기값, name/phone 제외, 순수 추가). lint+agent-gateway:test 통과.
+- 남은 루프: 테스트 단위(test-agent-gateway prefill/비PII) + test-agent-layer(작성만) + DECISIONS.
 - ⚠️ **PII**: 성함·연락처는 URL/추출 금지(미리채움은 상품·금액·픽업·수령·경로만). ⚠️ **가드레일**: 헤르메스 DB 직접쓰기 없음, agent-layer:test·실 OpenAI 루프 미실행, modules import 금지.
 - **루프 후 사람 검증 필요**: ① 로컬/연습 DB `agent-layer:test`(DATABASE_URL 운영 아닌지 먼저) ② 로컬 `OPENAI_API_KEY` 후 dev(`scripts/seed-hermes-dev.mjs` 재사용)에서
   `@헤르메스 내일 오후 3시 장미 부케 5만원 방문수령 예약` → 미리채운 양식(상품·금액·픽업·수령), **성함/연락처 빈칸**, 제출 시 정상 생성; `@헤르메스 예약하고 싶어`→일반 링크 degrade ③ PR 생성·검토.

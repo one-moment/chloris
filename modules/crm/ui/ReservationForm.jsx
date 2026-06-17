@@ -21,6 +21,18 @@ function emptyForm(branchId) {
   };
 }
 
+// 3단계: 헤르메스 미리채움(비PII만) 초기값 반영. 성함·연락처(name/phone)는 절대 미리채우지 않는다.
+function applyPrefill(base, prefill) {
+  if (!prefill || typeof prefill !== "object") return base;
+  const next = { ...base };
+  if (prefill.product) next.product = String(prefill.product);
+  if (prefill.amount) next.amount = String(prefill.amount);
+  if (prefill.pickup) next.pickupAt = String(prefill.pickup).slice(0, 16);
+  if (prefill.receive && RECEIVE_OPTIONS.includes(prefill.receive)) next.receiveMethod = prefill.receive;
+  if (prefill.source && SOURCE_OPTIONS.includes(prefill.source)) next.source = prefill.source;
+  return next;
+}
+
 function formatPickup(value) {
   if (!value) return "-";
   const date = new Date(value);
@@ -30,8 +42,8 @@ function formatPickup(value) {
 
 // 재사용 예약 입력 폼. /work/reservations "새 예약"과 (후속) #지점방 @예약 진입이 공유한다.
 // fixedBranchId 주면 지점 고정(현장 진입), 없으면 지점 선택(매니저 진입). channelId는 예약-채널 연결용.
-export default function ReservationForm({ branches = [], fixedBranchId = "", channelId = null, onSubmitted, onCancel }) {
-  const [form, setForm] = useState(() => emptyForm(fixedBranchId));
+export default function ReservationForm({ branches = [], fixedBranchId = "", channelId = null, prefill = null, onSubmitted, onCancel }) {
+  const [form, setForm] = useState(() => applyPrefill(emptyForm(fixedBranchId), prefill));
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [matches, setMatches] = useState([]);

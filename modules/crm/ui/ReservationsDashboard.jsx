@@ -168,7 +168,7 @@ function InsightsPanel() {
   );
 }
 
-export default function ReservationsDashboard({ initialNew = false, initialChannelId = null, initialBranchId = "" }) {
+export default function ReservationsDashboard({ initialNew = false, initialChannelId = null, initialBranchId = "", initialPrefill = null }) {
   const [reservations, setReservations] = useState([]);
   const [branches, setBranches] = useState([]);
   const [branchId, setBranchId] = useState("");
@@ -233,6 +233,7 @@ export default function ReservationsDashboard({ initialNew = false, initialChann
           branches={branches}
           fixedBranchId={initialBranchId}
           channelId={initialChannelId}
+          prefill={initialPrefill}
           onSubmitted={() => {
             setShowForm(false);
             loadReservations();
