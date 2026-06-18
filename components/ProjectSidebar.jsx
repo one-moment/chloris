@@ -1,4 +1,5 @@
 import { CHANNEL_TYPES } from "../lib/constants";
+import PushNotificationToggle from "./PushNotificationToggle";
 
 export default function ProjectSidebar({
   projects,
@@ -47,6 +48,8 @@ export default function ProjectSidebar({
         </div>
         <button className="ghost-button" type="button" onClick={onLogout}>로그아웃</button>
       </div>
+
+      <PushNotificationToggle />
 
       <div className="project-switcher">
         {projects.map((item) => (
