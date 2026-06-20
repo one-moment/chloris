@@ -3,6 +3,7 @@ import { CHANNEL_TYPES } from "../lib/constants";
 import { ACTIVE_BRAND } from "../lib/brand";
 import { getWorkNavItems } from "../modules/registry";
 import Icon from "./Icon";
+import PushNotificationToggle from "./PushNotificationToggle";
 
 function activityTime(record) {
   const date = new Date(record?.createdAtIso ?? record?.createdAt ?? "");
@@ -72,6 +73,8 @@ export default function ProjectSidebar({
         </div>
         <button className="ghost-button" type="button" onClick={onLogout}>로그아웃</button>
       </div>
+
+      <PushNotificationToggle />
 
       <div className="project-switcher">
         {projects.map((item) => (
