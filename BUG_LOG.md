@@ -1,0 +1,87 @@
+# BUG_LOG.md
+
+## 2026-06-17: 헤르메스 3단계 — 예약 금액 추출(한국어 "만원") 수정
+- 증상: `@헤르메스 …장미 부케 5만원…` → 미리채움 링크 `amount=1`(50000이어야 함). dev 실LLM 검증(§4.2)에서 발견.
+- 원인: 분류 프롬프트에 amount를 원(KRW) 정수로 변환하는 규칙이 없어 LLM이 한국어 금액("5만원")을 잘못 추출.
+- 수정: `lib/agents/hermes/prompts.js` 지시문에 "amount는 원 정수로 변환('5만원'→50000 등)" 추가. lint+agent-gateway:test 통과, dev 재확인.
+
+## Open Risks
+
+### Coupang cart quantity handling
+
+- Status: open risk
+- Context: Cart row detection and quantity correction can fail when the cart already contains products or re-renders.
+- Rule: Do not change selectors without artifacts.
+- Required artifacts:
+  - failed order request data
+  - selector logs
+  - match counts
+  - chosen element index
+  - full screenshot
+  - row screenshot
+  - page HTML
+  - row outerHTML
+  - environment details
+
+### Non-Coupang vendor automation
+
+- Status: not implemented
+- Context: Sungwon Adpia, Gmarket, and Hyundai Deco are currently vendor-task handoff states.
+- Next: Build vendor-specific skeletons after Purchase Agent production test.
+
+## Fixed Bugs
+
+### Mention filter did not match composer-inserted mentions (2026-06-10)
+
+- Status: fixed
+- Context: The Ideas "멘션" filter matched posts against the raw `currentUser.handle` text, but `MentionInput` inserts mentions as `@{user.name}`. Mentions inserted via autocomplete never matched the filter.
+- Fix: `app/page.jsx` filter now matches both `@{name}` and `@{handle}` tokens.
+- Found while extending mentions to post/message composers (employee UI/UX proposal batch 1).
+
+### Bulk purchase parser treated metadata as an unknown item
+
+- Status: fixed, deployed, and verified
+- Date: 2026-06-09
+- Issue: In a production Purchase Agent test, a line like `[운영 테스트] 2026-06-09 Purchase Agent 복수주문` before the first vendor section was parsed as an `unknown` vendor item with quantity `2026`.
+- Fix: Bulk parser now skips likely metadata/title lines before the first vendor section unless the line is an explicit item marker or URL-only line.
+- Verification: Added `agent-gateway:test` coverage for metadata before vendor sections, deployed the fix, and re-ran a production Purchase Agent draft/approve test with `hasUnknown:false`.
+
+### Post/Send delay
+
+- Status: fixed
+- Fix: Optimistic UI and create API simplification.
+- Verification: local and production responsiveness improved.
+
+### Korean duplicate input in chat
+
+- Status: fixed
+- Fix: IME composition handling.
+- Verification: local chat input confirmed.
+
+### Production slow response
+
+- Status: fixed
+- Fix: region alignment, logging, DB query/index improvements.
+- Verification: production response improved and `icn1` confirmed.
+
+### Purchase worker 401
+
+- Status: fixed
+- Fix: worker token/env handling clarified and production token configured.
+- Verification: worker polling returned 200 in Vercel logs.
+
+### Auth user list exposure
+
+- Status: fixed
+- Date: 2026-06-08
+- Issue: `/api/auth/me` returned user list while unauthenticated.
+- Fix: unauthenticated response returns `currentUser:null` and `users:[]`.
+- Verification: production `/api/auth/me` returned `{"currentUser":null,"users":[]}`.
+
+### Deployment log written to chat instead of Ideas
+
+- Status: corrected
+- Date: 2026-06-09
+- Issue: deployment logs were initially added as chat messages.
+- Fix: same three logs were written as Ideas posts in `#배포로그`.
+- Verification: production DB confirmed the three Ideas posts.

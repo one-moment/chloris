@@ -11,7 +11,7 @@ export async function PATCH(request, { params }) {
   if (!user) return Response.json({ error: "Authentication required." }, { status: 401 });
 
   const { postId } = await params;
-  const { status, title, body } = await request.json();
+  const { status, title, body, pinned } = await request.json();
   if (status !== undefined && !ALLOWED_STATUSES.has(status)) return badRequest("Invalid post status.");
 
   const existing = await prisma.post.findUnique({ where: { id: postId } });
@@ -19,6 +19,11 @@ export async function PATCH(request, { params }) {
 
   const data = {};
   if (status !== undefined) data.status = status;
+
+  if (pinned !== undefined) {
+    if (user.role !== "admin") return Response.json({ error: "Only admins can pin posts." }, { status: 403 });
+    data.pinnedAt = pinned ? new Date() : null;
+  }
 
   const isContentEdit = title !== undefined || body !== undefined;
   if (isContentEdit) {

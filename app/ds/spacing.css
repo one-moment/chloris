@@ -1,0 +1,54 @@
+/* Borough Flower Market — Spacing, Radius, Shadow & Motion Tokens */
+
+:root {
+  /* ---- Spacing scale (4px base) ---- */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --space-32: 128px;
+
+  /* ---- Radii — soft, editorial; never fully pill on big surfaces ---- */
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+
+  /* ---- Shadows — low, warm green-tinted, never harsh ---- */
+  --shadow-xs: 0 1px 2px rgba(14, 53, 39, 0.06);
+  --shadow-sm: 0 2px 6px rgba(14, 53, 39, 0.08);
+  --shadow-md: 0 8px 22px rgba(14, 53, 39, 0.10);
+  --shadow-lg: 0 18px 44px rgba(14, 53, 39, 0.14);
+  --shadow-xl: 0 32px 70px rgba(11, 42, 31, 0.20);
+  --shadow-inset: inset 0 1px 2px rgba(14, 53, 39, 0.06);
+
+  /* ---- Layout ---- */
+  --container-max: 1200px;
+  --container-prose: 660px;
+  --sidebar-w: 260px;
+  --channel-w: 248px;
+  --header-h: 60px;
+
+  /* ---- Motion — calm, organic easing; no bounce ---- */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1); /* @kind other */
+  --ease-in-out: cubic-bezier(0.45, 0, 0.25, 1); /* @kind other */
+  --ease-soft: cubic-bezier(0.33, 0, 0.2, 1); /* @kind other */
+  --dur-fast: 120ms; /* @kind other */
+  --dur-base: 200ms; /* @kind other */
+  --dur-slow: 360ms; /* @kind other */
+}

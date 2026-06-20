@@ -1,19 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Gowun+Batang:wght@400;700&family=Gothic+A1:wght@300;400;500;600;700;800&display=swap');
+
+/* Borough Flower Market theme (applied 2026-06-11)
+   Brand: forest green #185640 + sage gold #D5CD8C on warm paper, editorial serif accents.
+   Mapped onto the existing semantic variable names so the whole app re-skins.
+   To support per-company instances later, these values become a swappable theme. */
 :root {
-  --bg: #f6f7f8;
-  --surface: #ffffff;
-  --surface-subtle: #f0f3f5;
-  --line: #dfe4e8;
-  --line-strong: #c8d0d6;
-  --text: #1f2933;
-  --muted: #6b7785;
-  --accent: #0f766e;
-  --accent-weak: #e0f2ef;
-  --blue: #2563eb;
-  --amber: #b7791f;
-  --amber-weak: #fff3cd;
-  --danger: #e11d48;
-  --radius: 8px;
-  --shadow: 0 8px 24px rgba(31, 41, 51, 0.08);
+  --font-sans: "Gothic A1", "Noto Sans KR", sans-serif;
+  --font-serif: "Gowun Batang", serif;
+  --font-display: "Cormorant Garamond", serif;
+
+  --bg: #f7f4ea;             /* warm paper page */
+  --surface: #ffffff;         /* crisp white cards */
+  --surface-subtle: #f0ecdd;  /* warm sunken (chips, secondary, comments) */
+  --line: rgba(23, 28, 24, 0.13);
+  --line-strong: rgba(23, 28, 24, 0.24);
+  --text: #171c18;            /* ink */
+  --muted: #6b7568;           /* warm muted */
+  --accent: #185640;          /* forest green — primary brand */
+  --accent-weak: #d6e2d9;     /* soft green */
+  --blue: #1f664d;            /* links/mentions/active tabs → brand green family */
+  --amber: #946a1a;           /* warm gold (warning text) */
+  --amber-weak: #f4ebcf;
+  --danger: #b0503b;          /* warm terracotta */
+  --radius: 10px;
+  --shadow: 0 8px 22px rgba(14, 53, 39, 0.10);
+
+  /* Borough extras */
+  --brand: #185640;
+  --brand-strong: #123f2e;
+  --brand-tint: #edf2ee;
+  --brand-soft: #d6e2d9;
+  --gold: #d5cd8c;
+  --gold-strong: #b9af6a;
+  --gold-100: #f5f2e1;
+  --on-dark: #f5f2e1;
+  --on-dark-muted: rgba(245, 242, 225, 0.68);
+  --seasonal: #be6e54;
+  --seasonal-soft: #ecc8bb;
+  --seasonal-ink: #a85b43;
+  --focus-ring: 0 0 0 3px rgba(213, 205, 140, 0.55);
+
+  /* Status tokens (Borough DS) — soft bg + readable ink */
+  --success: #2c7b60;
+  --success-soft: #ddebe2;
+  --warning: #946a1a;
+  --warning-soft: #f4ebcf;
+  --danger-soft: #f1dbd2;
+  --info: #3e6e8e;
+  --info-soft: #dce7ee;
 }
 
 * {
@@ -25,7 +59,7 @@ body {
   min-width: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
 }
 

@@ -1,0 +1,118 @@
+/* Borough 구조형 셸 + 그린 레일 (S3)
+   정본: docs/design/borough/borough.css 의 레일/셸 레이어를 .workspace-root 스코프로 도입
+   (스코프로 특이도를 높여 앱의 기존 bare-class chrome를 이김).
+   모바일 사이드바 드로어 전환은 S4, 컴포넌트 전면 정합은 S5. 여기선 데스크톱 레일+3열만.
+   반응형은 실제 앱이 뷰포트를 채우므로 컨테이너 쿼리 대신 미디어 쿼리로(동등). */
+
+.workspace-root {
+  --rail-w: 64px;
+  --side-w: 292px;
+  min-height: 100vh;
+}
+
+/* 그린 레일 — 모바일 숨김, 데스크톱 표시 */
+.workspace-root .rail {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-2);
+  background: var(--surface-darker);
+  border-right: 1px solid var(--border-on-dark);
+  --accent: var(--gold-400); /* 다크 위 액티브/아바타는 골드 */
+}
+.workspace-root .rail-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: var(--space-3);
+  box-shadow: var(--shadow-sm);
+  display: block;
+}
+.workspace-root .rail-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.workspace-root .rail-button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-on-dark-muted);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.workspace-root .rail-button:hover {
+  background: rgba(245, 242, 225, 0.10);
+  color: var(--text-on-dark);
+}
+.workspace-root .rail-button.active {
+  background: rgba(213, 205, 140, 0.18);
+  color: var(--accent);
+}
+.workspace-root .rail-spacer {
+  margin-top: auto;
+}
+.workspace-root .rail-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-circle);
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-body-sm);
+}
+
+/* 모바일/태블릿(≤980px) — 기존 단일열 + 오프캔버스 드로어를 borough 톤으로 폴리시
+   (기존 .sidebar.mobile-open 토글 로직 유지, position/transform은 globals 그대로) */
+@media (max-width: 980px) {
+  .workspace-root .sidebar {
+    transition: transform var(--dur-base) var(--ease-out);
+    box-shadow: var(--shadow-lg);
+  }
+  .workspace-root .sidebar-backdrop {
+    background: var(--surface-overlay);
+  }
+}
+
+/* 데스크톱(≥981px, 기존 모바일 경계와 일치 → 768~980 빈 사이드바 열 회귀 해소)
+   레일 + 사이드바 + 메인 3열. 레일은 이 폭부터 표시. */
+@media (min-width: 981px) {
+  .workspace-root .app-shell {
+    grid-template-columns: var(--rail-w) var(--side-w) minmax(0, 1fr);
+  }
+  .workspace-root .rail {
+    display: flex;
+  }
+  /* 데스크톱 헤더 여백만 DS 토큰으로 정합 (모바일 ≤980의 12px 14px는 globals 유지) */
+  .workspace-root .main-header {
+    padding: var(--space-3) var(--space-5);
+  }
+}
+
+/* S5 — 컴포넌트 정합: 새 셸과 코어-comms 표면 정합 (scoped, additive).
+   카드·칩·세리프 등 컴포넌트는 기존 Borough 패스에서 적용됨 → 여기선 셸 통합만.
+   메인 영역 paper 배경 + flex 스크롤 컨텍스트(레일/3열 셸에서 컬럼이 늘어지지 않게). */
+.workspace-root .main-area {
+  background: var(--surface-page);
+  min-height: 0;
+}
+
+/* S6 — Lucide 아이콘 적용: 아이콘+라벨 버튼 정렬(scoped, additive) */
+.workspace-root .tabs button,
+.workspace-root .header-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.workspace-root .icon-button {
+  display: inline-grid;
+  place-items: center;
+}

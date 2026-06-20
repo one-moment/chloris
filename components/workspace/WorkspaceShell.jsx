@@ -1,18 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import AuthScreen from "../components/AuthScreen";
-import AutomationPanel from "../components/AutomationPanel";
-import FilesView from "../components/FilesView";
-import IdeasView from "../components/IdeasView";
-import MessagesView from "../components/MessagesView";
-import ProjectSidebar from "../components/ProjectSidebar";
-import Topbar from "../components/Topbar";
-import { getPostStatuses } from "../lib/constants";
-import { createInitialState } from "../lib/initialData";
-import { getMentionedUserIds } from "../lib/mentions";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import AuthScreen from "../AuthScreen";
+import ProjectSidebar from "../ProjectSidebar";
+import SearchDialog from "../SearchDialog";
+import TemplateManagerDialog from "../TemplateManagerDialog";
+import Icon from "../Icon";
+import { getPostStatuses } from "../../lib/constants";
+import { requestJson as apiRequestJson } from "../../lib/core/apiClient";
+import { maybeCompressImage } from "../../lib/imageCompress";
+import { createInitialState } from "../../lib/initialData";
+import { getMentionedUserIds } from "../../lib/mentions";
+import { ACTIVE_BRAND } from "../../lib/brand";
 
 const MAX_INLINE_ATTACHMENT_SIZE = 1_500_000;
+
+const WorkspaceContext = createContext(null);
+
+export function useWorkspace() {
+  const context = useContext(WorkspaceContext);
+  if (!context) throw new Error("useWorkspace must be used within WorkspaceShell.");
+  return context;
+}
 
 function makeClientId(prefix) {
   return `${prefix}-client-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -22,7 +33,8 @@ function isTransientFetchError(error) {
   return error instanceof TypeError && error.message === "Failed to fetch";
 }
 
-export default function Home() {
+export default function WorkspaceShell({ children }) {
+  const router = useRouter();
   const [state, setState] = useState(createInitialState);
   const [stateLoaded, setStateLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState("messages");
@@ -32,9 +44,12 @@ export default function Home() {
   const [commentDrafts, setCommentDrafts] = useState({});
   const [fileDraft, setFileDraft] = useState({ name: "", source: "수동 추가" });
   const [projectDraft, setProjectDraft] = useState("");
-  const [channelDraft, setChannelDraft] = useState({ name: "", type: "general" });
+  const [channelDraft, setChannelDraft] = useState({ name: "", type: "general", branchId: "" });
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [showChannelDialog, setShowChannelDialog] = useState(false);
+  const [showSearchDialog, setShowSearchDialog] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [showTemplateManager, setShowTemplateManager] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -43,27 +58,7 @@ export default function Home() {
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
   const [actionError, setActionError] = useState("");
 
-  const requestJson = useCallback(async function requestJson(url, options = {}) {
-    const response = await fetch(url, {
-      ...options,
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers ?? {})
-      }
-    });
-    const text = await response.text();
-    let data = null;
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch {
-      data = null;
-    }
-    if (!response.ok) {
-      throw new Error(data?.error ?? `API request failed (${response.status})`);
-    }
-    return data;
-  }, []);
+  const requestJson = useCallback((url, options = {}) => apiRequestJson(url, options), []);
 
   const withSelection = useCallback(function withSelection(serverState, preferredProjectId, preferredChannelId) {
     const selectedProject = serverState.projects.find((item) => item.id === preferredProjectId) ?? serverState.projects[0];
@@ -155,7 +150,8 @@ export default function Home() {
     const files = Array.from(fileList ?? []);
     const uploaded = [];
 
-    for (const file of files) {
+    for (const rawFile of files) {
+      const file = await maybeCompressImage(rawFile);
       const target = await requestJson("/api/uploads/presign", {
         method: "POST",
         body: JSON.stringify({
@@ -186,7 +182,7 @@ export default function Home() {
       }
 
       if (file.size > MAX_INLINE_ATTACHMENT_SIZE) {
-        window.alert("로컬 inline 저장은 1.5MB 이하 파일만 첨부할 수 있습니다. 운영에서는 S3 설정을 사용하세요.");
+        window.alert("이 파일은 1.5MB가 넘어 첨부할 수 없습니다. 사진은 자동 압축되며, 큰 파일은 운영(S3) 설정에서 업로드하세요.");
         continue;
       }
 
@@ -300,17 +296,18 @@ export default function Home() {
 
   const filteredPosts = useMemo(() => {
     if (activeFilter === "mentions") {
-      const mention = currentUser?.handle;
-      if (!mention && !currentUser?.id) return [];
+      const mentionTokens = [currentUser?.name, currentUser?.handle].filter(Boolean).map((value) => `@${value}`);
+      if (mentionTokens.length === 0 && !currentUser?.id) return [];
+      const matchesMention = (text) => mentionTokens.some((token) => String(text ?? "").includes(token));
       return channel.posts.filter(
-        (post) => post.title.includes(mention) || post.body.includes(mention) || (post.comments ?? []).some((comment) => (
-          comment.body.includes(mention) || (comment.mentions ?? []).includes(currentUser?.id)
+        (post) => matchesMention(post.title) || matchesMention(post.body) || (post.comments ?? []).some((comment) => (
+          matchesMention(comment.body) || (comment.mentions ?? []).includes(currentUser?.id)
         ))
       );
     }
     if (activeFilter === "open") return channel.posts.filter((post) => post.status !== donePostStatus);
     return channel.posts;
-  }, [activeFilter, channel.posts, currentUser?.handle, currentUser?.id, donePostStatus]);
+  }, [activeFilter, channel.posts, currentUser?.handle, currentUser?.id, currentUser?.name, donePostStatus]);
 
   const counts = useMemo(
     () => ({
@@ -321,23 +318,167 @@ export default function Home() {
     [channel.posts, postStatuses]
   );
 
-  function selectProject(projectId) {
+  const channelInsights = useMemo(() => {
+    const meta = {};
+    const notifications = [];
+    if (!currentUser) return { meta, notifications };
+    const myTokens = [currentUser.name, currentUser.handle].filter(Boolean).map((value) => `@${value}`);
+    const matchesMe = (text) => myTokens.some((token) => String(text ?? "").includes(token));
+    const readStates = state.readStates ?? {};
+
+    for (const projectItem of state.projects) {
+      for (const channelItem of projectItem.channels) {
+        const lastRead = Date.parse(readStates[channelItem.id] ?? "") || 0;
+        const isNew = (record) => (Date.parse(record.createdAtIso ?? "") || 0) > lastRead;
+        let unread = 0;
+        let hasMention = false;
+        const base = {
+          channelId: channelItem.id,
+          channelName: channelItem.name,
+          projectId: projectItem.id
+        };
+
+        for (const message of channelItem.messages ?? []) {
+          if (!isNew(message) || message.authorId === currentUser.id) continue;
+          unread += 1;
+          if (matchesMe(message.body)) {
+            hasMention = true;
+            notifications.push({
+              ...base,
+              key: `message-${message.id}`,
+              type: "mention",
+              tab: "messages",
+              author: message.author,
+              snippet: message.body.slice(0, 80),
+              createdAtIso: message.createdAtIso
+            });
+          }
+        }
+
+        for (const post of channelItem.posts ?? []) {
+          if (isNew(post) && post.authorId !== currentUser.id) {
+            unread += 1;
+            if (matchesMe(post.title) || matchesMe(post.body)) {
+              hasMention = true;
+              notifications.push({
+                ...base,
+                key: `post-${post.id}`,
+                type: "mention",
+                tab: "ideas",
+                author: post.author,
+                snippet: post.title || post.body.slice(0, 80),
+                createdAtIso: post.createdAtIso
+              });
+            } else if (post.pinned) {
+              notifications.push({
+                ...base,
+                key: `notice-${post.id}`,
+                type: "notice",
+                tab: "ideas",
+                author: post.author,
+                snippet: post.title || post.body.slice(0, 80),
+                createdAtIso: post.createdAtIso
+              });
+            }
+          }
+
+          for (const comment of post.comments ?? []) {
+            if (!isNew(comment) || comment.authorId === currentUser.id) continue;
+            const isMentioned = (comment.mentions ?? []).includes(currentUser.id) || matchesMe(comment.body);
+            const isMyPost = post.authorId === currentUser.id;
+            if (!isMentioned && !isMyPost) continue;
+            if (isMentioned) hasMention = true;
+            notifications.push({
+              ...base,
+              key: `comment-${comment.id}`,
+              type: isMentioned ? "mention" : "comment",
+              tab: "ideas",
+              author: comment.author,
+              snippet: comment.body.slice(0, 80),
+              createdAtIso: comment.createdAtIso
+            });
+          }
+        }
+
+        meta[channelItem.id] = { unread, hasMention };
+      }
+    }
+
+    notifications.sort((a, b) => new Date(b.createdAtIso ?? 0) - new Date(a.createdAtIso ?? 0));
+    return { meta, notifications: notifications.slice(0, 20) };
+  }, [state, currentUser]);
+
+  const markingReadRef = useRef(false);
+
+  useEffect(() => {
+    if (!currentUser || !channel?.id || markingReadRef.current) return;
+    const meta = channelInsights.meta[channel.id];
+    const hasReadState = Boolean((state.readStates ?? {})[channel.id]);
+    if (!meta || (meta.unread === 0 && hasReadState)) return;
+    const channelId = channel.id;
+    markingReadRef.current = true;
+    requestJson(`/api/channels/${channelId}/read`, { method: "POST" })
+      .then((result) => {
+        if (result?.ok === false) return;
+        setState((current) => ({
+          ...current,
+          readStates: { ...(current.readStates ?? {}), [channelId]: result?.lastReadAt ?? new Date().toISOString() }
+        }));
+      })
+      .catch((error) => console.error(error))
+      .finally(() => {
+        markingReadRef.current = false;
+      });
+  }, [channel?.id, channelInsights, currentUser, requestJson, state.readStates]);
+
+  const applyChannelFromUrl = useCallback((channelId) => {
     setState((current) => {
-      const nextProject = current.projects.find((item) => item.id === projectId) ?? current.projects[0];
+      const targetProject = current.projects.find((item) => item.channels.some((channelItem) => channelItem.id === channelId));
+      if (!targetProject) return current;
+      if (current.selectedProjectId === targetProject.id && current.selectedChannelId === channelId) return current;
       return {
         ...current,
-        selectedProjectId: nextProject.id,
-        selectedChannelId: nextProject.channels[0]?.id
+        selectedProjectId: targetProject.id,
+        selectedChannelId: channelId
       };
     });
+  }, []);
+
+  function navigateTo({ projectId, channelId, tab }) {
+    setState((current) => {
+      const targetProject = current.projects.find((item) => item.id === projectId)
+        ?? current.projects.find((item) => item.channels.some((channelItem) => channelItem.id === channelId))
+        ?? current.projects[0];
+      const targetChannel = targetProject?.channels.find((item) => item.id === channelId) ?? targetProject?.channels[0];
+      return {
+        ...current,
+        selectedProjectId: targetProject?.id,
+        selectedChannelId: targetChannel?.id
+      };
+    });
+    if (tab) setActiveTab(tab);
+    setActiveFilter("all");
+    if (channelId) router.push(`/chat/${channelId}`);
+  }
+
+  function selectProject(projectId) {
+    const nextProject = state.projects.find((item) => item.id === projectId) ?? state.projects[0];
+    const nextChannelId = nextProject?.channels[0]?.id;
+    setState((current) => ({
+      ...current,
+      selectedProjectId: nextProject?.id,
+      selectedChannelId: nextChannelId
+    }));
     setActiveTab("ideas");
     setActiveFilter("all");
+    if (nextChannelId) router.push(`/chat/${nextChannelId}`);
   }
 
   function selectChannel(channelId) {
     setState((current) => ({ ...current, selectedChannelId: channelId }));
     setActiveTab("ideas");
     setActiveFilter("all");
+    router.push(`/chat/${channelId}`);
   }
 
   async function deleteChannel(channelId) {
@@ -348,9 +489,8 @@ export default function Home() {
 
     const previousState = state;
     const remainingChannels = project.channels.filter((item) => item.id !== channelId);
-    const selectedChannelId = channelId === state.selectedChannelId
-      ? remainingChannels[0]?.id
-      : state.selectedChannelId;
+    const wasSelected = channelId === state.selectedChannelId;
+    const selectedChannelId = wasSelected ? remainingChannels[0]?.id : state.selectedChannelId;
 
     setActionError("");
     setState((current) => ({
@@ -361,6 +501,7 @@ export default function Home() {
       ))
     }));
     setActiveFilter("all");
+    if (wasSelected && selectedChannelId) router.replace(`/chat/${selectedChannelId}`);
 
     try {
       const result = await requestJson(`/api/channels/${channelId}`, { method: "DELETE" });
@@ -455,6 +596,7 @@ export default function Home() {
           projectItem.id === temporaryProject.id ? created : projectItem
         ))
       }));
+      if (created.channels?.[0]?.id) router.replace(`/chat/${created.channels[0].id}`);
       refreshStateInBackground({ projectId: created.id, channelId: created.channels?.[0]?.id });
     } catch (error) {
       console.error(error);
@@ -477,17 +619,19 @@ export default function Home() {
     event.preventDefault();
     const name = channelDraft.name.trim();
     if (!name) return;
+    const branchId = channelDraft.branchId || null;
     const temporaryChannel = {
       id: makeClientId("channel"),
       name,
       type: channelDraft.type,
+      branchId,
       messages: [],
       posts: [],
       files: [],
       botRuns: []
     };
     setActionError("");
-    setChannelDraft({ name: "", type: "general" });
+    setChannelDraft({ name: "", type: "general", branchId: "" });
     setShowChannelDialog(false);
     setActiveTab("ideas");
     setState((current) => ({
@@ -503,9 +647,10 @@ export default function Home() {
       const projectId = state.selectedProjectId;
       const created = await requestJson(`/api/projects/${projectId}/channels`, {
         method: "POST",
-        body: JSON.stringify({ name, type: temporaryChannel.type })
+        body: JSON.stringify({ name, type: temporaryChannel.type, branchId })
       });
       replaceChannelId(temporaryChannel.id, created);
+      router.replace(`/chat/${created.id}`);
       refreshStateInBackground({ projectId, channelId: created.id });
     } catch (error) {
       console.error(error);
@@ -600,6 +745,35 @@ export default function Home() {
     }
   }
 
+  async function changeChannelBranch(channelId, branchId) {
+    setActionError("");
+    try {
+      const updated = await requestJson(`/api/channels/${channelId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ branchId: branchId || null })
+      });
+      updateChannel(channelId, (channelItem) => ({ ...channelItem, branchId: updated.branchId }));
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId });
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+    }
+  }
+
+  async function togglePostPin(postId, pinned) {
+    try {
+      const updated = await requestJson(`/api/posts/${postId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ pinned })
+      });
+      replacePostInState(postId, updated);
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id });
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+    }
+  }
+
   async function editMessage(messageId, body) {
     try {
       const updated = await requestJson(`/api/messages/${messageId}`, {
@@ -665,6 +839,24 @@ export default function Home() {
       setCommentDrafts((current) => ({ ...current, [postId]: "" }));
     } catch (error) {
       console.error(error);
+    }
+  }
+
+  async function addReply(postId, parentId, body) {
+    try {
+      await mutateAndRefresh(`/api/posts/${postId}/comments`, {
+        body,
+        parentId,
+        mentions: getMentionedUserIds(body, users)
+      }, "POST", {
+        projectId: state.selectedProjectId,
+        channelId: channel.id
+      });
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+      return { ok: false };
     }
   }
 
@@ -741,127 +933,274 @@ export default function Home() {
     }
   }
 
+  async function actOnPurchaseRequest(requestId, action) {
+    setActionError("");
+    try {
+      const endpoint = action === "run"
+        ? `/api/purchase-bot/requests/${requestId}/run`
+        : `/api/purchase-bot/requests/${requestId}/${action}`;
+      await requestJson(endpoint, {
+        method: "POST"
+      });
+      await refreshState({ projectId: state.selectedProjectId, channelId: channel.id });
+      if (action === "run") {
+        setTimeout(() => refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id }), 1800);
+        setTimeout(() => refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id }), 6000);
+      }
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: false };
+    }
+  }
+
+  async function updatePurchaseOrderDraft(draftId, payload) {
+    setActionError("");
+    try {
+      await requestJson(`/api/purchase-order-drafts/${draftId}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload)
+      });
+      await refreshState({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: false };
+    }
+  }
+
+  async function approvePurchaseOrderDraft(draftId) {
+    setActionError("");
+    try {
+      await requestJson(`/api/purchase-order-drafts/${draftId}/approve`, {
+        method: "POST"
+      });
+      await refreshState({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: false };
+    }
+  }
+
+  const reloadTemplates = useCallback(async () => {
+    try {
+      const data = await requestJson("/api/post-templates");
+      setTemplates(data?.templates ?? []);
+    } catch (error) {
+      console.error(error);
+    }
+  }, [requestJson]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setTemplates([]);
+      return;
+    }
+    reloadTemplates();
+  }, [currentUser, reloadTemplates]);
+
+  async function createTemplate(form) {
+    try {
+      await requestJson("/api/post-templates", { method: "POST", body: JSON.stringify(form) });
+      await reloadTemplates();
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }
+
+  async function updateTemplate(templateId, form) {
+    try {
+      await requestJson(`/api/post-templates/${templateId}`, { method: "PATCH", body: JSON.stringify(form) });
+      await reloadTemplates();
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }
+
+  async function deleteTemplate(templateId) {
+    try {
+      await requestJson(`/api/post-templates/${templateId}`, { method: "DELETE" });
+      await reloadTemplates();
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      return { ok: false, error: error.message };
+    }
+  }
+
+  const workspaceValue = {
+    state,
+    stateLoaded,
+    currentUser,
+    users,
+    project,
+    channel,
+    activeTab,
+    setActiveTab,
+    activeFilter,
+    setActiveFilter,
+    filteredPosts,
+    counts,
+    postStatuses,
+    availableBots,
+    channelInsights,
+    actionError,
+    requestJson,
+    applyChannelFromUrl,
+    navigateTo,
+    openSearch: () => setShowSearchDialog(true),
+    templates,
+    openTemplateManager: () => setShowTemplateManager(true),
+    createTemplate,
+    updateTemplate,
+    deleteTemplate,
+    openSidebar: () => setIsSidebarOpen(true),
+    messageAttachments,
+    postAttachments,
+    addMessageAttachments,
+    addPostAttachments,
+    removeMessageAttachment: (index) => removeAttachment(setMessageAttachments, index),
+    removePostAttachment: (index) => removeAttachment(setPostAttachments, index),
+    commentDrafts,
+    setCommentDraft: (postId, value) => setCommentDrafts((current) => ({ ...current, [postId]: value })),
+    fileDraft,
+    setFileDraft,
+    sendMessage,
+    editMessage,
+    createPost,
+    changePostStatus,
+    editPost,
+    editComment,
+    addComment,
+    addReply,
+    togglePostPin,
+    addFile,
+    runBot,
+    completeRun,
+    approveRun,
+    rejectRun,
+    actOnPurchaseRequest,
+    updatePurchaseOrderDraft,
+    approvePurchaseOrderDraft,
+    changeChannelBranch
+  };
+
   return (
-    !authLoaded || !stateLoaded ? (
-      <main className="loading-shell">불러오는 중...</main>
-    ) : !currentUser ? (
-      <AuthScreen
-        onLogin={(form) => authenticate("/api/auth/login", form)}
-        onRegister={(form) => authenticate("/api/auth/register", form)}
-        error={authError}
-        isSubmitting={isAuthSubmitting}
-      />
-    ) : (
-    <main className="app-shell">
-      <ProjectSidebar
-        projects={state.projects}
-        selectedProjectId={state.selectedProjectId}
-        selectedChannelId={state.selectedChannelId}
-        onSelectProject={selectProject}
-        onSelectChannel={selectChannel}
-        onDeleteChannel={deleteChannel}
-        onNewProject={() => setShowProjectDialog(true)}
-        onNewChannel={() => setShowChannelDialog(true)}
-        currentUser={currentUser}
-        onLogout={logout}
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
-      {isSidebarOpen && <button className="sidebar-backdrop" type="button" onClick={() => setIsSidebarOpen(false)} aria-label="채널 패널 닫기" />}
-
-      <section className="main-area">
-        <Topbar
-          project={project}
-          channel={channel}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          onToggleSidebar={() => setIsSidebarOpen(true)}
+    <WorkspaceContext.Provider value={workspaceValue}>
+      {!authLoaded || !stateLoaded ? (
+        <main className="loading-shell">불러오는 중...</main>
+      ) : !currentUser ? (
+        <AuthScreen
+          onLogin={(form) => authenticate("/api/auth/login", form)}
+          onRegister={(form) => authenticate("/api/auth/register", form)}
+          error={authError}
+          isSubmitting={isAuthSubmitting}
         />
-
-        <div className="work-surface">
-          {activeTab === "messages" && (
-            <MessagesView
-              channel={channel}
-              currentUser={currentUser}
-              attachments={messageAttachments}
-              error={actionError}
-              onAttachmentsChange={addMessageAttachments}
-              onRemoveAttachment={(index) => removeAttachment(setMessageAttachments, index)}
-              onSend={sendMessage}
-              onEditMessage={editMessage}
-            />
-          )}
-          {activeTab === "ideas" && (
-            <IdeasView
-              channel={channel}
-              posts={filteredPosts}
-              currentUser={currentUser}
-              users={users}
-              counts={counts}
-              activeFilter={activeFilter}
-              postStatuses={postStatuses}
-              onFilterChange={setActiveFilter}
-              attachments={postAttachments}
-              error={actionError}
-              onAttachmentsChange={addPostAttachments}
-              onRemoveAttachment={(index) => removeAttachment(setPostAttachments, index)}
-              onCreatePost={createPost}
-              commentDrafts={commentDrafts}
-              onCommentDraftChange={(postId, value) => setCommentDrafts((current) => ({ ...current, [postId]: value }))}
-              onAddComment={addComment}
-              onStatusChange={changePostStatus}
-              onEditPost={editPost}
-              onEditComment={editComment}
-            />
-          )}
-          {activeTab === "files" && (
-            <FilesView channel={channel} draft={fileDraft} onDraftChange={setFileDraft} onAddFile={addFile} />
-          )}
-          <AutomationPanel
-            channel={channel}
-            bots={availableBots}
-            onRunBot={runBot}
-            onCompleteRun={completeRun}
-            onApproveRun={approveRun}
-            onRejectRun={rejectRun}
+      ) : (
+        <div className="workspace-root" data-theme="forest" data-sidebar="dark" data-cards="comfortable" data-chips="soft">
+        <main className="app-shell">
+          <nav className="rail" aria-label="워크스페이스">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <Link className="rail-logo" href="/" aria-label="홈"><img src={ACTIVE_BRAND.logo} alt="" /></Link>
+            <button className="rail-button" type="button" onClick={() => setShowSearchDialog(true)} aria-label="검색">
+              <Icon name="search" size={21} />
+            </button>
+            <div className="rail-spacer" />
+            <div className="rail-avatar" aria-hidden="true">{(currentUser?.name ?? "?").trim().slice(0, 1).toUpperCase()}</div>
+          </nav>
+          <ProjectSidebar
+            projects={state.projects}
+            selectedProjectId={state.selectedProjectId}
+            selectedChannelId={state.selectedChannelId}
+            channelMeta={channelInsights.meta}
+            onSelectProject={selectProject}
+            onSelectChannel={selectChannel}
+            onDeleteChannel={deleteChannel}
+            onNewProject={() => setShowProjectDialog(true)}
+            onNewChannel={() => setShowChannelDialog(true)}
+            currentUser={currentUser}
+            onLogout={logout}
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
           />
-        </div>
-      </section>
+          {isSidebarOpen && <button className="sidebar-backdrop" type="button" onClick={() => setIsSidebarOpen(false)} aria-label="채널 패널 닫기" />}
 
-      {showProjectDialog && (
-        <div className="next-dialog-fallback">
-          <form className="modal-card" onSubmit={createProject}>
-            <h2>프로젝트 생성</h2>
-            <input value={projectDraft} onChange={(event) => setProjectDraft(event.target.value)} placeholder="프로젝트 이름" autoFocus />
-            <div className="modal-actions">
-              <button type="button" onClick={() => setShowProjectDialog(false)}>취소</button>
-              <button className="primary-button" type="submit">생성</button>
+          <section className="main-area">
+            {children}
+          </section>
+
+          {showProjectDialog && (
+            <div className="next-dialog-fallback">
+              <form className="modal-card" onSubmit={createProject}>
+                <h2>프로젝트 생성</h2>
+                <input value={projectDraft} onChange={(event) => setProjectDraft(event.target.value)} placeholder="프로젝트 이름" autoFocus />
+                <div className="modal-actions">
+                  <button type="button" onClick={() => setShowProjectDialog(false)}>취소</button>
+                  <button className="primary-button" type="submit">생성</button>
+                </div>
+              </form>
             </div>
-          </form>
+          )}
+
+          {showSearchDialog && (
+            <SearchDialog
+              requestJson={requestJson}
+              onNavigate={navigateTo}
+              onClose={() => setShowSearchDialog(false)}
+            />
+          )}
+
+          {showTemplateManager && (
+            <TemplateManagerDialog
+              templates={templates}
+              channels={state.projects.flatMap((projectItem) => projectItem.channels.map((channelItem) => ({ id: channelItem.id, name: channelItem.name })))}
+              currentChannelId={channel?.id}
+              currentUser={currentUser}
+              onCreate={createTemplate}
+              onUpdate={updateTemplate}
+              onDelete={deleteTemplate}
+              onClose={() => setShowTemplateManager(false)}
+            />
+          )}
+
+          {showChannelDialog && (
+            <div className="next-dialog-fallback">
+              <form className="modal-card" onSubmit={createChannel}>
+                <h2>채널 생성</h2>
+                <input value={channelDraft.name} onChange={(event) => setChannelDraft({ ...channelDraft, name: event.target.value })} placeholder="채널 이름" autoFocus />
+                <select value={channelDraft.type} onChange={(event) => setChannelDraft({ ...channelDraft, type: event.target.value })}>
+                  <option value="general">일반 소통</option>
+                  <option value="purchase">구매요청</option>
+                  <option value="inbound">입고</option>
+                  <option value="outbound">출고</option>
+                  <option value="inventory">재고관리</option>
+                  <option value="improvement">개선 건의</option>
+                </select>
+                <select value={channelDraft.branchId} onChange={(event) => setChannelDraft({ ...channelDraft, branchId: event.target.value })} aria-label="지점 선택">
+                  <option value="">지점 없음 (공통 채널)</option>
+                  {(state.branches ?? []).map((branch) => (
+                    <option key={branch.id} value={branch.id}>{branch.name}</option>
+                  ))}
+                </select>
+                <div className="modal-actions">
+                  <button type="button" onClick={() => setShowChannelDialog(false)}>취소</button>
+                  <button className="primary-button" type="submit">생성</button>
+                </div>
+              </form>
+            </div>
+          )}
+        </main>
         </div>
       )}
-
-      {showChannelDialog && (
-        <div className="next-dialog-fallback">
-          <form className="modal-card" onSubmit={createChannel}>
-            <h2>채널 생성</h2>
-            <input value={channelDraft.name} onChange={(event) => setChannelDraft({ ...channelDraft, name: event.target.value })} placeholder="채널 이름" autoFocus />
-            <select value={channelDraft.type} onChange={(event) => setChannelDraft({ ...channelDraft, type: event.target.value })}>
-              <option value="general">일반 소통</option>
-              <option value="purchase">구매요청</option>
-              <option value="inbound">입고</option>
-              <option value="outbound">출고</option>
-              <option value="inventory">재고관리</option>
-              <option value="improvement">개선 건의</option>
-            </select>
-            <div className="modal-actions">
-              <button type="button" onClick={() => setShowChannelDialog(false)}>취소</button>
-              <button className="primary-button" type="submit">생성</button>
-            </div>
-          </form>
-        </div>
-      )}
-    </main>
-    )
+    </WorkspaceContext.Provider>
   );
 }

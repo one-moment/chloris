@@ -14,20 +14,53 @@ model Project {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   channels    Channel[]
+  botInstallations BotInstallation[]
+}
+
+model Branch {
+  id          String   @id
+  name        String   @unique
+  slug        String   @unique
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  channels    Channel[]
+  assignments BranchAssignment[]
+}
+
+model BranchAssignment {
+  id        String   @id
+  userId    String
+  branchId  String
+  role      String   @default("staff")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, branchId], map: "uniq_branch_assignment")
 }
 
 model Channel {
   id        String    @id
   projectId String
+  branchId  String?
   name      String
   type      String
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch    Branch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
   messages  Message[]
   posts     Post[]
   files     File[]
   botRuns   BotRun[]
+  botInstallations ChannelBotInstallation[]
+  botEventLogs BotEventLog[]
+  agentInstallations ChannelAgentInstallation[]
+  agentRuns AgentRun[]
+  approvalRequests ApprovalRequest[]
+  purchaseOrderDrafts PurchaseOrderDraft[]
+  readStates ChannelReadState[]
 }
 
 model User {
@@ -43,6 +76,217 @@ model User {
   messages     Message[]
   posts        Post[]
   comments     Comment[]
+  readStates   ChannelReadState[]
+  branchAssignments BranchAssignment[]
+  pushSubscriptions PushSubscription[]
+}
+
+model BotApp {
+  id                     String                   @id
+  slug                   String                   @unique
+  name                   String
+  type                   String
+  status                 String                   @default("active")
+  description            String?
+  webhookUrl             String?
+  signingSecretHash      String?
+  eventSubscriptionsJson String                   @default("[]")
+  configJson             String                   @default("{}")
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  installations          BotInstallation[]
+  channelInstallations   ChannelBotInstallation[]
+  credentials            BotCredential[]
+  eventLogs              BotEventLog[]
+}
+
+model BotInstallation {
+  id             String      @id
+  botAppId       String
+  projectId      String?
+  status         String      @default("installed")
+  configJson     String      @default("{}")
+  installedById  String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  botApp         BotApp      @relation(fields: [botAppId], references: [id], onDelete: Cascade)
+  project        Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  credentials    BotCredential[]
+
+  @@unique([botAppId, projectId], map: "uniq_bot_installation_project")
+  @@index([projectId], map: "idx_bot_installations_project")
+}
+
+model ChannelBotInstallation {
+  id             String   @id
+  botAppId       String
+  channelId      String
+  enabled        Boolean  @default(true)
+  configJson     String   @default("{}")
+  installedById  String?
+  enabledAt      DateTime?
+  disabledAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  botApp         BotApp   @relation(fields: [botAppId], references: [id], onDelete: Cascade)
+  channel        Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  credentials    BotCredential[]
+
+  @@unique([botAppId, channelId], map: "uniq_channel_bot_installation")
+  @@index([channelId, enabled], map: "idx_channel_bot_installations_channel_enabled")
+}
+
+model BotCredential {
+  id                           String                  @id
+  botAppId                     String
+  installationId               String?
+  channelBotInstallationId     String?
+  name                         String
+  tokenHash                    String                  @unique
+  scopesJson                   String                  @default("[]")
+  createdById                  String?
+  lastUsedAt                   DateTime?
+  revokedAt                    DateTime?
+  createdAt                    DateTime                @default(now())
+  botApp                       BotApp                  @relation(fields: [botAppId], references: [id], onDelete: Cascade)
+  installation                 BotInstallation?        @relation(fields: [installationId], references: [id], onDelete: Cascade)
+  channelBotInstallation       ChannelBotInstallation? @relation(fields: [channelBotInstallationId], references: [id], onDelete: Cascade)
+
+  @@index([botAppId, revokedAt], map: "idx_bot_credentials_bot_revoked")
+}
+
+model BotEventLog {
+  id                  String    @id
+  botAppId            String
+  channelId           String?
+  eventType           String
+  status              String
+  requestPayloadJson  String    @default("{}")
+  responsePayloadJson String    @default("{}")
+  error               String?
+  durationMs          Int?
+  createdAt           DateTime  @default(now())
+  botApp              BotApp    @relation(fields: [botAppId], references: [id], onDelete: Cascade)
+  channel             Channel?  @relation(fields: [channelId], references: [id], onDelete: SetNull)
+
+  @@index([botAppId, createdAt(sort: Desc)], map: "idx_bot_event_logs_bot_created")
+  @@index([channelId, createdAt(sort: Desc)], map: "idx_bot_event_logs_channel_created")
+}
+
+model AgentApp {
+  id          String   @id
+  slug        String   @unique
+  name        String
+  role        String
+  status      String   @default("active")
+  description String?
+  configJson  String   @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  channelInstallations ChannelAgentInstallation[]
+  tools       AgentTool[]
+  runs        AgentRun[]
+}
+
+model ChannelAgentInstallation {
+  id             String   @id
+  agentAppId     String
+  channelId      String
+  enabled        Boolean  @default(true)
+  configJson     String   @default("{}")
+  installedById  String?
+  enabledAt      DateTime?
+  disabledAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  agentApp       AgentApp @relation(fields: [agentAppId], references: [id], onDelete: Cascade)
+  channel        Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([agentAppId, channelId], map: "uniq_channel_agent_installation")
+  @@index([channelId, enabled], map: "idx_channel_agent_installations_channel_enabled")
+}
+
+model AgentTool {
+  id          String   @id
+  agentAppId  String
+  slug        String
+  name        String
+  type        String
+  status      String   @default("active")
+  botAppId    String?
+  configJson  String   @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  agentApp    AgentApp @relation(fields: [agentAppId], references: [id], onDelete: Cascade)
+  toolCalls   AgentToolCall[]
+
+  @@unique([agentAppId, slug], map: "uniq_agent_tool_slug")
+  @@index([botAppId], map: "idx_agent_tools_bot_app")
+}
+
+model AgentRun {
+  id             String   @id
+  agentAppId     String
+  channelId      String?
+  messageId      String?
+  requesterId    String?
+  status         String
+  inputText      String
+  intentJson     String   @default("{}")
+  outputJson     String   @default("{}")
+  error          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  agentApp       AgentApp @relation(fields: [agentAppId], references: [id], onDelete: Cascade)
+  channel        Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  toolCalls      AgentToolCall[]
+  approvalRequests ApprovalRequest[]
+
+  @@index([agentAppId, createdAt(sort: Desc)], map: "idx_agent_runs_agent_created")
+  @@index([channelId, createdAt(sort: Desc)], map: "idx_agent_runs_channel_created")
+  @@index([status, createdAt], map: "idx_agent_runs_status_created")
+}
+
+model AgentToolCall {
+  id             String   @id
+  agentRunId     String
+  agentToolId    String?
+  toolSlug       String
+  toolType       String
+  status         String
+  requestJson    String   @default("{}")
+  responseJson   String   @default("{}")
+  error          String?
+  durationMs     Int?
+  createdAt      DateTime @default(now())
+  agentRun       AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+  agentTool      AgentTool? @relation(fields: [agentToolId], references: [id], onDelete: SetNull)
+
+  @@index([agentRunId, createdAt], map: "idx_agent_tool_calls_run_created")
+  @@index([toolSlug, createdAt(sort: Desc)], map: "idx_agent_tool_calls_tool_created")
+}
+
+model ApprovalRequest {
+  id             String   @id
+  agentRunId     String?
+  channelId      String?
+  requesterId    String
+  approverId     String?
+  subject        String
+  body           String
+  status         String
+  entityType     String?
+  entityId       String?
+  decisionById   String?
+  decidedAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  agentRun       AgentRun? @relation(fields: [agentRunId], references: [id], onDelete: SetNull)
+  channel        Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+
+  @@index([channelId, createdAt(sort: Desc)], map: "idx_approval_requests_channel_created")
+  @@index([status, createdAt], map: "idx_approval_requests_status_created")
+  @@index([entityType, entityId], map: "idx_approval_requests_entity")
 }
 
 model Session {
@@ -83,6 +327,138 @@ model Message {
   @@index([channelId, createdAt(sort: Desc)], map: "idx_messages_channel_created")
 }
 
+model PurchaseItem {
+  id                      String            @id
+  name                    String
+  aliasesJson             String
+  vendor                  String
+  url                     String
+  defaultQuantity         Int
+  unitLabel               String
+  minQuantity             Int
+  maxQuantity             Int
+  expectedPrice           Int?
+  maxAllowedPrice         Int?
+  defaultDeliveryMemo     String?
+  defaultShippingLocation String?
+  approvalRequired        Boolean           @default(true)
+  automationLevel         String
+  isActive                Boolean           @default(true)
+  notes                   String?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  requests                PurchaseRequest[]
+}
+
+model PurchaseRequest {
+  id                  String              @id
+  requesterId         String
+  channelId           String?
+  messageId           String?
+  itemId              String
+  itemName            String
+  vendor              String
+  url                 String
+  quantity            Int
+  unitLabel           String
+  expectedPrice       Int?
+  maxAllowedPrice     Int?
+  shippingLocation    String?
+  approvalRequired    Boolean             @default(true)
+  approvedBy          String?
+  approvedAt          DateTime?
+  status              String
+  workerTaskId        String?
+  resultScreenshotUrl String?
+  resultMessage       String?
+  orderNumber         String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  item                PurchaseItem        @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  workerTask          PurchaseWorkerTask?
+
+  @@index([channelId, createdAt(sort: Desc)], map: "idx_purchase_requests_channel_created")
+  @@index([status, createdAt], map: "idx_purchase_requests_status_created")
+}
+
+model PurchaseOrderDraft {
+  id            String                   @id
+  requesterId   String
+  channelId     String?
+  messageId     String?
+  requesterName String?
+  requesterTeam String?
+  status        String                   @default("draft")
+  sourceText    String
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  channel       Channel?                 @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  lines         PurchaseOrderDraftLine[]
+  vendorTasks   PurchaseOrderVendorTask[]
+
+  @@index([channelId, createdAt(sort: Desc)], map: "idx_purchase_order_drafts_channel_created")
+  @@index([status, createdAt], map: "idx_purchase_order_drafts_status_created")
+}
+
+model PurchaseOrderDraftLine {
+  id        String             @id
+  draftId   String
+  lineIndex Int
+  vendor    String
+  itemName  String
+  quantity  Int?
+  unitLabel String?
+  url       String?
+  notes     String?
+  rawText   String
+  status    String             @default("needs_review")
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  draft     PurchaseOrderDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId, lineIndex], map: "idx_purchase_order_draft_lines_draft_order")
+  @@index([vendor, status], map: "idx_purchase_order_draft_lines_vendor_status")
+}
+
+model PurchaseOrderVendorTask {
+  id                     String             @id
+  draftId                String
+  vendor                 String
+  status                 String             @default("queued")
+  automationLevel        String?
+  lineIdsJson            String             @default("[]")
+  purchaseRequestIdsJson String             @default("[]")
+  resultMessage          String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  draft                  PurchaseOrderDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@unique([draftId, vendor], map: "PurchaseOrderVendorTask_draftId_vendor_key")
+  @@index([status, createdAt], map: "idx_purchase_order_vendor_tasks_status_created")
+  @@index([vendor, status], map: "idx_purchase_order_vendor_tasks_vendor_status")
+}
+
+model PurchaseWorkerTask {
+  id                String          @id
+  purchaseRequestId String          @unique
+  vendor            String
+  url               String
+  quantity          Int
+  automationLevel   String
+  maxAllowedPrice   Int?
+  status            String
+  resultMessage     String?
+  screenshotPath    String?
+  observedPrice     Int?
+  errorCode         String?
+  lockedAt          DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  purchaseRequest   PurchaseRequest @relation(fields: [purchaseRequestId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt], map: "idx_purchase_worker_tasks_status_created")
+}
+
 model Post {
   id              String    @id
   channelId       String
@@ -95,6 +471,7 @@ model Post {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   editedAt        DateTime?
+  pinnedAt        DateTime?
   channel         Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
   authorUser      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
   comments        Comment[]
@@ -102,10 +479,68 @@ model Post {
   @@index([channelId, createdAt(sort: Desc)], map: "idx_posts_channel_created")
 }
 
+model PostTemplate {
+  id          String   @id
+  name        String
+  body        String
+  scope       String   @default("personal")
+  channelId   String?
+  ownerId     String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([scope], map: "idx_post_templates_scope")
+  @@index([ownerId], map: "idx_post_templates_owner")
+  @@index([channelId], map: "idx_post_templates_channel")
+}
+
+// CRM module (Borough-only). Chain-wide customer keyed by phone + reservations
+// (Google-sheet successor). Loosely coupled (scalar ids, no FK) like PostTemplate so
+// the app degrades safely before the migration is applied to production.
+model Customer {
+  id           String   @id
+  name         String
+  phone        String   @unique(map: "uniq_customers_phone")
+  homeBranchId String?
+  memo         String?
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([name], map: "idx_customers_name")
+  @@index([homeBranchId], map: "idx_customers_home_branch")
+}
+
+model Reservation {
+  id            String   @id
+  customerId    String
+  branchId      String
+  channelId     String?
+  postId        String?
+  reservedAt    DateTime @default(now())
+  pickupAt      DateTime
+  product       String
+  amount        Int
+  source        String
+  receiveMethod String
+  status        String   @default("예약접수")
+  note          String?
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([customerId], map: "idx_reservations_customer")
+  @@index([branchId], map: "idx_reservations_branch")
+  @@index([pickupAt], map: "idx_reservations_pickup")
+  @@index([status], map: "idx_reservations_status")
+}
+
 model Comment {
   id        String   @id
   postId    String
   authorId  String?
+  parentId  String?
   author    String
   body      String
   mentionsJson String   @default("[]")
@@ -114,8 +549,23 @@ model Comment {
   editedAt  DateTime?
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   authorUser User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
 
   @@index([postId, createdAt(sort: Asc)], map: "idx_comments_post_created")
+  @@index([parentId], map: "idx_comments_parent")
+}
+
+model ChannelReadState {
+  id         String   @id
+  userId     String
+  channelId  String
+  lastReadAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel    Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId], map: "uniq_channel_read_state")
 }
 
 model File {
@@ -148,4 +598,155 @@ model BotRun {
   payloadJson    String
   createdAt      DateTime @default(now())
   channel        Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+}
+
+// Inventory module (Borough-only): flower item master, disposal causes, stock-in lots,
+// disposal records with lot-cost mapping. Loosely coupled to core (scalar branchId/channelId/
+// messageId/itemId/sourceLotId, no cross-module FK) like Customer/Reservation, so the app
+// degrades safely before the migration is applied. Intra-module relations use FK.
+// Money = Int (KRW), quantity = Float (decimal stems/bunches). See docs/inventory-stockin-disposal.md.
+model FlowerItem {
+  id          String   @id
+  name        String   @unique(map: "uniq_flower_items_name")
+  category    String?
+  origin      String?
+  isImported  Boolean  @default(false)
+  defaultUnit String   @default("송이")
+  aliasesJson String   @default("[]")
+  isActive    Boolean  @default(true)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name], map: "idx_flower_items_name")
+  @@index([isActive], map: "idx_flower_items_active")
+}
+
+model DisposalCause {
+  id        String   @id
+  name      String   @unique(map: "uniq_disposal_causes_name")
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StockInDelivery {
+  id              String        @id
+  branchId        String
+  channelId       String?
+  messageId       String?
+  supplier        String
+  statementDate   DateTime
+  totalAmount     Int?
+  status          String        @default("draft")
+  sourceText      String        @default("")
+  attachmentsJson String        @default("[]")
+  createdById     String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  lines           StockInLine[]
+
+  @@index([branchId, statementDate], map: "idx_stockin_deliveries_branch_date")
+  @@index([status], map: "idx_stockin_deliveries_status")
+}
+
+model StockInLine {
+  id          String          @id
+  deliveryId  String
+  lineIndex   Int
+  lotId       String          @unique(map: "uniq_stockin_lines_lot")
+  itemId      String?
+  itemName    String
+  supplier    String
+  stockInDate DateTime
+  unit        String          @default("송이")
+  unitPrice   Int
+  quantity    Float
+  amount      Int
+  orderedQty  Float?
+  receiptQty  Float?
+  note        String?
+  status      String          @default("ok")
+  rawText     String          @default("")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  delivery    StockInDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId, lineIndex], map: "idx_stockin_lines_delivery_order")
+  @@index([itemName, stockInDate], map: "idx_stockin_lines_item_date")
+}
+
+model DisposalBatch {
+  id              String         @id
+  branchId        String
+  channelId       String?
+  messageId       String?
+  disposalDate    DateTime
+  status          String         @default("draft")
+  sourceText      String         @default("")
+  attachmentsJson String         @default("[]")
+  createdById     String?
+  submittedAt     DateTime?
+  syncedAt        DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  lines           DisposalLine[]
+
+  @@index([branchId, disposalDate], map: "idx_disposal_batches_branch_date")
+  @@index([status], map: "idx_disposal_batches_status")
+}
+
+model DisposalLine {
+  id          String        @id
+  batchId     String
+  lineIndex   Int
+  itemId      String?
+  itemName    String
+  quantity    Float
+  unit        String        @default("송이")
+  category    String
+  cause       String
+  sourceLotId String?
+  unitPrice   Int?
+  amount      Int?
+  note        String?
+  rawText     String        @default("")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  batch       DisposalBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, lineIndex], map: "idx_disposal_lines_batch_order")
+  @@index([itemName], map: "idx_disposal_lines_item")
+  @@index([sourceLotId], map: "idx_disposal_lines_lot")
+}
+
+model NewItemRequest {
+  id             String    @id
+  requestedName  String
+  branchId       String?
+  channelId      String?
+  requestedById  String?
+  status         String    @default("pending")
+  resolvedItemId String?
+  decidedById    String?
+  decidedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, createdAt], map: "idx_new_item_requests_status_created")
+}
+
+model PushSubscription {
+  id        String   @id
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

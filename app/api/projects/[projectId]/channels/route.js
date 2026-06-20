@@ -18,18 +18,26 @@ export async function POST(request, { params }) {
   if (!user) return Response.json({ error: "Authentication required." }, { status: 401 });
 
   const { projectId } = await params;
-  const { name, type } = await request.json();
+  const { name, type, branchId } = await request.json();
   const trimmedName = name?.trim();
   if (!trimmedName) return badRequest("Channel name is required.");
 
   const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
   if (!project) return notFound("Project not found.");
 
+  let resolvedBranchId = null;
+  if (branchId) {
+    const branch = await prisma.branch.findUnique({ where: { id: branchId }, select: { id: true } });
+    if (!branch) return badRequest("Branch not found.");
+    resolvedBranchId = branch.id;
+  }
+
   const channel = createChannelRecord({ name: trimmedName, type });
   await prisma.channel.create({
     data: {
       id: channel.id,
       projectId,
+      branchId: resolvedBranchId,
       name: channel.name,
       type: channel.type,
       messages: {
@@ -45,5 +53,5 @@ export async function POST(request, { params }) {
     }
   });
 
-  return Response.json(channel, { status: 201 });
+  return Response.json({ ...channel, branchId: resolvedBranchId }, { status: 201 });
 }
