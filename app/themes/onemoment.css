@@ -1,0 +1,101 @@
+/* 원모먼트(onemoment) 브랜드 테마 — data-brand 게이팅으로 이 인스턴스에만 적용.
+   브랜드 가이드(branding.pdf): 딥 네이비 #222944 + 블루그레이 + 웜브라운 포인트 + 웜페이퍼,
+   산돌고딕 NEO(→Pretendard) 본문 + 세리프 포인트(→Noto Serif KR), 스퀘어 모티브.
+   보로 :root 값은 건드리지 않는다(보로 무영향). :root[data-brand] 특이도 > :root. */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap");
+
+:root[data-brand="onemoment"] {
+  /* ── 폰트 ── */
+  --font-sans: "Pretendard", "Noto Sans KR", sans-serif;
+  --font-serif: "Noto Serif KR", serif;
+  --font-display: "Noto Serif KR", serif;
+
+  /* ── 스케일 재정의(ds/colors.css 시맨틱이 var()로 참조 → 연쇄 적용) ── */
+  /* 네이비 램프 (보로 그린 자리) */
+  --green-950: #121420;
+  --green-900: #1a1d29;   /* 레일/사이드바 ground (surface-darker) */
+  --green-800: #1f2436;
+  --green-700: #222944;   /* ★ 프라이머리 */
+  --green-600: #2c3556;   /* 링크/액티브 */
+  --green-500: #41507a;
+  --green-400: #5e6c93;
+  --green-300: #8f9ebc;
+  --green-100: #c6cfda;
+  --green-50:  #eef1f5;
+  /* 블루그레이 램프 (보로 골드 자리 = 세컨더리) */
+  --gold-700: #6b7894;
+  --gold-600: #8190ad;
+  --gold-500: #8f9ebc;    /* ★ 세컨더리 */
+  --gold-400: #a3b1c8;
+  --gold-300: #bbc7d7;
+  --gold-200: #d3dae6;
+  --gold-100: #eef1f5;
+  /* 웜페이퍼 중립 */
+  --paper-0: #fbfbf6;
+  --paper-1: #f4f4ed;     /* ★ 페이지 배경 */
+  --paper-2: #ebeae0;
+  --linen:   #e3e2d6;
+  /* 잉크(텍스트) — 네이비 잉크로 */
+  --ink-900: #1d1f29;
+  --ink-700: #3a3d49;
+  --ink-400: #6a7180;
+  --ink-300: #9aa0ab;
+  /* 시즈널 = 웜브라운 포인트 */
+  --clay-500: #89674e;
+  --clay-200: #e2d5c9;
+
+  /* ── styles.css 리터럴 시맨틱 직접 오버라이드 ── */
+  --bg: #f4f4ed;
+  --surface: #ffffff;
+  --surface-subtle: #ebeae0;
+  --line: rgba(29, 31, 41, 0.12);
+  --line-strong: rgba(29, 31, 41, 0.24);
+  --text: #1d1f29;
+  --muted: #6a7180;
+  --accent: #222944;        /* 프라이머리 */
+  --accent-weak: #c6cfda;
+  --blue: #1f355e;          /* 링크/멘션/액티브 탭 */
+  --shadow: 0 8px 22px rgba(20, 23, 35, 0.12);
+
+  --brand: #222944;
+  --brand-strong: #1d1f29;
+  --brand-tint: #eef1f5;
+  --brand-soft: #c6cfda;
+
+  --gold: #8f9ebc;          /* 세컨더리 액센트 → 블루그레이 */
+  --gold-strong: #6b7894;
+
+  --on-dark: #f4f4ed;
+  --on-dark-muted: rgba(244, 244, 237, 0.68);
+
+  --seasonal: #89674e;      /* 웜브라운 포인트 */
+  --seasonal-soft: #e2d5c9;
+  --seasonal-ink: #6f5036;
+
+  --focus-ring: 0 0 0 3px rgba(143, 158, 188, 0.55);
+
+  /* ds/colors.css 리터럴 시맨틱 */
+  --surface-overlay: rgba(18, 20, 32, 0.55);
+  --text-on-dark-muted: rgba(244, 244, 237, 0.68);
+  --text-on-dark-faint: rgba(244, 244, 237, 0.42);
+}
+
+/* borough-shell.css의 골드 리터럴 rgba 폴리시(레일 액티브) → 블루그레이 */
+:root[data-brand="onemoment"] .workspace-root .rail-button.active {
+  background: rgba(143, 158, 188, 0.22);
+}
+
+/* 유저카드: 라이트 펄(--surface-subtle) 위에 라이트 텍스트(--on-dark)가 상속돼 저대비 →
+   네이비 테마에선 다크 텍스트로 가독성 확보(보로는 미변경, onemoment만 스코프). */
+:root[data-brand="onemoment"] .sidebar .user-card strong {
+  color: var(--text);
+}
+:root[data-brand="onemoment"] .sidebar .user-card span {
+  color: var(--muted);
+}
+:root[data-brand="onemoment"] .sidebar .user-card .ghost-button {
+  color: var(--text);
+  background: transparent;
+  border-color: var(--line);
+}

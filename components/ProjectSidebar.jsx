@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CHANNEL_TYPES } from "../lib/constants";
+import { ACTIVE_BRAND } from "../lib/brand";
 import { getWorkNavItems } from "../modules/registry";
 import Icon from "./Icon";
 
@@ -52,7 +53,7 @@ export default function ProjectSidebar({
       <div className="workspace-header">
         <div className="workspace-brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="logo-mark" src="/brand/logo-mark-gold.png" alt="보로플라워마켓" />
+          <img className="logo-mark" src={ACTIVE_BRAND.logo} alt={ACTIVE_BRAND.name} />
           <div>
             <strong>{project.name}</strong>
             <span>{currentUser?.email}</span>
