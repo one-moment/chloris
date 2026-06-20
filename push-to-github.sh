@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_url="https://github.com/one-moment/mattermost.git"
+repo_url="https://github.com/one-moment/chloris.git"
 
 if [ ! -d ".git" ]; then
   git init
@@ -16,5 +16,5 @@ else
 fi
 
 git add .
-git commit -m "Initial Mattermost project MVP" || true
+git commit -m "Initial Chloris commit" || true
 git push -u origin main
