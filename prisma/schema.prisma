@@ -750,3 +750,71 @@ model PushSubscription {
 
   @@index([userId])
 }
+
+// ── 정산 자동화(오늘꽃) — additive, 양쪽 스키마 동기화. enum 미사용(문자열), id는 앱 생성 String. ──
+
+// 홈택스에서 수집한 매입 계산서
+model PurchaseInvoice {
+  id            String   @id
+  approvalNo    String   @unique          // 국세청 승인번호 → 중복 수집 방지 키
+  supplierBizNo String                    // 공급자 사업자등록번호(숫자만)
+  supplierName  String?
+  supplyAmount  Int?
+  taxAmount     Int?
+  totalAmount   Int                       // 합계금액(대조 키)
+  writeDate     DateTime                  // 작성일자
+  issueDate     DateTime?
+  taxType       String?                   // "과세" / "면세"
+  raw           String?                   // 원본 응답 JSON 문자열(감사용)
+  collectedAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([supplierBizNo, totalAmount, writeDate], map: "idx_purchase_invoice_match")
+}
+
+// 수집 작업(홈택스 매입 / 계좌 입금) 요청·상태 추적
+model CollectionJob {
+  id           String    @id
+  jobType      String                          // "HOMETAX_PURCHASE" / "BANK_DEPOSIT"
+  target       String?
+  periodFrom   DateTime?
+  periodTo     DateTime?
+  popbillJobId String?
+  status       String    @default("REQUESTED") // REQUESTED / COLLECTING / DONE / FAILED
+  resultCount  Int       @default(0)
+  error        String?
+  requestedAt  DateTime  @default(now())
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// 은행 입출금(입금) 내역
+model BankDeposit {
+  id            String   @id
+  dedupKey      String   @unique          // 계좌+거래일시+금액+적요 → 중복 방지
+  accountRef    String?
+  txDateTime    DateTime
+  depositorName String?
+  amountIn      Int      @default(0)      // 입금액(대조 키)
+  amountOut     Int      @default(0)
+  balanceAfter  Int?
+  memo          String?
+  raw           String?
+  collectedAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([depositorName, amountIn, txDateTime], map: "idx_bank_deposit_match")
+}
+
+// 입금자명 → 거래처 별칭표
+model DepositorAlias {
+  id            String   @id
+  depositorName String   @unique          // 매칭 시 코드(normalizeName)에서 정규화 비교
+  customerName  String
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
