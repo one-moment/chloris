@@ -1,6 +1,0 @@
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="원모먼트">
-  <!-- 임시 마크 (정식 로고 파일 수령 시 교체). 스퀘어(플라워 박스) 모티브 + 세리프 포인트 -->
-  <rect width="64" height="64" rx="13" fill="#222944"/>
-  <rect x="14" y="14" width="36" height="36" rx="5" fill="none" stroke="#8f9ebc" stroke-width="1.6"/>
-  <text x="32" y="39" text-anchor="middle" font-family="'Noto Serif KR','Cormorant Garamond',serif" font-size="20" font-style="italic" fill="#f4f4ed">om</text>
-</svg>
