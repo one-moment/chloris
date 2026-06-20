@@ -2,7 +2,7 @@ import { prisma } from "../../../lib/prisma";
 
 export async function GET() {
   const basePayload = {
-    service: "mattermost-project-mvp",
+    service: "chloris",
     checkedAt: new Date().toISOString()
   };
 

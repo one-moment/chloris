@@ -1,8 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+import { useCallback, useEffect, useRef, useState } from "react";
 
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -27,6 +25,7 @@ function isStandalone() {
 export default function PushNotificationToggle() {
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
+  const vapidKeyRef = useRef(null);
 
   const refresh = useCallback(async () => {
     if (typeof window === "undefined") return;
@@ -40,7 +39,19 @@ export default function PushNotificationToggle() {
       setStatus("unsupported");
       return;
     }
-    if (!VAPID_PUBLIC_KEY) {
+    // 공개키는 서버에서 받아옴(비밀키에서 유도) → NEXT_PUBLIC 빌드변수 불필요.
+    if (!vapidKeyRef.current) {
+      try {
+        const res = await fetch("/api/push/public-key", { credentials: "same-origin" });
+        if (res.ok) {
+          const data = await res.json();
+          vapidKeyRef.current = data?.publicKey || null;
+        }
+      } catch {
+        vapidKeyRef.current = null;
+      }
+    }
+    if (!vapidKeyRef.current) {
       setStatus("unconfigured");
       return;
     }
@@ -73,7 +84,7 @@ export default function PushNotificationToggle() {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        applicationServerKey: urlBase64ToUint8Array(vapidKeyRef.current)
       });
       const json = sub.toJSON();
       const res = await fetch("/api/push/subscribe", {
@@ -113,6 +124,26 @@ export default function PushNotificationToggle() {
     }
   }, [refresh]);
 
+  const sendTest = useCallback(async () => {
+    setMessage("");
+    try {
+      const res = await fetch("/api/push/test", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMessage(data?.error || "테스트 발송 실패");
+        return;
+      }
+      setMessage(data.sent > 0 ? "테스트 알림을 보냈습니다." : "보낼 기기가 없습니다(구독 0).");
+    } catch {
+      setMessage("테스트 발송 실패");
+    }
+  }, []);
+
   if (status === "loading") return null;
 
   if (status === "unsupported") {
@@ -151,6 +182,11 @@ export default function PushNotificationToggle() {
       <button className="ghost-button" type="button" onClick={on ? disable : enable} disabled={working}>
         {working ? "처리 중…" : on ? "알림 끄기" : "알림 받기"}
       </button>
+      {on ? (
+        <button className="ghost-button" type="button" onClick={sendTest} disabled={working}>
+          테스트 알림
+        </button>
+      ) : null}
       {message ? <small>{message}</small> : null}
     </div>
   );
