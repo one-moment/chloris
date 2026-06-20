@@ -1,9 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-
-// NEXT_PUBLIC_VAPID_PUBLIC_KEY는 빌드 시 인라인 → 값 변경 시 캐시 없는 재빌드 필요.
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+import { useCallback, useEffect, useRef, useState } from "react";
 
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -28,6 +25,7 @@ function isStandalone() {
 export default function PushNotificationToggle() {
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
+  const vapidKeyRef = useRef(null);
 
   const refresh = useCallback(async () => {
     if (typeof window === "undefined") return;
@@ -41,7 +39,19 @@ export default function PushNotificationToggle() {
       setStatus("unsupported");
       return;
     }
-    if (!VAPID_PUBLIC_KEY) {
+    // 공개키는 서버에서 받아옴(비밀키에서 유도) → NEXT_PUBLIC 빌드변수 불필요.
+    if (!vapidKeyRef.current) {
+      try {
+        const res = await fetch("/api/push/public-key", { credentials: "same-origin" });
+        if (res.ok) {
+          const data = await res.json();
+          vapidKeyRef.current = data?.publicKey || null;
+        }
+      } catch {
+        vapidKeyRef.current = null;
+      }
+    }
+    if (!vapidKeyRef.current) {
       setStatus("unconfigured");
       return;
     }
@@ -74,7 +84,7 @@ export default function PushNotificationToggle() {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        applicationServerKey: urlBase64ToUint8Array(vapidKeyRef.current)
       });
       const json = sub.toJSON();
       const res = await fetch("/api/push/subscribe", {
