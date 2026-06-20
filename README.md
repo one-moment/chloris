@@ -1,6 +1,6 @@
-# Mattermost Project Communication MVP
+# Chloris — Work OS
 
-Mattermost 스타일의 사내 커뮤니케이션 MVP입니다. 현재 버전은 Next.js App Router 기반으로 동작하며, 핵심 모델을 `프로젝트 > 채널 > Messages / Ideas / Files` 구조로 정리했습니다.
+채팅·게시판 기반의 사내 Work OS입니다. 현재 버전은 Next.js App Router 기반으로 동작하며, 핵심 모델을 `프로젝트 > 채널 > Messages / Ideas / Files` 구조로 정리했습니다.
 
 ## 주요 기능
 
@@ -70,8 +70,8 @@ Vercel은 [vercel.json](vercel.json)의 `npm run vercel-build`를 사용해 Post
 로컬 확인용 단일 컨테이너는 SQLite를 사용할 수 있습니다.
 
 ```bash
-docker build -t mattermost-project-mvp .
-docker run --env-file .env -p 3000:3000 mattermost-project-mvp
+docker build -t chloris .
+docker run --env-file .env -p 3000:3000 chloris
 ```
 
 영속 SQLite 볼륨까지 포함해 실행하려면:
@@ -244,7 +244,7 @@ PLAN.md                 개발 계획
 원격 저장소:
 
 ```text
-https://github.com/one-moment/mattermost.git
+https://github.com/one-moment/chloris.git
 ```
 
 브라우저 업로드 방식으로 이어갈 때는 이 폴더 전체를 저장소에 덮어쓰고 커밋하면 됩니다.
