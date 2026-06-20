@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+// NEXT_PUBLIC_VAPID_PUBLIC_KEY는 빌드 시 인라인 → 값 변경 시 캐시 없는 재빌드 필요.
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
 function urlBase64ToUint8Array(base64String) {
