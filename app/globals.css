@@ -482,7 +482,7 @@
 
 .title-field:focus-within {
   border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(27, 74, 60, 0.12);
 }
 
 .file-uploader {
@@ -618,7 +618,7 @@
 }
 
 .chat-message:hover {
-  background: #f6f7f8;
+  background: var(--surface-subtle);
 }
 
 .chat-message.pending {
@@ -640,7 +640,7 @@
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: #1f2937;
+  background: var(--oht-green-900);
   color: #ffffff;
   font-size: 13px;
   font-weight: 900;
@@ -950,8 +950,8 @@
 .primary-button {
   border: 0;
   border-radius: var(--radius);
-  background: var(--accent);
-  color: #fff;
+  background: var(--cta);
+  color: var(--cta-ink);
   padding: 9px 12px;
   font-weight: 800;
 }
@@ -1067,4 +1067,22 @@ button:disabled {
   .chat-avatar-spacer {
     width: 32px;
   }
+}
+
+/* ===== 오늘꽃 brand · 로그인 히어로 워드마크 (명조는 브랜드 히어로만) ===== */
+.auth-heading .overline {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.auth-heading .wordmark {
+  font-family: var(--font-serif);
+  font-weight: 800;
+  font-size: 46px;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  color: var(--oht-green-900);
 }

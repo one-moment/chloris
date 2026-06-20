@@ -27,9 +27,9 @@ export default function AuthScreen({ onLogin, onRegister, error, isSubmitting })
     <main className="auth-shell">
       <form className="auth-card" onSubmit={submit}>
         <div className="auth-heading">
-          <span>1moment workspace</span>
-          <h1>팀 커뮤니케이션 MVP</h1>
-          <p>직원 계정으로 로그인해 채널, 메시지, 게시판을 사용하세요.</p>
+          <span className="overline">onul-kkot · 회원제 B2B 화훼 도매</span>
+          <h1 className="wordmark">오늘꽃</h1>
+          <p>사장님은 꽃만 만지세요. 시장은 저희가 다녀올게요. 직원 계정으로 로그인하세요.</p>
         </div>
 
         <div className="auth-tabs">

@@ -33,7 +33,8 @@ RESUME
 ## 코드/배포 스냅샷
 
 - **스택:** Next.js 15 App Router + React 19 + Prisma 6 + Supabase PostgreSQL. 빌드 `npm run vercel-build`(`prisma generate` → `next build`).
-- **체크아웃 브랜치:** `claude/mystifying-gould-bb9179` (= `feature/oneulkkot` 내용, 동일 커밋 라인). HEAD `fbf9930`(작업 보존 커밋 — 작업지시 문서 1개).
+- **체크아웃 브랜치:** `claude/mystifying-gould-bb9179` (= `feature/oneulkkot` 내용, 동일 커밋 라인). 최근 커밋: 오늘꽃 디자인 시스템 적용 → STATE/ROADMAP 문서화 → 작업 보존.
+- **디자인:** 오늘꽃 브랜드 시스템 적용됨(그린 지배 + 코랄 CTA + Pretendard/명조). 토큰은 `styles.css` `:root`의 `--oht-*` + 시맨틱 별칭. 상세는 사내 메모리 `oneulkkot-design-system`.
 - **데이터 모델(`prisma/schema.postgres.prisma`):** Project, Channel, User, Session, Invite, Message, Post, Comment, File, Bot, BotRun. 마이그레이션 3건.
 - **API 라우트:** `app/api/**/route.js` 21개(auth/projects/channels/messages/posts/comments/files/invites/bot-runs/uploads/state/health/users). **`/api/bots`(봇 등록 CRUD) 없음.**
 - **운영:** `https://onul-kkot.vercel.app` (Vercel team `one-moment-1808`, project `onul-kkot`, region icn1) + Supabase 서울(ap-northeast-2, `xakudnwgvssubaqrnafg`). `/api/health` = ok / database ok. 가입 잠김. 보로(`chloris`)와 분리.
@@ -44,9 +45,11 @@ RESUME
 - 채팅(Messages)·게시판(Ideas)·파일(Files) MVP, 멘션·편집·타임스탬프·게시글 상태·채널 삭제.
 - 인증/세션/초대코드/가입정책, 첨부(inline + S3 presign 코드), health, write-path 최적화.
 - 운영 배포 기반(Vercel+Supabase, Docker/Caddy 대안, 백업) + 오늘꽃 서울 인스턴스 배포.
+- **오늘꽃 브랜드 디자인 시스템 적용**(2026-06-20): CSS 토큰 리맵(그린 팔레트·Pretendard/명조·코랄 CTA·tabular-nums), `--ink` 버그 수정. build·lint 통과.
 
 미완(근거 있는 미완성):
 - **팝빌 계산서:** `lib/popbill.js` 없음, `POPBILL_*` env 없음, 발행 UI/API 없음 (SDK+검증노트만).
+- **디자인 예시 화면:** 실시간 시세·검수 리포트·사입 명세서는 PDF 스펙만, 화면/기능 미구현(토큰 기반은 준비됨) → Phase 4~5.
 - **봇/자동화 실 구동:** 실제 봇 실행 서버 호출 없음(`PLAN.md` 제외 기능), 봇 등록 CRUD 없음.
 - **운영 S3:** 오늘꽃은 inline 사용 중(S3 미전환).
 - **권한:** `admin`/`member` 2단계만, 채널별 세부 권한 없음 (`lib/permissions.js`).

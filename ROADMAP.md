@@ -35,6 +35,13 @@
 - 근거: `495395c Pin Vercel functions to Seoul region`, `6bca018 Add production deployment foundations`, `a095e8d Add Vercel Supabase deployment profile`, 이번 세션 배포 기록. (오늘꽃 배포 상세는 사내 메모리/`#배포로그`)
 - **Done when:** 운영 URL에서 `/api/health`가 `ok / database ok`, 첫 관리자 생성·외부 가입 차단(403)이 확인된다. ✅ (`https://onul-kkot.vercel.app`)
 
+### Phase 3.5 — 오늘꽃 브랜드 디자인 시스템 적용 ✅ (2026-06-20)
+- 브랜드 디자인 시스템 v1.0(mood A "새벽 시장")을 CSS 토큰으로 적용: `styles.css` `:root`에 `--oht-*` 레이어(컬러·타이포·radius·그린틴트 그림자·모션) + 기존 시맨틱 변수명 유지하며 값만 오늘꽃 팔레트로 리맵 → 컴포넌트 전체 재스킨.
+- Pretendard(제품 UI)/Nanum Myeongjo(브랜드 히어로) 폰트, 코랄 CTA(`.primary-button`), 로그인 명조 워드마크, 숫자 `tabular-nums`, 미정의였던 `--ink` 정의(버그 수정).
+- 근거: `/Users/user/Downloads/오늘꽃 디자인 시스템.pdf`, 변경 파일 `styles.css`·`app/globals.css`·`app/layout.jsx`·`components/AuthScreen.jsx`·`index.html`. 로직 변경 0.
+- 범위 제외: PDF 예시 화면(실시간 시세·검수 리포트·사입 명세서)은 토큰이 아닌 **미구현 기능** → Phase 4~5에서 구현.
+- **Done when:** 앱 전역이 오늘꽃 그린 팔레트·폰트로 렌더되고 `npm run build`/`npm run lint`가 통과한다. ✅
+
 ---
 
 ## 예정 Phase
