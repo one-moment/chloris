@@ -13,6 +13,7 @@ import { requestJson as apiRequestJson } from "../../lib/core/apiClient";
 import { maybeCompressImage } from "../../lib/imageCompress";
 import { createInitialState } from "../../lib/initialData";
 import { getMentionedUserIds } from "../../lib/mentions";
+import { ACTIVE_BRAND } from "../../lib/brand";
 
 const MAX_INLINE_ATTACHMENT_SIZE = 1_500_000;
 
@@ -1109,7 +1110,7 @@ export default function WorkspaceShell({ children }) {
         <main className="app-shell">
           <nav className="rail" aria-label="워크스페이스">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <Link className="rail-logo" href="/" aria-label="홈"><img src="/brand/logo-mark-gold.png" alt="" /></Link>
+            <Link className="rail-logo" href="/" aria-label="홈"><img src={ACTIVE_BRAND.logo} alt="" /></Link>
             <button className="rail-button" type="button" onClick={() => setShowSearchDialog(true)} aria-label="검색">
               <Icon name="search" size={21} />
             </button>
