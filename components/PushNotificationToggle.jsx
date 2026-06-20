@@ -113,6 +113,26 @@ export default function PushNotificationToggle() {
     }
   }, [refresh]);
 
+  const sendTest = useCallback(async () => {
+    setMessage("");
+    try {
+      const res = await fetch("/api/push/test", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMessage(data?.error || "테스트 발송 실패");
+        return;
+      }
+      setMessage(data.sent > 0 ? "테스트 알림을 보냈습니다." : "보낼 기기가 없습니다(구독 0).");
+    } catch {
+      setMessage("테스트 발송 실패");
+    }
+  }, []);
+
   if (status === "loading") return null;
 
   if (status === "unsupported") {
@@ -151,6 +171,11 @@ export default function PushNotificationToggle() {
       <button className="ghost-button" type="button" onClick={on ? disable : enable} disabled={working}>
         {working ? "처리 중…" : on ? "알림 끄기" : "알림 받기"}
       </button>
+      {on ? (
+        <button className="ghost-button" type="button" onClick={sendTest} disabled={working}>
+          테스트 알림
+        </button>
+      ) : null}
       {message ? <small>{message}</small> : null}
     </div>
   );
