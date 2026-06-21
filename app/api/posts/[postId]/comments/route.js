@@ -4,7 +4,6 @@ import { createCommentRecord } from "../../../../../lib/serverState";
 import { normalizeMentionIds } from "../../../../../lib/mentions";
 import { prisma } from "../../../../../lib/prisma";
 import { notifyMention } from "../../../../../lib/pushEvents";
-import { after } from "next/server";
 
 export const runtime = "nodejs";
 export const preferredRegion = "icn1";
@@ -78,17 +77,21 @@ export async function POST(request, { params }) {
   perf.log("optional select/join start", { skipped: true });
   perf.log("optional select/join end", { skipped: true, optionalSelectMs: 0, reason: "insert returns selected row" });
 
-  // 멘션 푸시 — 본 작업(댓글 저장) 성공 후 비차단 발송(응답 후 실행). 본업 영향 0.
-  after(() => {
-    console.log(`[push] comment after() fired: mentionIds=${mentionIds.length}`);
-    return notifyMention({
+  // 멘션 푸시 — 댓글 저장(트랜잭션) 완료 후 발송. 댓글은 이미 커밋됨 → 푸시 실패는 본업 영향 0.
+  // Vercel 운영에서 next/server after()가 콜백을 실행하지 않아, 응답 직전에 직접 await(try/catch).
+  // sendToUser가 기기별 격리 + web-push timeout으로 지연 상한 → 응답 지연 최소화.
+  console.log(`[push] comment: mentionIds=${mentionIds.length}`);
+  try {
+    await notifyMention({
       recipientIds: mentionIds,
       authorId: user.id,
       authorName: user.name,
       channelId: post.channelId,
       body: trimmedBody
-    }).catch((error) => console.error("mention push failed:", error?.message));
-  });
+    });
+  } catch (error) {
+    console.error("mention push failed:", error?.message);
+  }
 
   perf.done({ status: 201 });
   return Response.json({
