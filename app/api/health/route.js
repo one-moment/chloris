@@ -20,6 +20,7 @@ export async function GET() {
   try {
     await prisma.$queryRaw`SELECT 1`;
   } catch (error) {
+    console.error("[health] db check failed:", error?.message);
     return Response.json(
       {
         ...basePayload,
