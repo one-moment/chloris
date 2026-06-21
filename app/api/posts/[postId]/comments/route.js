@@ -3,6 +3,8 @@ import { createApiPerfLogger } from "../../../../../lib/apiPerf";
 import { createCommentRecord } from "../../../../../lib/serverState";
 import { normalizeMentionIds } from "../../../../../lib/mentions";
 import { prisma } from "../../../../../lib/prisma";
+import { notifyMention } from "../../../../../lib/pushEvents";
+import { after } from "next/server";
 
 export const runtime = "nodejs";
 export const preferredRegion = "icn1";
@@ -27,7 +29,7 @@ export async function POST(request, { params }) {
   }
 
   const post = await perf.measure("permission check", "permissionMs", () => (
-    prisma.post.findUnique({ where: { id: postId }, select: { id: true } })
+    prisma.post.findUnique({ where: { id: postId }, select: { id: true, channelId: true } })
   ));
   if (!post) {
     perf.done({ status: 404 });
@@ -75,6 +77,16 @@ export async function POST(request, { params }) {
 
   perf.log("optional select/join start", { skipped: true });
   perf.log("optional select/join end", { skipped: true, optionalSelectMs: 0, reason: "insert returns selected row" });
+
+  // 멘션 푸시 — 본 작업(댓글 저장) 성공 후 비차단 발송(응답 후 실행). 본업 영향 0.
+  after(() => notifyMention({
+    recipientIds: mentionIds,
+    authorId: user.id,
+    authorName: user.name,
+    channelId: post.channelId,
+    body: trimmedBody
+  }).catch((error) => console.error("mention push failed:", error?.message)));
+
   perf.done({ status: 201 });
   return Response.json({
     id: created.id,
