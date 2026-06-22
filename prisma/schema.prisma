@@ -687,6 +687,13 @@ model DisposalBatch {
   sourceText      String         @default("")
   attachmentsJson String         @default("[]")
   createdById     String?
+  reviewerId      String?
+  reviewerName    String?
+  reviewRequestedAt DateTime?
+  approvedById    String?
+  approvedByName  String?
+  approvedAt      DateTime?
+  rejectReason    String?
   submittedAt     DateTime?
   syncedAt        DateTime?
   createdAt       DateTime       @default(now())
