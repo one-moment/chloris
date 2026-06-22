@@ -5,6 +5,7 @@ import { requireCurrentUser } from "../../../../../lib/auth";
 import { prisma } from "../../../../../lib/prisma";
 import { isModuleEnabled } from "../../../../../lib/brand";
 import { isMissingInventoryTableError } from "../../../../../lib/inventoryServer";
+import { pct, normalizeGranularity, aggregateDisposalByItem, buildWasteTrend } from "../../../../../lib/inventory";
 
 export const runtime = "nodejs";
 export const preferredRegion = "icn1";
@@ -13,26 +14,23 @@ function inventoryEnabled() {
   return isModuleEnabled("disposal") || isModuleEnabled("stockin");
 }
 
-// 백분율(소수 1자리). 분모 0이면 0.
-function pct(numerator, denominator) {
-  if (!denominator) return 0;
-  return Math.round((numerator / denominator) * 1000) / 10;
-}
-
 const EMPTY = {
   period: { from: null, to: null },
-  disposal: { batchCount: 0, lineCount: 0, totalQuantity: 0, totalAmount: 0, byCause: [], byCategory: [] },
+  disposal: { batchCount: 0, lineCount: 0, totalQuantity: 0, totalAmount: 0, byCause: [], byCategory: [], byItem: [] },
   stockIn: { deliveryCount: 0, lineCount: 0, totalAmount: 0, discrepancyCount: 0, discrepancyRate: 0 },
   wasteRateByAmount: 0,
-  byBranch: []
+  byBranch: [],
+  trend: { granularity: "month", points: [] }
 };
 
 export async function GET(request) {
   const user = await requireCurrentUser();
   if (!user) return Response.json({ error: "Authentication required." }, { status: 401 });
-  if (!inventoryEnabled()) return Response.json(EMPTY);
 
   const params = new URL(request.url).searchParams;
+  const granularity = normalizeGranularity(params.get("granularity"));
+  if (!inventoryEnabled()) return Response.json({ ...EMPTY, trend: { granularity, points: [] } });
+
   const branchId = params.get("branchId") || null;
   const from = params.get("from");
   const to = params.get("to");
@@ -117,7 +115,8 @@ export async function GET(request) {
         totalQuantity: Math.round(disposalQuantity * 100) / 100,
         totalAmount: disposalAmount,
         byCause: [...causeMap.values()].sort((a, b) => b.amount - a.amount),
-        byCategory: [...categoryMap.values()].sort((a, b) => b.amount - a.amount)
+        byCategory: [...categoryMap.values()].sort((a, b) => b.amount - a.amount),
+        byItem: aggregateDisposalByItem(disposalBatches)
       },
       stockIn: {
         deliveryCount: stockDeliveries.length,
@@ -129,7 +128,8 @@ export async function GET(request) {
       wasteRateByAmount: pct(disposalAmount, stockAmount),
       byBranch: [...byBranch.values()]
         .map((entry) => ({ ...entry, wasteRate: pct(entry.disposalAmount, entry.stockInAmount) }))
-        .sort((a, b) => b.disposalAmount - a.disposalAmount)
+        .sort((a, b) => b.disposalAmount - a.disposalAmount),
+      trend: buildWasteTrend(disposalBatches, stockDeliveries, granularity, branchName)
     });
   } catch (error) {
     if (isMissingInventoryTableError(error)) return Response.json(EMPTY);
