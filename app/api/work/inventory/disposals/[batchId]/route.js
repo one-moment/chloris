@@ -1,15 +1,22 @@
-// 폐기 기록 조회/수정 API. 임시저장(draft) 배치를 불러와 행을 교체하거나 최종제출로 전환한다.
-// 최종제출된 기록은 수정 불가. 최종제출 전환 시 서버 검증 게이트를 통과해야 한다(422면 미반영).
+// 폐기 기록 조회/수정 API. 작성자: draft(임시저장)/rejected(반려) 상태에서 행 교체·검수요청(review) 전환.
+//   검수요청 전환 시 서버 검증 게이트 통과(422면 미반영) + 담당 매니저 태그 + 채널 게시글 생성(R4).
+// 매니저: action=approve|reject 로 검수. 승인(→submitted) 시에만 구글시트 반영(검수 전 미반영).
+//   승인/반려는 그 지점 매니저(BranchAssignment.role="manager") 또는 전역 admin만 가능.
 import { requireCurrentUser } from "../../../../../../lib/auth";
 import { badRequest } from "../../../../../../lib/serverState";
 import { prisma } from "../../../../../../lib/prisma";
 import { isModuleEnabled } from "../../../../../../lib/brand";
+import { normalizeAuthorStatus, canTransitionDisposal } from "../../../../../../lib/inventory";
 import {
   serializeDisposalBatch,
   resolveLotPrices,
   buildDisposalLineData,
   validateDisposalForSubmit,
-  isMissingInventoryTableError
+  isMissingInventoryTableError,
+  canApproveDisposal,
+  branchManagers,
+  postDisposalReviewRequest,
+  postDisposalDecision
 } from "../../../../../../lib/inventoryServer";
 import { syncDisposalBatch } from "../../../../../../lib/inventorySheetSync";
 
@@ -43,27 +50,103 @@ export async function PATCH(request, { params }) {
   const { batchId } = await params;
   const existing = await prisma.disposalBatch.findUnique({ where: { id: batchId } });
   if (!existing) return Response.json({ error: "Batch not found." }, { status: 404 });
-  if (existing.status !== "draft") return badRequest("이미 최종제출된 기록은 수정할 수 없습니다.");
 
   const body = await request.json();
-  const replaceLines = Array.isArray(body.lines) ? body.lines : null;
-  const nextStatus = body.status === "submitted" ? "submitted" : "draft";
+  const action = body.action;
 
   try {
+    // ── 매니저 검수 액션: 승인(approve) / 반려(reject) ──────────────────────
+    if (action === "approve" || action === "reject") {
+      const targetStatus = action === "approve" ? "submitted" : "rejected";
+      if (!canTransitionDisposal(existing.status, targetStatus)) {
+        return badRequest("검수대기 상태의 폐기 기록만 승인/반려할 수 있습니다.");
+      }
+      const allowed = await canApproveDisposal(user, existing.branchId);
+      if (!allowed) return Response.json({ error: "이 지점의 담당 매니저만 검수할 수 있습니다." }, { status: 403 });
+
+      if (action === "reject") {
+        // 상태 가드를 update 조건(where status:"review")에 넣어 동시 승인/반려 경쟁을 차단한다.
+        const rejectResult = await prisma.disposalBatch.updateMany({
+          where: { id: batchId, status: "review" },
+          data: { status: "rejected", rejectReason: typeof body.rejectReason === "string" ? body.rejectReason : null }
+        });
+        if (rejectResult.count === 0) return badRequest("이미 처리된(검수대기가 아닌) 폐기 기록입니다.");
+        const rejected = await prisma.disposalBatch.findUnique({
+          where: { id: batchId },
+          include: { lines: { orderBy: { lineIndex: "asc" } } }
+        });
+        await postDisposalDecision(rejected, { actorName: user.name, decision: "rejected", reason: rejected.rejectReason });
+        return Response.json(serializeDisposalBatch(rejected));
+      }
+
+      // approve → submitted(승인·시트반영 종착). 상태 가드를 update 조건에 넣어 동시 처리 경쟁을 차단한다.
+      const approveResult = await prisma.disposalBatch.updateMany({
+        where: { id: batchId, status: "review" },
+        data: {
+          status: "submitted",
+          approvedById: user.id,
+          approvedByName: user.name,
+          approvedAt: new Date(),
+          submittedAt: new Date(),
+          rejectReason: null
+        }
+      });
+      if (approveResult.count === 0) return badRequest("이미 처리된(검수대기가 아닌) 폐기 기록입니다.");
+      let approved = await prisma.disposalBatch.findUnique({
+        where: { id: batchId },
+        include: { lines: { orderBy: { lineIndex: "asc" } } }
+      });
+
+      // 승인 후에만 구글시트 한 방향 연동(기본 비활성; env 설정 시에만 동작). 실패는 비치명적.
+      try {
+        const [author, branch] = await Promise.all([
+          approved.createdById ? prisma.user.findUnique({ where: { id: approved.createdById }, select: { name: true } }) : null,
+          prisma.branch.findUnique({ where: { id: approved.branchId }, select: { name: true } })
+        ]);
+        const synced = await syncDisposalBatch(approved, { author: author?.name, branchName: branch?.name });
+        if (!synced.skipped) {
+          approved = await prisma.disposalBatch.update({
+            where: { id: batchId },
+            data: { syncedAt: new Date() },
+            include: { lines: { orderBy: { lineIndex: "asc" } } }
+          });
+        }
+      } catch (syncError) {
+        console.error("disposal_sheet_sync_failed", syncError);
+      }
+
+      await postDisposalDecision(approved, { actorName: user.name, decision: "approved" });
+      return Response.json(serializeDisposalBatch(approved));
+    }
+
+    // ── 작성자 편집/검수요청: 전이 테이블이 허용할 때만(draft/rejected → draft/review) ──────
+    const replaceLines = Array.isArray(body.lines) ? body.lines : null;
+    const nextStatus = normalizeAuthorStatus(body.status);
+    if (!canTransitionDisposal(existing.status, nextStatus)) {
+      return badRequest("검수중이거나 승인된 기록은 수정할 수 없습니다.");
+    }
+
     const effectiveLines = replaceLines
       ?? (await prisma.disposalLine.findMany({ where: { batchId }, orderBy: { lineIndex: "asc" } }));
 
-    if (nextStatus === "submitted") {
+    if (nextStatus === "review") {
       if (effectiveLines.length === 0) return badRequest("폐기 품목이 한 개 이상 필요합니다.");
+      // 담당 매니저로 지정한 사용자는 해당 지점의 매니저여야 한다(멘션 대상 무결성).
+      if (body.reviewerId) {
+        const managers = await branchManagers(existing.branchId);
+        if (!managers.some((manager) => manager.id === body.reviewerId)) {
+          return badRequest("담당 매니저는 해당 지점의 매니저여야 합니다.");
+        }
+      }
       const errors = await validateDisposalForSubmit(effectiveLines);
       if (errors.length) {
-        return Response.json({ error: "검증 오류로 최종제출할 수 없습니다.", errors }, { status: 422 });
+        return Response.json({ error: "검증 오류로 검수 요청할 수 없습니다.", errors }, { status: 422 });
       }
     }
 
     const priceByLot = replaceLines ? await resolveLotPrices(replaceLines) : new Map();
 
-    const updated = await prisma.$transaction(async (tx) => {
+    let updated = await prisma.$transaction(async (tx) => {
       if (replaceLines) {
         await tx.disposalLine.deleteMany({ where: { batchId } });
         for (const data of buildDisposalLineData(replaceLines, priceByLot, batchId)) {
@@ -74,7 +157,10 @@ export async function PATCH(request, { params }) {
         where: { id: batchId },
         data: {
           status: nextStatus,
-          submittedAt: nextStatus === "submitted" ? new Date() : null,
+          reviewerId: nextStatus === "review" ? (body.reviewerId ?? existing.reviewerId ?? null) : existing.reviewerId,
+          reviewerName: nextStatus === "review" ? (body.reviewerName ?? existing.reviewerName ?? null) : existing.reviewerName,
+          reviewRequestedAt: nextStatus === "review" ? new Date() : existing.reviewRequestedAt,
+          rejectReason: null,
           disposalDate: body.disposalDate ? new Date(body.disposalDate) : undefined,
           sourceText: typeof body.sourceText === "string" ? body.sourceText : undefined
         },
@@ -82,16 +168,9 @@ export async function PATCH(request, { params }) {
       });
     });
 
-    // 구글시트 한 방향 연동(기본 비활성). 최종제출 전환 시에만, 비치명적.
-    if (updated.status === "submitted") {
-      try {
-        const synced = await syncDisposalBatch(updated, { author: user.name });
-        if (!synced.skipped) {
-          await prisma.disposalBatch.update({ where: { id: batchId }, data: { syncedAt: new Date() } });
-        }
-      } catch (syncError) {
-        console.error("disposal_sheet_sync_failed", syncError);
-      }
+    // R4: 검수요청 전환 시 지점 채널에 스윗형 게시글 생성/갱신(비치명적).
+    if (updated.status === "review") {
+      updated = await postDisposalReviewRequest(updated, user);
     }
 
     return Response.json(serializeDisposalBatch(updated));
