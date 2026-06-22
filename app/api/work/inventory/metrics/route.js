@@ -19,12 +19,20 @@ function pct(numerator, denominator) {
   return Math.round((numerator / denominator) * 1000) / 10;
 }
 
+// 월별 집계 키(YYYY-MM). 폐기는 disposalDate, 입고는 statementDate 기준.
+function monthKey(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "unknown";
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
 const EMPTY = {
   period: { from: null, to: null },
-  disposal: { batchCount: 0, lineCount: 0, totalQuantity: 0, totalAmount: 0, byCause: [], byCategory: [] },
+  disposal: { batchCount: 0, lineCount: 0, totalQuantity: 0, totalAmount: 0, byCause: [], byCategory: [], byItem: [] },
   stockIn: { deliveryCount: 0, lineCount: 0, totalAmount: 0, discrepancyCount: 0, discrepancyRate: 0 },
   wasteRateByAmount: 0,
-  byBranch: []
+  byBranch: [],
+  byMonth: []
 };
 
 export async function GET(request) {
@@ -62,12 +70,20 @@ export async function GET(request) {
     const branchName = new Map(branches.map((branch) => [branch.id, branch.name]));
     const causeMap = new Map();
     const categoryMap = new Map();
+    const itemMap = new Map();
     const byBranch = new Map();
+    const monthBucket = new Map();
     const branchEntry = (id) => {
       if (!byBranch.has(id)) {
         byBranch.set(id, { branchId: id, branchName: branchName.get(id) ?? id, disposalAmount: 0, stockInAmount: 0, discrepancyCount: 0 });
       }
       return byBranch.get(id);
+    };
+    const monthEntry = (key) => {
+      if (!monthBucket.has(key)) {
+        monthBucket.set(key, { month: key, disposalAmount: 0, stockInAmount: 0 });
+      }
+      return monthBucket.get(key);
     };
 
     let disposalLineCount = 0;
@@ -75,12 +91,14 @@ export async function GET(request) {
     let disposalAmount = 0;
     for (const batch of disposalBatches) {
       const entry = branchEntry(batch.branchId);
+      const month = monthEntry(monthKey(batch.disposalDate));
       for (const line of batch.lines) {
         disposalLineCount += 1;
         disposalQuantity += line.quantity ?? 0;
         const amount = line.amount ?? 0;
         disposalAmount += amount;
         entry.disposalAmount += amount;
+        month.disposalAmount += amount;
         const cause = causeMap.get(line.cause) ?? { cause: line.cause, count: 0, amount: 0 };
         cause.count += 1;
         cause.amount += amount;
@@ -89,6 +107,11 @@ export async function GET(request) {
         category.count += 1;
         category.amount += amount;
         categoryMap.set(line.category, category);
+        const item = itemMap.get(line.itemName) ?? { itemName: line.itemName, count: 0, quantity: 0, amount: 0 };
+        item.count += 1;
+        item.quantity += line.quantity ?? 0;
+        item.amount += amount;
+        itemMap.set(line.itemName, item);
       }
     }
 
@@ -97,11 +120,13 @@ export async function GET(request) {
     let discrepancyCount = 0;
     for (const delivery of stockDeliveries) {
       const entry = branchEntry(delivery.branchId);
+      const month = monthEntry(monthKey(delivery.statementDate));
       for (const line of delivery.lines) {
         stockLineCount += 1;
         const amount = line.amount ?? 0;
         stockAmount += amount;
         entry.stockInAmount += amount;
+        month.stockInAmount += amount;
         if (line.status && line.status !== "ok") {
           discrepancyCount += 1;
           entry.discrepancyCount += 1;
@@ -117,7 +142,10 @@ export async function GET(request) {
         totalQuantity: Math.round(disposalQuantity * 100) / 100,
         totalAmount: disposalAmount,
         byCause: [...causeMap.values()].sort((a, b) => b.amount - a.amount),
-        byCategory: [...categoryMap.values()].sort((a, b) => b.amount - a.amount)
+        byCategory: [...categoryMap.values()].sort((a, b) => b.amount - a.amount),
+        byItem: [...itemMap.values()]
+          .map((item) => ({ ...item, quantity: Math.round(item.quantity * 100) / 100 }))
+          .sort((a, b) => b.amount - a.amount)
       },
       stockIn: {
         deliveryCount: stockDeliveries.length,
@@ -129,7 +157,11 @@ export async function GET(request) {
       wasteRateByAmount: pct(disposalAmount, stockAmount),
       byBranch: [...byBranch.values()]
         .map((entry) => ({ ...entry, wasteRate: pct(entry.disposalAmount, entry.stockInAmount) }))
-        .sort((a, b) => b.disposalAmount - a.disposalAmount)
+        .sort((a, b) => b.disposalAmount - a.disposalAmount),
+      // 월별: 폐기율 추이 + 월별 입고/폐기가액 (오름차순 월). "unknown"은 마지막으로.
+      byMonth: [...monthBucket.values()]
+        .map((entry) => ({ ...entry, wasteRate: pct(entry.disposalAmount, entry.stockInAmount) }))
+        .sort((a, b) => a.month.localeCompare(b.month))
     });
   } catch (error) {
     if (isMissingInventoryTableError(error)) return Response.json(EMPTY);
