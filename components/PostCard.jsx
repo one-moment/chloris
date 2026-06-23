@@ -133,6 +133,15 @@ export default function PostCard({
               onChange={setCommentEditDraft}
               users={users}
               placeholder="@멘션을 포함해 댓글 수정"
+              multiline
+              onKeyDown={(event) => {
+                if (event.isComposing || event.nativeEvent?.isComposing || event.keyCode === 229) return;
+                if (event.key === "Escape") { setEditingCommentId(null); return; }
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  if (!isSaving && commentEditDraft.trim()) saveCommentEdit(comment);
+                }
+              }}
             />
             <div className="inline-editor-actions">
               <button type="button" onClick={() => saveCommentEdit(comment)} disabled={isSaving || !commentEditDraft.trim()}>저장</button>
@@ -240,6 +249,13 @@ export default function PostCard({
           users={users}
           placeholder="@멘션을 포함해 댓글 작성"
           disabled={post.pending}
+          multiline
+          onKeyDown={(event) => {
+            if (event.isComposing || event.nativeEvent?.isComposing || event.keyCode === 229) return;
+            if (event.key !== "Enter" || event.shiftKey) return;
+            event.preventDefault();
+            if (!post.pending && commentDraft?.trim()) onAddComment(post.id);
+          }}
         />
         <button onClick={() => onAddComment(post.id)} disabled={post.pending || !commentDraft?.trim()}>댓글</button>
       </div>
