@@ -6,7 +6,7 @@ import { requireCurrentUser } from "../../../../../lib/auth";
 import { badRequest } from "../../../../../lib/serverState";
 import { prisma } from "../../../../../lib/prisma";
 import { isModuleEnabled } from "../../../../../lib/brand";
-import { normalizeAuthorStatus } from "../../../../../lib/inventory";
+import { normalizeAuthorStatus, attachmentCount } from "../../../../../lib/inventory";
 import {
   serializeDisposalBatch,
   resolveLotPrices,
@@ -74,6 +74,10 @@ export async function POST(request) {
 
   try {
     if (status === "review") {
+      // 검수요청에는 폐기 사진이 1장 이상 필요하다(매니저가 사진 보고 승인). draft/임시저장은 사진 없이 허용.
+      if (attachmentCount(body.attachments) < 1) {
+        return badRequest("검수요청에는 폐기 사진이 1장 이상 필요합니다.");
+      }
       // 담당 매니저로 지정한 사용자는 해당 지점의 매니저여야 한다(멘션 대상 무결성).
       if (body.reviewerId) {
         const managers = await branchManagers(branchId);
