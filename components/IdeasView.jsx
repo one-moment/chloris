@@ -25,6 +25,8 @@ export default function IdeasView({
   onStatusChange,
   onEditPost,
   onEditComment,
+  onDeletePost,
+  onDeleteComment,
   onAddReply,
   onTogglePin,
   templates = [],
@@ -158,6 +160,8 @@ export default function IdeasView({
               onAddComment={onAddComment}
               onEditPost={onEditPost}
               onEditComment={onEditComment}
+              onDeletePost={onDeletePost}
+              onDeleteComment={onDeleteComment}
               onAddReply={onAddReply}
               onTogglePin={onTogglePin}
             />
@@ -182,6 +186,8 @@ export default function IdeasView({
               onAddComment={onAddComment}
               onEditPost={onEditPost}
               onEditComment={onEditComment}
+              onDeletePost={onDeletePost}
+              onDeleteComment={onDeleteComment}
               onAddReply={onAddReply}
               onTogglePin={onTogglePin}
             />
