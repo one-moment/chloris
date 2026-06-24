@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { requestJson } from "../../../lib/core/apiClient";
+import { filesToAttachments } from "../../../lib/core/attachments";
+import AttachmentList from "../../../components/AttachmentList";
 
 // 폐기 입력 폼 (보로 inventory 모듈). 표 입력 + 키보드 이동(Enter/Tab, IME 안전) + 품목 자동완성 +
 // 구분/폐기원인 드롭다운 + 임시저장/최종제출(서버 검증 게이트) + 엑셀 복사.
@@ -53,6 +55,8 @@ export default function DisposalDashboard() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [draftBatchId, setDraftBatchId] = useState(null);
+  const [attachments, setAttachments] = useState([]);
+  const [uploadBusy, setUploadBusy] = useState(false);
   const [itemSuggest, setItemSuggest] = useState({ row: -1, items: [] });
   const [lotPicker, setLotPicker] = useState({ row: -1, lots: [], loading: false });
   const [managers, setManagers] = useState([]);
@@ -229,6 +233,25 @@ export default function DisposalDashboard() {
     setLotPicker({ row: -1, lots: [], loading: false });
   }
 
+  // 사진 첨부: 입고·채팅과 동일 경로(압축 → presign → S3/inline). 검수요청에 사진이 필수다.
+  async function onAttachmentsChange(fileList) {
+    if (!fileList || fileList.length === 0) return;
+    setError("");
+    setUploadBusy(true);
+    try {
+      const added = await filesToAttachments(fileList);
+      setAttachments((prev) => [...prev, ...added]);
+    } catch (uploadError) {
+      setError(uploadError.message);
+    } finally {
+      setUploadBusy(false);
+    }
+  }
+
+  function removeAttachment(index) {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function save(status) {
     setError("");
     setMessage("");
@@ -239,6 +262,10 @@ export default function DisposalDashboard() {
     }
     if (status === "review" && !reviewerId) {
       setError("담당 매니저를 선택하세요.");
+      return;
+    }
+    if (status === "review" && attachments.length === 0) {
+      setError("검수요청에는 폐기 사진이 1장 이상 필요합니다. 임시저장은 사진 없이 가능합니다.");
       return;
     }
     const filled = rows.filter(isFilled);
@@ -265,6 +292,7 @@ export default function DisposalDashboard() {
         lines,
         disposalDate,
         branchId,
+        attachments,
         reviewerId: status === "review" ? reviewerId : undefined,
         reviewerName: status === "review" ? (reviewer?.name ?? null) : undefined
       });
@@ -275,6 +303,7 @@ export default function DisposalDashboard() {
       if (status === "review") {
         setMessage(`검수 요청 완료 · ${result.lineCount}건 — 담당 매니저 승인 후 폐기대장에 반영됩니다.`);
         setRows([emptyRow()]);
+        setAttachments([]);
         setDraftBatchId(null);
         await loadReviews();
       } else {
@@ -346,6 +375,26 @@ export default function DisposalDashboard() {
 
       {error && <p className="action-error">{error}</p>}
       {message && <p className="work-empty">{message}</p>}
+
+      <section className="work-section">
+        <div className="work-filter-row" style={{ alignItems: "center" }}>
+          <label className="ghost-button" style={{ cursor: (uploadBusy || busy) ? "default" : "pointer", marginBottom: 0 }}>
+            📷 사진 첨부
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: "none" }}
+              disabled={uploadBusy || busy}
+              onChange={(event) => { onAttachmentsChange(event.target.files); event.target.value = ""; }}
+              aria-label="폐기 사진 첨부"
+            />
+          </label>
+          {uploadBusy && <span className="work-empty" style={{ margin: 0 }}>업로드 중…</span>}
+          <span className="work-empty" style={{ margin: 0 }}>검수요청에는 사진이 1장 이상 필요합니다(임시저장은 사진 없이 가능).</span>
+        </div>
+        <AttachmentList attachments={attachments} onRemove={removeAttachment} />
+      </section>
 
       <section className="work-section">
         <table className="work-table">
@@ -477,7 +526,7 @@ export default function DisposalDashboard() {
         <div className="work-filter-row" style={{ marginTop: "0.75rem" }}>
           <button type="button" className="ghost-button" onClick={addRow} disabled={busy}>＋ 행 추가</button>
           <button type="button" className="ghost-button" onClick={() => save("draft")} disabled={busy}>임시저장</button>
-          <button type="button" className="primary-button" onClick={() => save("review")} disabled={busy}>검수 요청</button>
+          <button type="button" className="primary-button" onClick={() => save("review")} disabled={busy || uploadBusy || attachments.length === 0} title={attachments.length === 0 ? "검수요청에는 사진이 1장 이상 필요합니다" : undefined}>검수 요청</button>
           <button type="button" className="ghost-button" onClick={copyForExcel} disabled={busy}>엑셀로 복사</button>
         </div>
       </section>
@@ -510,6 +559,12 @@ export default function DisposalDashboard() {
                       </li>
                     ))}
                   </ul>
+                  {batch.attachments?.length > 0 && (
+                    <div style={{ margin: "6px 0" }}>
+                      <span style={{ fontSize: "13px", color: "var(--muted)" }}>첨부사진 {batch.attachments.length}장 — 확인 후 승인하세요.</span>
+                      <AttachmentList attachments={batch.attachments} />
+                    </div>
+                  )}
                   <div className="work-filter-row" style={{ marginTop: "6px" }}>
                     <input
                       value={rejectReasons[batch.id] ?? ""}

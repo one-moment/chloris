@@ -6,7 +6,7 @@ import { requireCurrentUser } from "../../../../../../lib/auth";
 import { badRequest } from "../../../../../../lib/serverState";
 import { prisma } from "../../../../../../lib/prisma";
 import { isModuleEnabled } from "../../../../../../lib/brand";
-import { normalizeAuthorStatus, canTransitionDisposal } from "../../../../../../lib/inventory";
+import { normalizeAuthorStatus, canTransitionDisposal, attachmentCount } from "../../../../../../lib/inventory";
 import {
   serializeDisposalBatch,
   resolveLotPrices,
@@ -129,8 +129,15 @@ export async function PATCH(request, { params }) {
     const effectiveLines = replaceLines
       ?? (await prisma.disposalLine.findMany({ where: { batchId }, orderBy: { lineIndex: "asc" } }));
 
+    // 검수요청 사진 게이트: 폼이 보낸 첨부(있으면) 또는 기존 저장 첨부 기준으로 1장 이상 필요.
+    // (반려→재요청 시 사진 재업로드 없이 기존 사진으로도 통과.)
+    const effectiveAttachments = Array.isArray(body.attachments) ? body.attachments : existing.attachmentsJson;
+
     if (nextStatus === "review") {
       if (effectiveLines.length === 0) return badRequest("폐기 품목이 한 개 이상 필요합니다.");
+      if (attachmentCount(effectiveAttachments) < 1) {
+        return badRequest("검수요청에는 폐기 사진이 1장 이상 필요합니다.");
+      }
       // 담당 매니저로 지정한 사용자는 해당 지점의 매니저여야 한다(멘션 대상 무결성).
       if (body.reviewerId) {
         const managers = await branchManagers(existing.branchId);
@@ -161,6 +168,7 @@ export async function PATCH(request, { params }) {
           reviewerName: nextStatus === "review" ? (body.reviewerName ?? existing.reviewerName ?? null) : existing.reviewerName,
           reviewRequestedAt: nextStatus === "review" ? new Date() : existing.reviewRequestedAt,
           rejectReason: null,
+          attachmentsJson: Array.isArray(body.attachments) ? JSON.stringify(body.attachments) : undefined,
           disposalDate: body.disposalDate ? new Date(body.disposalDate) : undefined,
           sourceText: typeof body.sourceText === "string" ? body.sourceText : undefined
         },
