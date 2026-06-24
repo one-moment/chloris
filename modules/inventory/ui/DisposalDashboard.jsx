@@ -266,6 +266,8 @@ export default function DisposalDashboard() {
       return;
     }
     if (status === "review" && attachments.length === 0) {
+      // 사진 없이 검수요청을 누르면 명확히 알린다(버튼 비활성만으로는 피드백이 없어 "안 된다"로 오인됨).
+      window.alert("검수 요청에는 사진을 1장 이상 첨부해야 합니다.");
       setError("검수요청에는 폐기 사진이 1장 이상 필요합니다. 임시저장은 사진 없이 가능합니다.");
       return;
     }
@@ -527,7 +529,7 @@ export default function DisposalDashboard() {
         <div className="work-filter-row" style={{ marginTop: "0.75rem" }}>
           <button type="button" className="ghost-button" onClick={addRow} disabled={busy}>＋ 행 추가</button>
           <button type="button" className="ghost-button" onClick={() => save("draft")} disabled={busy}>임시저장</button>
-          <button type="button" className="primary-button" onClick={() => save("review")} disabled={busy || uploadBusy || attachments.length === 0} title={attachments.length === 0 ? "검수요청에는 사진이 1장 이상 필요합니다" : undefined}>검수 요청</button>
+          <button type="button" className="primary-button" onClick={() => save("review")} disabled={busy || uploadBusy} title={attachments.length === 0 ? "검수요청에는 사진이 1장 이상 필요합니다" : undefined}>검수 요청</button>
           <button type="button" className="ghost-button" onClick={copyForExcel} disabled={busy}>엑셀로 복사</button>
         </div>
       </section>
