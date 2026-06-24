@@ -1,9 +1,9 @@
-# PLAN v4 — 지점 매니저 관리 (Branch Manager Admin)
+# PLAN v5 — 지점 매니저 관리 (Branch Manager Admin)
 
 > **트랙:** `docs/tracks/branch-manager-admin/` (#28 또는 다음 번호)
 > **선행/연결:** #27 폐기 검수·승인 (승인·검증 경로 직접 수정 — §4)
 > **단계:** 기획(사무실 PC) → 실행(Mac, Claude Code)
-> **v4 변경 요지:** supervisor = '비admin 전 지점 매니저'의 UI 라벨로 확정 (새 role/enum/컬럼 0, v3 인프라가 그대로 supervisor 레이어). 구조 변경 없이 문구·라벨·보안 명시만 보강. (v3: 권한 2축 분리 + 박선영 admin+(manager,flag) 조합 + 지적 A~F 반영.)
+> **v5 변경 요지:** STATE(§9-1) 조사 반영 — 듀얼 스키마 **drift 없음** 확인 / #27 두 함수의 `if(!branchId)` **early-가드 함정**을 §4·§9-5에 명시 / 박선영 실데이터는 **운영 DB 전용**(워크트리·로컬 dev.db 조회 불가)이라 정합 절차·자격증명 주의를 §3에 명시. 구조 변경 0. (v4: supervisor 라벨화. v3: 권한 2축 + 박선영 admin+(manager,flag) + 지적 A~F.)
 
 ---
 
@@ -67,8 +67,10 @@ BranchAssignment { id, userId, branchId, role @default("staff"), createdAt
 - → §10 "감사 기록"은 '마지막 변경자/시각'으로 정의.
 
 **박선영 데이터 정합** (스키마 아님 = 데이터 변경, 사인오프 대상)
-- `User.role` → `"admin"` 설정 (현재 admin 아니면).
-- `BranchAssignment` 행 → `isAllBranches=true`, `branchId=null`로 갱신. 1단계에서 현재 `branchId` 확인.
+- ⚠️ **박선영 계정·배정은 운영 DB에만 수기 존재** (워크트리·로컬 `dev.db` 없음, STATE 확인). 현황은 **운영자가 운영 콘솔(Supabase/Vercel Postgres)에서 read-only SQL을 직접 실행**해 `User.role`·`branchId`·`role` 값만 회수 (STATE에 SQL·표 준비됨). **운영 자격증명을 채팅·코드·repo·`.env.local`에 넣지 말 것** — 결과 값만 회수.
+- 회수 값 기준: 이미 `role="admin"`이면 **승격 생략**. 아니면 `User.role` → `"admin"`.
+- `BranchAssignment` 행 → `isAllBranches=true`, `branchId=null`로 갱신.
+- 이 정합은 스키마 변경(§9-2)과 **독립** — 스키마 작업은 박선영 데이터 없이 선행 가능(병렬 트랙).
 
 ## 4. #27 승인·검증 경로 연동 ([A] — 확대, 함정 회피)
 
@@ -78,6 +80,7 @@ BranchAssignment { id, userId, branchId, role @default("staff"), createdAt
   - `app/api/work/inventory/disposals/route.js:79` — 전 지점 매니저를 담당자(reviewerId)로 지정 시 "해당 지점 매니저여야" 거부됨
   - `app/api/work/inventory/disposals/[batchId]/route.js:136` — 승인 알림 대상에서도 누락
 - 수정(개념): `branchManagers(branchId)` = `where { role:"manager", OR:[{ branchId }, { isAllBranches:true }] }`
+- ⚠️ **early-가드 함정 (STATE 확인):** 두 함수 모두 `if(!branchId)` early-return 존재 (`branchManagers`→`[]` `L56` / `canApproveDisposal`→admin 외 false `L85`). **early-return 분기는 그대로 두고 그 아래 where절만 OR로 교체** — branchId 없이 부르는 소비처의 기존 동작 보존 + 전 지점 매니저가 정상 호출에서만 잡히도록. 소비처 3곳(`L64` 승인 / `L79` reviewer 검증 / `L136` 알림)이 branchId를 항상 주는지 회귀로 확인.
 
 **회귀 테스트 (필수 — 승인 경로 변경)**
 - 특정 지점 매니저: 그 지점만 reviewer 드롭다운·검증·승인
@@ -106,7 +109,7 @@ BranchAssignment { id, userId, branchId, role @default("staff"), createdAt
 - **[F] brand 게이팅**: `isModuleEnabled(slug)`는 모듈 슬러그 기반(`lib/brand.js:40`)인데 매니저 관리는 코어=슬러그 없음 → borough `modules` 배열에 **의사 슬러그 `"branch-admin"` 등록 후 `isModuleEnabled("branch-admin")`**. (기존 게이팅 관례와 일관 — (a)안. `ACTIVE_BRAND_SLUG` 직접 체크는 비채택.)
 
 ## 8. 마이그레이션 / 운영 주의 (지적 D 반영)
-- 스키마 변경 = 컬럼 추가 + `branchId` nullable + `onDelete` 변경 → ⚠️ **듀얼 스키마 둘 다.**
+- 스키마 변경 = 컬럼 추가 + `branchId` nullable + `onDelete` 변경 → ⚠️ **듀얼 스키마 둘 다.** (STATE: drift 없음 확인 — 두 파일에 동일 내용 적용하면 됨.)
 - ⚠️ **[D]** Prisma 생성 SQL은 `IF NOT EXISTS` 미포함 → **Postgres 마이그레이션 SQL 수동 보정**(`ADD COLUMN IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`)으로 idempotent 충족. (SQLite는 dev 전용 — 사인오프가 실제 지키는 건 Postgres.)
 - 운영 마이그레이션 **선적용 → 검증 → 배포** (지난 '선적용 누락' 사고 방지).
 - 배포 후 health 체크.
@@ -117,9 +120,9 @@ BranchAssignment { id, userId, branchId, role @default("staff"), createdAt
 2. 스키마: `isAllBranches`/`assignedById`/`updatedAt` 추가 + `branchId` nullable + `onDelete: SetNull` (두 파일) + 마이그레이션 작성(PG는 `IF NOT EXISTS` 수동) → **사인오프 대기** → 선적용·검증
 3. `GET /api/branches` + 사용자 검색 API (admin 가드)
 4. 매니저 CRUD API (admin 가드, [B] 불변식 가드 포함)
-5. `canApproveDisposal()` + `branchManagers()` **둘 다** `isAllBranches` OR 추가 + 회귀 테스트 ([A])
+5. `canApproveDisposal()` + `branchManagers()` **둘 다** `isAllBranches` OR 추가 — ⚠️ 둘 다 `if(!branchId)` early-가드 존재, **early-return 유지 + 아래 where절만 OR 교체**(STATE 메모) + 회귀 테스트 ([A])
 6. 관리자 UI 3화면 (borough 의사 슬러그 게이팅, [F], supervisor/admin 뱃지 구분)
-7. 박선영 데이터 정합: `User.role="admin"` + 행 `isAllBranches=true`/`branchId=null` (데이터 변경, 사인오프)
+7. 박선영 데이터 정합: **운영 SQL 회수 값 기준** — `User.role="admin"`(이미면 생략) + 행 `isAllBranches=true`/`branchId=null` (데이터 변경, 사인오프). 스키마 작업과 **병행 가능**.
 8. 스모크 테스트 — 박선영이 매니저 관리 화면 접근 + **모든 지점 reviewer로 노출** + 지정/수정/해제 동작 + (선택) 비admin 사용자에 전 지점 토글 시 supervisor 생성·승인 확인
 
 ## 10. 완료 기준

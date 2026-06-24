@@ -10,7 +10,17 @@ import { analyticsModule } from "./analytics";
 // 회사별로 켜는 모듈은 lib/brand.js 의 ACTIVE_BRAND.modules 가 결정한다.
 // (crm·reservations·disposal·stockin 모듈은 보로플라워마켓 전용 — brand 게이팅으로 노출됨.)
 // (analytics 모듈은 원모먼트 전용 — brand 게이팅으로 노출됨.)
-const allModules = [purchaseModule, crmModule, reservationsModule, disposalModule, stockInModule, inventoryMasterModule, inventoryInsightsModule, analyticsModule];
+//
+// 지점 매니저 관리는 코어 admin 기능(코드는 app/(workspace)/work/branch-managers + app/api/branch-managers,
+// app/api/branches). 모듈이 아니라 nav 파이프라인만 공유하려고 nav-only 매니페스트로 등록한다(다른 import 없음).
+// brand 게이팅은 lib/brand.js 의 borough.modules 에 의사 슬러그 "branch-admin" 을 넣어 처리(PLAN §7-F).
+const branchAdminModule = {
+  slug: "branch-admin",
+  name: "지점 매니저",
+  nav: { label: "지점 매니저", href: "/work/branch-managers", minRole: "admin" }
+};
+
+const allModules = [purchaseModule, crmModule, reservationsModule, disposalModule, stockInModule, inventoryMasterModule, inventoryInsightsModule, analyticsModule, branchAdminModule];
 
 export const modules = allModules.filter((module) => isModuleEnabled(module.slug));
 
