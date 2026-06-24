@@ -65,16 +65,42 @@ export async function PATCH(request, { params }) {
       if (!allowed) return Response.json({ error: "이 지점의 담당 매니저만 검수할 수 있습니다." }, { status: 403 });
 
       if (action === "reject") {
+        const decidedAt = new Date();
         // 상태 가드를 update 조건(where status:"review")에 넣어 동시 승인/반려 경쟁을 차단한다.
         const rejectResult = await prisma.disposalBatch.updateMany({
           where: { id: batchId, status: "review" },
           data: { status: "rejected", rejectReason: typeof body.rejectReason === "string" ? body.rejectReason : null }
         });
         if (rejectResult.count === 0) return badRequest("이미 처리된(검수대기가 아닌) 폐기 기록입니다.");
-        const rejected = await prisma.disposalBatch.findUnique({
+        let rejected = await prisma.disposalBatch.findUnique({
           where: { id: batchId },
           include: { lines: { orderBy: { lineIndex: "asc" } } }
         });
+
+        // 반려도 구글시트에 한 줄 남긴다(승인상태=반려). DB엔 반려자/시각이 없어 처리한 매니저·시각을
+        // 옵션으로 전달한다. env 설정 시에만 동작·실패는 비치명적(승인 분기와 동일 패턴).
+        try {
+          const [author, branch] = await Promise.all([
+            rejected.createdById ? prisma.user.findUnique({ where: { id: rejected.createdById }, select: { name: true } }) : null,
+            prisma.branch.findUnique({ where: { id: rejected.branchId }, select: { name: true } })
+          ]);
+          const synced = await syncDisposalBatch(rejected, {
+            author: author?.name,
+            branchName: branch?.name,
+            decidedByName: user.name,
+            decidedAt
+          });
+          if (!synced.skipped) {
+            rejected = await prisma.disposalBatch.update({
+              where: { id: batchId },
+              data: { syncedAt: new Date() },
+              include: { lines: { orderBy: { lineIndex: "asc" } } }
+            });
+          }
+        } catch (syncError) {
+          console.error("disposal_sheet_sync_failed", syncError);
+        }
+
         await postDisposalDecision(rejected, { actorName: user.name, decision: "rejected", reason: rejected.rejectReason });
         return Response.json(serializeDisposalBatch(rejected));
       }
