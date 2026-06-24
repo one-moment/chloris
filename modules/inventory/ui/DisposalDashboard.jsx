@@ -5,6 +5,7 @@ import Link from "next/link";
 import { requestJson } from "../../../lib/core/apiClient";
 import { filesToAttachments } from "../../../lib/core/attachments";
 import AttachmentList from "../../../components/AttachmentList";
+import DisposalLogView from "./DisposalLogView";
 
 // 폐기 입력 폼 (보로 inventory 모듈). 표 입력 + 키보드 이동(Enter/Tab, IME 안전) + 품목 자동완성 +
 // 구분/폐기원인 드롭다운 + 임시저장/최종제출(서버 검증 게이트) + 엑셀 복사.
@@ -581,6 +582,8 @@ export default function DisposalDashboard() {
           </ul>
         )}
       </section>
+
+      <DisposalLogView />
     </div>
   );
 }
