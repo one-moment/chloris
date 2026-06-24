@@ -29,7 +29,13 @@ export async function GET(request) {
   const params = new URL(request.url).searchParams;
   const where = {};
   if (params.get("branchId")) where.branchId = params.get("branchId");
-  if (params.get("status")) where.status = params.get("status");
+  // status는 단일값 또는 CSV(예: "review,submitted,rejected"=전체 조회뷰, draft 제외) 모두 허용.
+  const statusParam = params.get("status");
+  if (statusParam) {
+    const statuses = statusParam.split(",").map((value) => value.trim()).filter(Boolean);
+    if (statuses.length > 1) where.status = { in: statuses };
+    else if (statuses.length === 1) where.status = statuses[0];
+  }
   const from = params.get("from");
   const to = params.get("to");
   if (from || to) {
@@ -37,6 +43,9 @@ export async function GET(request) {
     if (from) where.disposalDate.gte = new Date(from);
     if (to) where.disposalDate.lte = new Date(to);
   }
+  // 품목 검색: 라인 품목명 부분일치(조회뷰). 새 API 없이 기존 GET에 파라미터만 추가.
+  const item = params.get("item");
+  if (item && item.trim()) where.lines = { some: { itemName: { contains: item.trim() } } };
 
   // 지점 목록·담당 매니저 후보는 폼/필터를 위해 항상 반환한다(폐기 테이블 부재와 무관, 예약 라우트와 동일 패턴).
   const [branches, managers] = await Promise.all([
@@ -51,7 +60,17 @@ export async function GET(request) {
       take: 50,
       include: { lines: { orderBy: { lineIndex: "asc" } } }
     });
-    return Response.json({ batches: batches.map(serializeDisposalBatch), branches, managers });
+    // 입력자(작성자) 이름은 배치에 저장돼 있지 않아 createdById로 한 번에 조회해 부착(스키마 변경 회피).
+    const creatorIds = [...new Set(batches.map((batch) => batch.createdById).filter(Boolean))];
+    const creators = creatorIds.length
+      ? await prisma.user.findMany({ where: { id: { in: creatorIds } }, select: { id: true, name: true } })
+      : [];
+    const creatorNameById = new Map(creators.map((creator) => [creator.id, creator.name]));
+    const serialized = batches.map((batch) => ({
+      ...serializeDisposalBatch(batch),
+      createdByName: batch.createdById ? (creatorNameById.get(batch.createdById) ?? null) : null
+    }));
+    return Response.json({ batches: serialized, branches, managers });
   } catch (error) {
     if (isMissingInventoryTableError(error)) return Response.json({ batches: [], branches, managers });
     throw error;
