@@ -46,3 +46,18 @@ export async function PATCH(request, { params }) {
 
   return Response.json(serializePost(updated));
 }
+
+export async function DELETE(request, { params }) {
+  const user = await requireCurrentUser();
+  if (!user) return Response.json({ error: "Authentication required." }, { status: 401 });
+
+  const { postId } = await params;
+  const existing = await prisma.post.findUnique({ where: { id: postId } });
+  if (!existing) return notFound("Post not found.");
+  if (!canEditRecord(user, existing)) return Response.json({ error: "You cannot delete this post." }, { status: 403 });
+
+  // 댓글·답글은 스키마 onDelete: Cascade로 함께 삭제된다(고아 레코드 없음).
+  await prisma.post.delete({ where: { id: postId } });
+
+  return Response.json({ ok: true, id: postId });
+}

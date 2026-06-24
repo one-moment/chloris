@@ -57,3 +57,18 @@ export async function PATCH(request, { params }) {
 
   return Response.json(serializeUpdatedComment(updated));
 }
+
+export async function DELETE(request, { params }) {
+  const user = await requireCurrentUser();
+  if (!user) return Response.json({ error: "Authentication required." }, { status: 401 });
+
+  const { commentId } = await params;
+  const existing = await prisma.comment.findUnique({ where: { id: commentId } });
+  if (!existing) return notFound("Comment not found.");
+  if (!canEditRecord(user, existing)) return Response.json({ error: "You cannot delete this comment." }, { status: 403 });
+
+  // 답글(자식 댓글)은 스키마 onDelete: Cascade로 함께 삭제된다.
+  await prisma.comment.delete({ where: { id: commentId } });
+
+  return Response.json({ ok: true, id: commentId, postId: existing.postId });
+}

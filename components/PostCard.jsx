@@ -34,6 +34,8 @@ export default function PostCard({
   onAddComment,
   onEditPost,
   onEditComment,
+  onDeletePost,
+  onDeleteComment,
   onAddReply,
   onTogglePin
 }) {
@@ -121,6 +123,9 @@ export default function PostCard({
           <span><Timestamp createdAt={comment.createdAtIso ?? comment.createdAt} updatedAt={comment.updatedAtIso} isEdited={comment.isEdited} /></span>
           {canEditRecord(comment, currentUser) && editingCommentId !== comment.id && (
             <button className="text-button" type="button" onClick={() => beginCommentEdit(comment)}>수정</button>
+          )}
+          {canEditRecord(comment, currentUser) && editingCommentId !== comment.id && onDeleteComment && (
+            <button className="text-button danger" type="button" onClick={() => onDeleteComment(post.id, comment.id)}>삭제</button>
           )}
           {!isReply && !post.pending && onAddReply && replyTargetId !== comment.id && (
             <button className="text-button" type="button" onClick={() => beginReply(comment)}>답글</button>
@@ -211,6 +216,9 @@ export default function PostCard({
           )}
           {canEditRecord(post, currentUser) && !isEditingPost && (
             <button className="text-button" type="button" onClick={beginPostEdit}>수정</button>
+          )}
+          {canEditRecord(post, currentUser) && !isEditingPost && onDeletePost && (
+            <button className="text-button danger" type="button" onClick={() => onDeletePost(post.id)}>삭제</button>
           )}
           <select className="status-select" value={post.status} onChange={(event) => onStatusChange(post.id, event.target.value)} disabled={post.pending}>
             {statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}

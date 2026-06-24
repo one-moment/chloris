@@ -44,6 +44,8 @@ export default function ChatView() {
     changePostStatus,
     editPost,
     editComment,
+    deletePost,
+    deleteComment,
     addComment,
     addReply,
     togglePostPin,
@@ -119,6 +121,8 @@ export default function ChatView() {
             onStatusChange={changePostStatus}
             onEditPost={editPost}
             onEditComment={editComment}
+            onDeletePost={deletePost}
+            onDeleteComment={deleteComment}
             onAddReply={addReply}
             onTogglePin={togglePostPin}
             templates={templates}

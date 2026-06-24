@@ -131,6 +131,25 @@ export default function WorkspaceShell({ children }) {
     }));
   }
 
+  function removePostFromState(postId) {
+    updateChannel(channel.id, (channelItem) => ({
+      ...channelItem,
+      posts: channelItem.posts.filter((post) => post.id !== postId)
+    }));
+  }
+
+  function removeCommentFromState(postId, commentId) {
+    updateChannel(channel.id, (channelItem) => ({
+      ...channelItem,
+      posts: channelItem.posts.map((post) => (
+        post.id === postId
+          // 댓글 본인 + 그 답글(parentId === commentId)을 함께 제거 — 서버 cascade와 동일하게 낙관적 반영.
+          ? { ...post, comments: (post.comments ?? []).filter((comment) => comment.id !== commentId && comment.parentId !== commentId) }
+          : post
+      ))
+    }));
+  }
+
   function replaceChannelId(previousId, nextChannel) {
     setState((current) => ({
       ...current,
@@ -768,6 +787,34 @@ export default function WorkspaceShell({ children }) {
     }
   }
 
+  async function deletePost(postId) {
+    if (!window.confirm("이 게시글을 삭제할까요? 댓글도 함께 삭제되며 되돌릴 수 없습니다.")) return { ok: false };
+    try {
+      await requestJson(`/api/posts/${postId}`, { method: "DELETE" });
+      removePostFromState(postId);
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+      return { ok: false };
+    }
+  }
+
+  async function deleteComment(postId, commentId) {
+    if (!window.confirm("이 댓글을 삭제할까요? 달린 답글이 있으면 함께 삭제되며 되돌릴 수 없습니다.")) return { ok: false };
+    try {
+      await requestJson(`/api/comments/${commentId}`, { method: "DELETE" });
+      removeCommentFromState(postId, commentId);
+      refreshStateInBackground({ projectId: state.selectedProjectId, channelId: channel.id });
+      return { ok: true };
+    } catch (error) {
+      console.error(error);
+      setActionError(error.message);
+      return { ok: false };
+    }
+  }
+
   async function addComment(postId) {
     const body = commentDrafts[postId]?.trim();
     if (!body) return;
@@ -1020,6 +1067,8 @@ export default function WorkspaceShell({ children }) {
     changePostStatus,
     editPost,
     editComment,
+    deletePost,
+    deleteComment,
     addComment,
     addReply,
     togglePostPin,
