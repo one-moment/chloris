@@ -159,7 +159,7 @@ export default function BranchManagerAdmin() {
       <header className="work-page-header">
         <div>
           <h1>지점 매니저</h1>
-          <p>지점 매니저를 지정·수정·해제합니다. '전 지점'은 신규 지점까지 자동 포함하며, 비admin이면 supervisor로 표시됩니다.</p>
+          <p>지점 매니저를 지정·수정·해제합니다. 전 지점 권한은 신규 지점까지 자동 포함하며, 비admin이면 supervisor로 표시됩니다.</p>
         </div>
         <Link className="ghost-button" href="/">← 채팅으로</Link>
       </header>
