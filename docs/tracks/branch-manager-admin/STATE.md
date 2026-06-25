@@ -30,12 +30,13 @@ JOIN "User" u ON u.id = ba."userId"
 WHERE u.name = '박선영';
 ```
 
+박선영 `userId` = `user-1780891898528-e6517678a073a` (운영 회수 2026-06-25).
+
 | 항목 | PLAN 기대 | 운영 실측 | 영향 |
 |---|---|---|---|
-| 박선영 `User.role` | `admin`(승격 대상) | **❓ 미확인** | 이미 admin이면 §9-7 role 변경 **불필요** |
-| 박선영 `BranchAssignment.branchId` | 특정 지점 1개 → `null`로 정합 예정 | **❓ 미확인** | nullable화 후 `isAllBranches=true` |
-| 박선영 `BranchAssignment.role` | `manager` | **❓ 미확인** | manager 아니면 정합 시 교정 |
-| 박선영 `BranchAssignment` 행 개수 | 1 | **❓ 미확인** | 복수면 [B] 불변식 정리 대상 |
+| 박선영 `User.role` | `admin`(승격 대상) | **❓ 미회수** (운영 1번 쿼리 값 대기) | 이미 admin이면 §9-7 role 변경 **불필요** |
+| 박선영 `BranchAssignment` | 특정 1개 → `null`+flag 정합 | **특정 3행**: gangnam-1 / gangnam-2 / jamsil, 전부 `role=manager` | 현재 3개 지점 전부 = 사실상 전 지점. §9-7로 1개 전 지점 행(isAllBranches)으로 정합 |
+| `BranchAssignment` 행 개수 | 1 | **3** | §9-7 reconcile: 3행 강등 + 전 지점 1행 (불변식[B]) |
 
 ---
 
@@ -70,9 +71,11 @@ WHERE u.name = '박선영';
 
 ## 4. 진행 상태
 - ✅ §9-1 조사 (위)
-- ✅ **§9-2~§9-6 작성 완료** (2026-06-25, 아래 §5). 마이그레이션은 **작성만** — 적용·배포 안 함.
-- ⛔ **§9-2 적용(선적용)·배포는 사인오프 대기.** (PG 마이그레이션 `IF NOT EXISTS` 수동 보정 완료)
-- ⏸ **§9-7 박선영 데이터 정합**: 운영 read-only SQL(§1) 회수 값 받은 뒤 별도. 박선영이 이미 admin이면 role 변경 생략.
+- ✅ **§9-2~§9-6 작성 완료** (2026-06-25, 아래 §5).
+- ✅ **dev 검증 통과** (2026-06-25, 워크트리 `npm install` 후): `prisma db push` + 회귀 `test-branch-manager.mjs` **15/15** + 기존 #27 `test-disposal-review.mjs` **10/10**(미회귀) + `npm run lint` 클린.
+- ✅ 푸시 + **draft PR #34** (머지 게이트 체크리스트). 마이그레이션은 운영 미적용.
+- ⛔ **운영 선적용·배포는 Geontae 최종 GO 대기.** (PG 마이그레이션 `IF NOT EXISTS` 수동 보정 완료)
+- ⏸ **§9-7 박선영 데이터 정합**: 운영 마이그레이션 적용 후 진행(컬럼 필요). 3행 → 전 지점 1행 reconcile. `User.role` 값 1건 대기.
 
 ## 5. 구현 요약 (§9-2~§9-6)
 **스키마 [§9-2]** — `BranchAssignment`에 추가/변경 (두 파일 동일):
