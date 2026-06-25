@@ -77,9 +77,9 @@ WHERE u.name = '박선영';
 ## 5. 구현 요약 (§9-2~§9-6)
 **스키마 [§9-2]** — `BranchAssignment`에 추가/변경 (두 파일 동일):
 - `isAllBranches Boolean @default(false)`, `assignedById String?`, `updatedById String?`, `updatedAt DateTime @updatedAt`
-- `branchId` → nullable, `branch Branch?` `onDelete: Cascade→SetNull`
+- `branchId` → nullable, `branch Branch?` **`onDelete: Cascade` 유지(v6 정정)**. SetNull 비채택 — 특정지점 삭제 시 `isAllBranches=false`+`branchId=null` 유령 행 생성 → 불변식[B] 위반. 전 지점 행은 branchId=null이라 FK 무관.
 - ⚠️ **결정: `assignedById`/`updatedById`는 FK 없는 scalar TEXT** — disposal-review(`approvedById` 등) 관례 일치 + 실제 FK화는 `User↔BranchAssignment` 기존 관계 개명(범위 밖 리팩토링)을 강제하므로 회피. PLAN §3 "FK→User"는 의미상 표기로 해석.
-- 마이그레이션: `prisma/migrations/20260625120000_add_branch_manager_fields/migration.sql` (Postgres 전용 — SQLite는 `db push`. idempotent: `ADD COLUMN IF NOT EXISTS` / `ALTER COLUMN DROP NOT NULL`(no-op 안전) / FK `DROP IF EXISTS`+`ADD`).
+- 마이그레이션: `prisma/migrations/20260625120000_add_branch_manager_fields/migration.sql` (Postgres 전용 — SQLite는 `db push`. **v6: FK 안 건드림 — 컬럼 4개 `ADD COLUMN IF NOT EXISTS` + `branchId` `ALTER COLUMN DROP NOT NULL`(재실행 no-op)만**).
 
 **API/로직 [§9-3·4]**
 - `lib/branchManagerAdmin.js` (코어): `listManagers`/`assignManager`/`updateManagerScope`/`unassignManager` + 불변식[B] 재조정(`reconcileScope`) + `isMissingBranchManagerSchema` degrade.

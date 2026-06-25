@@ -1,9 +1,9 @@
-# PLAN v5 — 지점 매니저 관리 (Branch Manager Admin)
+# PLAN v6 — 지점 매니저 관리 (Branch Manager Admin)
 
 > **트랙:** `docs/tracks/branch-manager-admin/` (#28 또는 다음 번호)
 > **선행/연결:** #27 폐기 검수·승인 (승인·검증 경로 직접 수정 — §4)
 > **단계:** 기획(사무실 PC) → 실행(Mac, Claude Code)
-> **v5 변경 요지:** STATE(§9-1) 조사 반영 — 듀얼 스키마 **drift 없음** 확인 / #27 두 함수의 `if(!branchId)` **early-가드 함정**을 §4·§9-5에 명시 / 박선영 실데이터는 **운영 DB 전용**(워크트리·로컬 dev.db 조회 불가)이라 정합 절차·자격증명 주의를 §3에 명시. 구조 변경 0. (v4: supervisor 라벨화. v3: 권한 2축 + 박선영 admin+(manager,flag) + 지적 A~F.)
+> **v6 변경 요지:** [C] **정정** — `onDelete`는 SetNull이 아니라 **Cascade 유지**(SetNull은 특정지점 삭제 시 `isAllBranches=false`+`branchId=null` 유령 행 생성 → [B] 불변식 위반). `branchId` nullable화만 필요, FK는 안 건드림. (v5: STATE 반영·early-가드. v4: supervisor 라벨화. v3: 권한 2축 + A~F.)
 
 ---
 
@@ -53,7 +53,7 @@ BranchAssignment { id, userId, branchId, role @default("staff"), createdAt
 - `assignedById String?` (FK → User) — 지정한 관리자
 - `updatedAt DateTime @updatedAt`
 - (선택) `updatedById String?`
-- ⚠️ **[C] branchId nullable화**: `branch Branch @relation(onDelete: Cascade)` → `branch Branch? @relation(onDelete: SetNull)`. 전 지점 행은 `branchId=null`이므로 필수. 듀얼 스키마 둘 다.
+- ⚠️ **[C] branchId nullable화 (onDelete는 Cascade 유지 — v6 정정)**: `branch Branch @relation(onDelete: Cascade)` → `branch Branch? @relation(onDelete: Cascade)`. **nullable만 추가, onDelete는 기존 Cascade 유지.** SetNull 비채택 — 특정지점 삭제 시 `isAllBranches=false`+`branchId=null` 유령 행 생성 → [B] 불변식 위반. 전 지점 행은 `branchId=null`이라 onDelete 무관. 마이그레이션은 **FK 안 건드리고 `branchId DROP NOT NULL`만** (변경면 최소). 듀얼 스키마 둘 다.
 
 **[B] 유니크/불변식 가드 (Prisma `@@unique`로는 못 막음)**
 - `@@unique([userId, branchId])`는 SQLite·Postgres 공통으로 **NULL을 서로 다른 값으로 취급** → 전 지점 행(`branchId=null`) 중복을 못 막고, 특정지점 행과 충돌도 안 남. 결과: ① 전 지점 행 다중 누적 가능 ② 전 지점 행 + 특정지점 행 모순 공존 가능.
@@ -81,6 +81,7 @@ BranchAssignment { id, userId, branchId, role @default("staff"), createdAt
   - `app/api/work/inventory/disposals/[batchId]/route.js:136` — 승인 알림 대상에서도 누락
 - 수정(개념): `branchManagers(branchId)` = `where { role:"manager", OR:[{ branchId }, { isAllBranches:true }] }`
 - ⚠️ **early-가드 함정 (STATE 확인):** 두 함수 모두 `if(!branchId)` early-return 존재 (`branchManagers`→`[]` `L56` / `canApproveDisposal`→admin 외 false `L85`). **early-return 분기는 그대로 두고 그 아래 where절만 OR로 교체** — branchId 없이 부르는 소비처의 기존 동작 보존 + 전 지점 매니저가 정상 호출에서만 잡히도록. 소비처 3곳(`L64` 승인 / `L79` reviewer 검증 / `L136` 알림)이 branchId를 항상 주는지 회귀로 확인.
+- ⚠️ **드롭다운 노출:** 폼은 `allBranchManagers()`를 `manager.branchId === branchId`로 필터(`DisposalDashboard.jsx`). 전 지점 매니저(branchId=null) 노출 위해 `allBranchManagers()`가 **활성 지점마다 1행 전개**. (목록 UI는 `listManagers()` 별도 — 전개 안 함, 중복 없음.)
 
 **회귀 테스트 (필수 — 승인 경로 변경)**
 - 특정 지점 매니저: 그 지점만 reviewer 드롭다운·검증·승인
@@ -103,24 +104,24 @@ BranchAssignment { id, userId, branchId, role @default("staff"), createdAt
 
 ## 7. API (지적 F 반영)
 - `GET /api/branches` **(신규)** — 지점 드롭다운용. `status="active"` 목록.
-- 사용자 검색 API **(신규)** — 기존 사용자 이름/이메일 검색. 지정 대상 선택용.
+- 사용자 검색 API — 기존 `GET /api/users?query=` **재사용**(신규 X). 지정 대상 선택용.
 - 매니저 목록 `GET` / 지정 `POST`(불변식 가드 포함) / 범위 수정 `PATCH` / 해제 `PATCH`(staff 강등)
 - 전부 표준 admin 가드 + 입력 검증.
 - **[F] brand 게이팅**: `isModuleEnabled(slug)`는 모듈 슬러그 기반(`lib/brand.js:40`)인데 매니저 관리는 코어=슬러그 없음 → borough `modules` 배열에 **의사 슬러그 `"branch-admin"` 등록 후 `isModuleEnabled("branch-admin")`**. (기존 게이팅 관례와 일관 — (a)안. `ACTIVE_BRAND_SLUG` 직접 체크는 비채택.)
 
 ## 8. 마이그레이션 / 운영 주의 (지적 D 반영)
-- 스키마 변경 = 컬럼 추가 + `branchId` nullable + `onDelete` 변경 → ⚠️ **듀얼 스키마 둘 다.** (STATE: drift 없음 확인 — 두 파일에 동일 내용 적용하면 됨.)
-- ⚠️ **[D]** Prisma 생성 SQL은 `IF NOT EXISTS` 미포함 → **Postgres 마이그레이션 SQL 수동 보정**(`ADD COLUMN IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`)으로 idempotent 충족. (SQLite는 dev 전용 — 사인오프가 실제 지키는 건 Postgres.)
+- 스키마 변경 = 컬럼 추가 + `branchId` nullable (**onDelete 미변경, Cascade 유지** — v6, FK 안 건드림) → ⚠️ **듀얼 스키마 둘 다.** (STATE: drift 없음 확인 — 두 파일에 동일 내용 적용하면 됨.)
+- ⚠️ **[D]** Prisma 생성 SQL은 `IF NOT EXISTS` 미포함 → **Postgres 마이그레이션 SQL 수동 보정**(`ADD COLUMN IF NOT EXISTS`)으로 idempotent 충족. (SQLite는 dev 전용 — 사인오프가 실제 지키는 건 Postgres.)
 - 운영 마이그레이션 **선적용 → 검증 → 배포** (지난 '선적용 누락' 사고 방지).
 - 배포 후 health 체크.
 - ⚠️ **별도 마이그레이션 사인오프 필요** (스키마 변경 + 박선영 admin 승격 데이터 변경, 실행 전 승인).
 
 ## 9. 작업 순서 (Claude Code)
 1. 박선영 행 `branchId` + `User.role` 현황 + 듀얼 스키마 확인 → `STATE.md` **(읽기 전용, 사인오프 불필요)**
-2. 스키마: `isAllBranches`/`assignedById`/`updatedAt` 추가 + `branchId` nullable + `onDelete: SetNull` (두 파일) + 마이그레이션 작성(PG는 `IF NOT EXISTS` 수동) → **사인오프 대기** → 선적용·검증
+2. 스키마: `isAllBranches`/`assignedById`/`updatedById`/`updatedAt` 추가 + `branchId` nullable (**onDelete Cascade 유지, FK 안 건드림** — v6) (두 파일) + 마이그레이션 작성(PG는 `IF NOT EXISTS` 수동) → **사인오프 대기** → 선적용·검증
 3. `GET /api/branches` + 사용자 검색 API (admin 가드)
 4. 매니저 CRUD API (admin 가드, [B] 불변식 가드 포함)
-5. `canApproveDisposal()` + `branchManagers()` **둘 다** `isAllBranches` OR 추가 — ⚠️ 둘 다 `if(!branchId)` early-가드 존재, **early-return 유지 + 아래 where절만 OR 교체**(STATE 메모) + 회귀 테스트 ([A])
+5. `canApproveDisposal()` + `branchManagers()` **둘 다** `isAllBranches` OR 추가 — ⚠️ 둘 다 `if(!branchId)` early-가드 존재, **early-return 유지 + 아래 where절만 OR 교체**(STATE 메모) + `allBranchManagers()` 전개 + 회귀 테스트 ([A])
 6. 관리자 UI 3화면 (borough 의사 슬러그 게이팅, [F], supervisor/admin 뱃지 구분)
 7. 박선영 데이터 정합: **운영 SQL 회수 값 기준** — `User.role="admin"`(이미면 생략) + 행 `isAllBranches=true`/`branchId=null` (데이터 변경, 사인오프). 스키마 작업과 **병행 가능**.
 8. 스모크 테스트 — 박선영이 매니저 관리 화면 접근 + **모든 지점 reviewer로 노출** + 지정/수정/해제 동작 + (선택) 비admin 사용자에 전 지점 토글 시 supervisor 생성·승인 확인
