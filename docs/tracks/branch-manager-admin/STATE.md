@@ -34,7 +34,7 @@ WHERE u.name = '박선영';
 
 | 항목 | PLAN 기대 | 운영 실측 | 영향 |
 |---|---|---|---|
-| 박선영 `User.role` | `admin`(승격 대상) | **❓ 미회수** (운영 1번 쿼리 값 대기) | 이미 admin이면 §9-7 role 변경 **불필요** |
+| 박선영 `User.role` | `admin`(승격 대상) | **`admin`** (운영 회수 2026-06-25) | 이미 admin → §9-7 role 승격 **생략** ✅ |
 | 박선영 `BranchAssignment` | 특정 1개 → `null`+flag 정합 | **특정 3행**: gangnam-1 / gangnam-2 / jamsil, 전부 `role=manager` | 현재 3개 지점 전부 = 사실상 전 지점. §9-7로 1개 전 지점 행(isAllBranches)으로 정합 |
 | `BranchAssignment` 행 개수 | 1 | **3** | §9-7 reconcile: 3행 강등 + 전 지점 1행 (불변식[B]) |
 
@@ -75,7 +75,7 @@ WHERE u.name = '박선영';
 - ✅ **dev 검증 통과** (2026-06-25, 워크트리 `npm install` 후): `prisma db push` + 회귀 `test-branch-manager.mjs` **15/15** + 기존 #27 `test-disposal-review.mjs` **10/10**(미회귀) + `npm run lint` 클린.
 - ✅ 푸시 + **draft PR #34** (머지 게이트 체크리스트). 마이그레이션은 운영 미적용.
 - ⛔ **운영 선적용·배포는 Geontae 최종 GO 대기.** (PG 마이그레이션 `IF NOT EXISTS` 수동 보정 완료)
-- ⏸ **§9-7 박선영 데이터 정합**: 운영 마이그레이션 적용 후 진행(컬럼 필요). 3행 → 전 지점 1행 reconcile. `User.role` 값 1건 대기.
+- ⏸ **§9-7 박선영 데이터 정합**: `User.role=admin` 확인 → **role 승격 생략**. 남은 건 3행 → 전 지점 1행 reconcile(운영 마이그레이션 적용 후, 사인오프). 권장: 새 UI에서 admin이 박선영 '범위 수정 → 전 지점'(= §9-8 스모크 겸함). 백업 SQL은 §8.
 
 ## 5. 구현 요약 (§9-2~§9-6)
 **스키마 [§9-2]** — `BranchAssignment`에 추가/변경 (두 파일 동일):
@@ -111,3 +111,20 @@ WHERE u.name = '박선영';
 - 원인: 폼이 `allBranchManagers()` 결과를 `manager.branchId === branchId`로 필터(`modules/inventory/ui/DisposalDashboard.jsx:100,339`). 전 지점 행은 `branchId=null` → 누락.
 - 조치: `allBranchManagers()`(`lib/inventoryServer.js`)에서 전 지점 매니저를 **활성 지점마다 1행으로 전개**. 모듈 UI(폼) 무수정. 회귀 테스트에 케이스 추가(A=특정+전지점 / B=전지점만).
 - 결과: 완료기준 "박선영 모든 지점 reviewer 노출" 충족(검증·승인은 §9-5, 드롭다운 노출은 본 조치).
+
+## 8. §9-7 박선영 정합 — 실행안 (운영 마이그레이션 적용 후, 사인오프 하에)
+- `User.role=admin` 확인됨 → **역할 변경 없음.** 정합 대상 = BranchAssignment 3행(gangnam-1/2·jamsil, manager) → 전 지점 1행.
+- **권장(A): 새 UI로 처리** — 운영 배포 후 admin이 `지점 매니저` 화면에서 박선영 **범위 수정 → '전 지점' 토글 → 저장**. 내부적으로 `updateManagerScope(isAllBranches:true)` = 3행 staff 강등 + 전 지점 1행. 기능 도그푸딩 + §9-8 스모크 겸함. 추가 SQL 불필요.
+- **백업(B): 동등 SQL** (`<actor>` = 수행 admin id, 감사용):
+```sql
+BEGIN;
+UPDATE "BranchAssignment"
+   SET role='staff', "isAllBranches"=false, "updatedById"='<actor>', "updatedAt"=now()
+ WHERE "userId"='user-1780891898528-e6517678a073a' AND role='manager' AND "branchId" IS NOT NULL;
+INSERT INTO "BranchAssignment"
+  (id,"userId","branchId",role,"isAllBranches","assignedById","updatedById","createdAt","updatedAt")
+VALUES
+  (gen_random_uuid()::text,'user-1780891898528-e6517678a073a',NULL,'manager',true,'<actor>','<actor>',now(),now());
+COMMIT;
+```
+- 검증(둘 중 무엇이든): `SELECT "branchId",role,"isAllBranches" FROM "BranchAssignment" WHERE "userId"='user-1780891898528-e6517678a073a';` → manager 행은 `branchId=NULL, isAllBranches=true` 1개, 나머지 3개는 staff.
