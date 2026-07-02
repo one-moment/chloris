@@ -188,3 +188,12 @@
 - Every agent/tool/bot invocation should leave an audit trail through `AgentRun`, `AgentToolCall`, or `BotEventLog`.
 - The initial framework should be registry-first and permission-first; marketplace-style UI can come later.
 - For Purchase Agent, vendor bots are tools under the Purchase Agent rather than global channel clutter.
+
+## 2026-07-02: 품목 마스터 수정·삭제 (사장님 승인)
+
+- 품목 삭제는 완전 삭제(hard delete)로 하되, 입고/폐기 이력이 0건인 품목만 실제 삭제한다.
+- 입고 또는 폐기 이력이 있으면 삭제를 거부하고 "비활성 처리만 가능" 안내한다 (사용자에게 보이는 차단 기준).
+- 이력 0건이어도 다른 참조(신규 품목 등록 요청 resolvedItemId)가 남아 있으면 강제 삭제·cascade 없이 안전 거부한다.
+- 이력 판정은 itemId 또는 itemName 매칭으로 카운트한다 (과거 itemId 없이 이름만 기록된 데이터 포함).
+- 수정 항목은 품목명·분류·원산지·단위·수입여부(isImported, 기존 필드)이며 저장 전 "이대로 수정하시겠습니까?" 확인 팝업을 거친다.
+- 이번 작업은 스키마 무변경 (schema.prisma / schema.postgres.prisma 둘 다 미변경).
