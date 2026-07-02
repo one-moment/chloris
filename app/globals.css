@@ -1482,6 +1482,14 @@
   font-weight: 800;
 }
 
+/* .modal-actions button(class+type)이 .primary-button보다 구체적이라 배경을 흰색으로
+   덮어써 흰 글자가 안 보이던 문제 — 모달 안에서도 primary 스타일 유지 */
+.modal-actions .primary-button {
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+}
+
 .primary-button:disabled,
 button:disabled {
   cursor: not-allowed;

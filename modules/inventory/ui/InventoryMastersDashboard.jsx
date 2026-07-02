@@ -29,6 +29,11 @@ export default function InventoryMastersDashboard() {
   const [itemForm, setItemForm] = useState(EMPTY_ITEM_FORM);
   const [causeForm, setCauseForm] = useState({ name: "", sortOrder: 0 });
 
+  // 품목 수정 모달: editTarget이 있으면 열림. 저장 실패 시 모달을 닫지 않고 editError로 표시.
+  const [editTarget, setEditTarget] = useState(null);
+  const [editForm, setEditForm] = useState(EMPTY_ITEM_FORM);
+  const [editError, setEditError] = useState("");
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -93,6 +98,48 @@ export default function InventoryMastersDashboard() {
     body: JSON.stringify({ isActive: !item.isActive })
   }));
 
+  function openEditItem(item) {
+    setEditTarget(item);
+    setEditForm({
+      name: item.name,
+      category: item.category ?? "",
+      origin: item.origin ?? "",
+      defaultUnit: item.defaultUnit,
+      isImported: Boolean(item.isImported)
+    });
+    setEditError("");
+  }
+
+  function closeEditItem() {
+    setEditTarget(null);
+    setEditError("");
+  }
+
+  async function saveEditItem(event) {
+    event.preventDefault();
+    if (!editTarget || !editForm.name.trim()) return;
+    if (!window.confirm("이대로 수정하시겠습니까?")) return;
+    setBusy(true);
+    try {
+      await requestJson(`/api/work/inventory/admin/items/${editTarget.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: editForm.name,
+          category: editForm.category,
+          origin: editForm.origin,
+          defaultUnit: editForm.defaultUnit,
+          isImported: editForm.isImported
+        })
+      });
+      closeEditItem();
+      reload();
+    } catch (saveError) {
+      setEditError(saveError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const toggleCause = (cause) => runAction(() => requestJson(`/api/work/inventory/admin/causes/${cause.id}`, {
     method: "PATCH",
     body: JSON.stringify({ isActive: !cause.isActive })
@@ -153,7 +200,7 @@ export default function InventoryMastersDashboard() {
             ) : (
               <table className="work-table">
                 <thead>
-                  <tr><th>품목명</th><th>분류</th><th>원산지</th><th>단위</th><th>상태</th></tr>
+                  <tr><th>품목명</th><th>분류</th><th>원산지</th><th>단위</th><th>상태</th><th>관리</th></tr>
                 </thead>
                 <tbody>
                   {items.map((item) => (
@@ -166,6 +213,9 @@ export default function InventoryMastersDashboard() {
                         <button type="button" className="ghost-button" disabled={busy} onClick={() => toggleItem(item)}>
                           {item.isActive ? "사용중" : "비활성"}
                         </button>
+                      </td>
+                      <td>
+                        <button type="button" className="ghost-button" disabled={busy} onClick={() => openEditItem(item)}>수정</button>
                       </td>
                     </tr>
                   ))}
@@ -202,6 +252,42 @@ export default function InventoryMastersDashboard() {
             )}
           </section>
         </>
+      )}
+
+      {editTarget && (
+        <div className="next-dialog-fallback" onClick={closeEditItem}>
+          <form className="modal-card" onClick={(e) => e.stopPropagation()} onSubmit={saveEditItem}>
+            <h2>품목 수정</h2>
+            <label className="settings-field">
+              품목명
+              <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} aria-label="품목명" />
+            </label>
+            <label className="settings-field">
+              분류
+              <input value={editForm.category} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })} placeholder="예: 국화류(선택)" aria-label="분류" />
+            </label>
+            <label className="settings-field">
+              원산지
+              <input value={editForm.origin} onChange={(e) => setEditForm({ ...editForm, origin: e.target.value })} placeholder="예: 국산(선택)" aria-label="원산지" />
+            </label>
+            <label className="settings-field">
+              단위
+              <input value={editForm.defaultUnit} onChange={(e) => setEditForm({ ...editForm, defaultUnit: e.target.value })} aria-label="단위" />
+            </label>
+            <label className="settings-switch-row">
+              <span>수입 품목</span>
+              <input type="checkbox" style={{ width: "auto" }} checked={editForm.isImported} onChange={(e) => setEditForm({ ...editForm, isImported: e.target.checked })} aria-label="수입여부" />
+            </label>
+            {editForm.name.trim() !== editTarget.name && (
+              <p className="work-empty">품목명을 바꾸면 과거 입고·폐기 기록은 이전 이름으로 남아, 인사이트에서 별개 품목으로 집계될 수 있습니다.</p>
+            )}
+            {editError && <p className="action-error">{editError}</p>}
+            <div className="modal-actions">
+              <button type="button" className="ghost-button" disabled={busy} onClick={closeEditItem}>취소</button>
+              <button type="submit" className="primary-button" disabled={busy || !editForm.name.trim()}>{busy ? "저장 중" : "저장"}</button>
+            </div>
+          </form>
+        </div>
       )}
     </div>
   );
