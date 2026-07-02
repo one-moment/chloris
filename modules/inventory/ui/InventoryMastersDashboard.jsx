@@ -98,6 +98,11 @@ export default function InventoryMastersDashboard() {
     body: JSON.stringify({ isActive: !item.isActive })
   }));
 
+  function deleteItem(item) {
+    if (!window.confirm("해당 품목을 삭제하시겠습니까?")) return;
+    return runAction(() => requestJson(`/api/work/inventory/admin/items/${item.id}`, { method: "DELETE" }));
+  }
+
   function openEditItem(item) {
     setEditTarget(item);
     setEditForm({
@@ -216,6 +221,8 @@ export default function InventoryMastersDashboard() {
                       </td>
                       <td>
                         <button type="button" className="ghost-button" disabled={busy} onClick={() => openEditItem(item)}>수정</button>
+                        {" "}
+                        <button type="button" className="ghost-button" disabled={busy} onClick={() => deleteItem(item)}>삭제</button>
                       </td>
                     </tr>
                   ))}
